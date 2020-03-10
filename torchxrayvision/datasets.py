@@ -298,9 +298,14 @@ class Kaggle_Dataset(Dataset):
 
 class NIH_Google_Dataset(Dataset):
 
-    def __init__(self, imgpath, csvpath, transform=None, data_aug=None, 
-                 nrows=None, seed=0,
-                 pure_labels=False, unique_patients=True):
+    def __init__(self, imgpath, 
+                 csvpath=os.path.join(thispath, "google2019_nih-chest-xray-labels.csv.gz"), 
+                 transform=None, 
+                 data_aug=None, 
+                 nrows=None, 
+                 seed=0,
+                 pure_labels=False, 
+                 unique_patients=True):
 
         super(NIH_Google_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
@@ -659,7 +664,8 @@ class MIMIC_Dataset(Dataset):
     
 class Openi_Dataset(Dataset):
 
-    def __init__(self, imgpath, xmlpath, 
+    def __init__(self, imgpath, 
+                 xmlpath, 
                  dicomcsv_path=os.path.join(thispath, "nlmcxr_dicom_metadata.csv.gz"),
                  tsnepacsv_path=os.path.join(thispath, "nlmcxr_tsne_pa.csv.gz"),
                  filter_pa=True,
