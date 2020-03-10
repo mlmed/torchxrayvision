@@ -20,6 +20,7 @@ import torchvision
 import torchvision.transforms.functional as TF
 import skimage.transform
 import warnings
+import tarfile
 
 default_pathologies = [  'Atelectasis',
                  'Consolidation',
@@ -665,7 +666,7 @@ class MIMIC_Dataset(Dataset):
 class Openi_Dataset(Dataset):
 
     def __init__(self, imgpath, 
-                 xmlpath, 
+                 xmlpath=os.path.join(thispath, "NLMCXR_reports.tgz"), 
                  dicomcsv_path=os.path.join(thispath, "nlmcxr_dicom_metadata.csv.gz"),
                  tsnepacsv_path=os.path.join(thispath, "nlmcxr_tsne_pa.csv.gz"),
                  filter_pa=True,
@@ -698,23 +699,28 @@ class Openi_Dataset(Dataset):
         # Load data
         self.xmlpath = xmlpath
         
+        tarf = tarfile.open("torchxrayvision/NLMCXR_reports.tgz", 'r:gz')
+        
         samples = []
-        for f in os.listdir(xmlpath):
-            tree = xml.etree.ElementTree.parse(os.path.join(xmlpath, f))
-            root = tree.getroot()
-            uid = root.find("uId").attrib["id"]
-            labels_m = [node.text.lower() for node in root.findall(".//MeSH/major")]
-            labels_m = "|".join(np.unique(labels_m))
-            labels_a = [node.text.lower() for node in root.findall(".//MeSH/automatic")]
-            labels_a = "|".join(np.unique(labels_a))
-            image_nodes = root.findall(".//parentImage")
-            for image in image_nodes:
-                sample = {}
-                sample["uid"] = uid
-                sample["imageid"] = image.attrib["id"]
-                sample["labels_major"] = labels_m
-                sample["labels_automatic"] = labels_a
-                samples.append(sample)
+        #for f in os.listdir(xmlpath):
+        #   tree = xml.etree.ElementTree.parse(os.path.join(xmlpath, f))
+        for filename in tarf.getnames():
+            if (filename.endswith(".xml")):
+                tree = xml.etree.ElementTree.parse(tarf.extractfile(filename))
+                root = tree.getroot()
+                uid = root.find("uId").attrib["id"]
+                labels_m = [node.text.lower() for node in root.findall(".//MeSH/major")]
+                labels_m = "|".join(np.unique(labels_m))
+                labels_a = [node.text.lower() for node in root.findall(".//MeSH/automatic")]
+                labels_a = "|".join(np.unique(labels_a))
+                image_nodes = root.findall(".//parentImage")
+                for image in image_nodes:
+                    sample = {}
+                    sample["uid"] = uid
+                    sample["imageid"] = image.attrib["id"]
+                    sample["labels_major"] = labels_m
+                    sample["labels_automatic"] = labels_a
+                    samples.append(sample)
        
         self.csv = pd.DataFrame(samples)
         self.MAXVAL = 255  # Range [0 255]
