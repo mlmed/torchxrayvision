@@ -299,6 +299,16 @@ class Kaggle_Dataset(Dataset):
 
 class NIH_Google_Dataset(Dataset):
 
+    """
+    Chest Radiograph Interpretation with Deep Learning Models: Assessment with 
+    Radiologist-adjudicated Reference Standards and Population-adjusted Evaluation
+    Anna Majkowska, Sid Mittal, David F. Steiner, Joshua J. Reicher, Scott Mayer 
+    McKinney, Gavin E. Duggan, Krish Eswaran, Po-Hsuan Cameron Chen, Yun Liu, 
+    Sreenivasa Raju Kalidindi, Alexander Ding, Greg S. Corrado, Daniel Tse, and 
+    Shravya Shetty. Radiology 2020
+    https://pubs.rsna.org/doi/10.1148/radiol.2019191293
+    """
+    
     def __init__(self, imgpath, 
                  csvpath=os.path.join(thispath, "google2019_nih-chest-xray-labels.csv.gz"), 
                  transform=None, 
