@@ -11,14 +11,12 @@ import os,sys,os.path
 import pandas as pd
 import pickle
 import skimage
-import skimage.draw
-import tarfile, glob
+import glob
 import collections
 import pprint
 import torch
 import torch.nn.functional as F
 import torchvision
-import torchvision.models as models
 import torchvision.transforms.functional as TF
 import skimage.transform
 import warnings
@@ -75,7 +73,7 @@ def relabel_dataset(pathologies, dataset):
     dataset.labels = new_labels
     dataset.pathologies = pathologies
 
-class XrayDataset():
+class Dataset():
     def __init__(self):
         pass
     def totals(self):
@@ -83,9 +81,9 @@ class XrayDataset():
         return dict(zip(self.pathologies,counts))
         
     
-class Merge_XrayDataset(XrayDataset):
+class Merge_Dataset(Dataset):
     def __init__(self, datasets, seed=0, label_concat=False):
-        super(Merge_XrayDataset, self).__init__()
+        super(Merge_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.datasets = datasets
         self.length = 0
@@ -115,8 +113,6 @@ class Merge_XrayDataset(XrayDataset):
                 new_labels[i,shift*size:shift*size+size] = self.labels[i]
             self.labels = new_labels
             
-            
-                
     def __repr__(self):
         pprint.pprint(self.totals())
         return self.__class__.__name__ + " num_samples={}".format(len(self))
@@ -130,17 +126,13 @@ class Merge_XrayDataset(XrayDataset):
         item["source"] = self.which_dataset[idx]
         return item
         
-class FilterDataset(XrayDataset):
+class FilterDataset(Dataset):
     def __init__(self, dataset, labels=None):
         super(FilterDataset, self).__init__()
         self.dataset = dataset
         self.pathologies = dataset.pathologies
         
         self.idxs = np.where(np.nansum(dataset.labels, axis=1) > 0)[0]
-        
-        #allnan = np.nansum(dataset.labels+1, axis=1) == 0
-        
-        #mask = mask and ~allnan
         
         if labels:
             print("filtering for ", dict(zip(labels, np.asarray(self.pathologies)[labels])))
@@ -149,7 +141,6 @@ class FilterDataset(XrayDataset):
             subset = [k in labels for k in singlelabel]
             self.idxs = self.idxs[np.array(subset)]
             
-        #self.idxs = np.where(newmask)[0]
         self.labels = self.dataset.labels[self.idxs]
                 
     def __repr__(self):
@@ -162,12 +153,18 @@ class FilterDataset(XrayDataset):
     def __getitem__(self, idx):
         return self.dataset[self.idxs[idx]]
 
-class NIH_XrayDataset(XrayDataset):
+class NIH_Dataset(Dataset):
 
-    def __init__(self, datadir, csvpath, transform=None, data_aug=None, 
-                 nrows=None, seed=0,
-                 pure_labels=False, unique_patients=True):
-        super(NIH_XrayDataset, self).__init__()
+    def __init__(self, datadir, 
+                 csvpath=os.path.join(thispath, "Data_Entry_2017.csv.gz"), 
+                 transform=None, 
+                 data_aug=None, 
+                 nrows=None, 
+                 seed=0,
+                 pure_labels=False, 
+                 unique_patients=True):
+        
+        super(NIH_Dataset, self).__init__()
 
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.datadir = datadir
@@ -232,13 +229,13 @@ class NIH_XrayDataset(XrayDataset):
             
         return {"PA":img, "lab":self.labels[idx], "idx":idx}
     
-class Kaggle_XrayDataset(XrayDataset):
+class Kaggle_Dataset(Dataset):
 
     def __init__(self, datadir, csvpath, transform=None, data_aug=None, 
                  nrows=None, seed=0,
                  pure_labels=False, unique_patients=True):
 
-        super(Kaggle_XrayDataset, self).__init__()
+        super(Kaggle_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.datadir = datadir
         self.transform = transform
@@ -293,13 +290,13 @@ class Kaggle_XrayDataset(XrayDataset):
             
         return {"PA":img, "lab":self.labels[idx], "idx":idx}
 
-class NIH_Google_XrayDataset(XrayDataset):
+class NIH_Google_Dataset(Dataset):
 
     def __init__(self, datadir, csvpath, transform=None, data_aug=None, 
                  nrows=None, seed=0,
                  pure_labels=False, unique_patients=True):
 
-        super(NIH_Google_XrayDataset, self).__init__()
+        super(NIH_Google_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.datadir = datadir
         self.transform = transform
@@ -315,10 +312,6 @@ class NIH_Google_XrayDataset(XrayDataset):
         self.csv = pd.read_csv(self.csvpath, nrows=nrows)
         self.MAXVAL = 255  # Range [0 255]
 
-        # Remove multi-finding images.
-#         if pure_labels:
-#             self.csv = self.csv[~self.csv["Finding Labels"].str.contains("\|")]
-
         if unique_patients:
             self.csv = self.csv.groupby("Patient ID").first().reset_index()
             
@@ -330,11 +323,6 @@ class NIH_Google_XrayDataset(XrayDataset):
             mask = self.csv[pathology] == "YES"
                 
             self.labels.append(mask.values)
-        
-        
-#         self.labels = []
-#         for pathology in self.pathologies:
-#             self.labels.append(self.csv["Finding Labels"].str.contains(pathology).values)
             
         self.labels = np.asarray(self.labels).T
         self.labels = self.labels.astype(np.float32)
@@ -374,12 +362,12 @@ class NIH_Google_XrayDataset(XrayDataset):
         return {"PA":img, "lab":self.labels[idx], "idx":idx}
     
     
-class PC_XrayDataset(XrayDataset):
+class PC_Dataset(Dataset):
 
     def __init__(self, datadir, csvpath, transform=None, data_aug=None,
                  flat_dir=True, seed=0, unique_patients=True):
 
-        super(PC_XrayDataset, self).__init__()
+        super(PC_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
 
         self.pathologies = ["Atelectasis", "Consolidation", "Infiltration",
@@ -468,12 +456,12 @@ class PC_XrayDataset(XrayDataset):
 
         return {"PA":img, "lab":self.labels[idx], "idx":idx}
 
-class CheX_XrayDataset(XrayDataset):
+class CheX_Dataset(Dataset):
 
     def __init__(self, datadir, csvpath, transform=None, data_aug=None,
                  flat_dir=True, seed=0, unique_patients=True):
 
-        super(CheX_XrayDataset, self).__init__()
+        super(CheX_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.MAXVAL = 255
         
@@ -558,12 +546,12 @@ class CheX_XrayDataset(XrayDataset):
 
         return {"PA":img, "lab":self.labels[idx], "idx":idx}
     
-class MIMIC_XrayDataset(XrayDataset):
+class MIMIC_Dataset(Dataset):
 
     def __init__(self, datadir, csvpath,metacsvpath, transform=None, data_aug=None,
                  flat_dir=True, seed=0, unique_patients=True):
 
-        super(MIMIC_XrayDataset, self).__init__()
+        super(MIMIC_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.MAXVAL = 255
         
@@ -656,17 +644,17 @@ class MIMIC_XrayDataset(XrayDataset):
 
         return {"PA":img, "lab":self.labels[idx], "idx":idx}
     
-class Openi_XrayDataset(XrayDataset):
+class Openi_Dataset(Dataset):
 
     def __init__(self, datadir, xmlpath, 
-                 dicomcsv_path=(thispath + "/nlmcxr_dicom_metadata.csv.gz"),
-                 tsnepacsv_path=(thispath + "/nlmcxr_tsne_pa.csv.gz"),
+                 dicomcsv_path=os.path.join(thispath, "nlmcxr_dicom_metadata.csv.gz"),
+                 tsnepacsv_path=os.path.join(thispath, "nlmcxr_tsne_pa.csv.gz"),
                  filter_pa=True,
                  transform=None, data_aug=None, 
                  nrows=None, seed=0,
                  pure_labels=False, unique_patients=True):
 
-        super(Openi_XrayDataset, self).__init__()
+        super(Openi_Dataset, self).__init__()
         import xml
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.datadir = datadir
@@ -711,10 +699,6 @@ class Openi_XrayDataset(XrayDataset):
        
         self.csv = pd.DataFrame(samples)
         self.MAXVAL = 255  # Range [0 255]
-
-        # Remove multi-finding images.
-#         if pure_labels:
-#             self.csv = self.csv[~self.csv["Finding Labels"].str.contains("\|")]
             
         self.dicom_metadata = pd.read_csv(dicomcsv_path, index_col="imageid", low_memory=False)
 
@@ -782,6 +766,11 @@ class Openi_XrayDataset(XrayDataset):
             img = self.data_aug(img)
             
         return {"PA":img, "lab":self.labels[idx], "idx":idx}
+
+    
+    
+    
+    
     
 class ToPILImage(object):
     def __init__(self):
@@ -811,56 +800,3 @@ class XRayCenterCrop(object):
     
     def __call__(self, img):
         return self.crop_center(img)
-
-# class ToPILImage(object):
-#     """Convert ndarrays in sample to PIL images."""
-#     def __call__(self, x):
-#         to_pil = transforms.ToPILImage()
-#         return to_pil(x)
-
-
-
-# class GaussianNoise(object):
-#     """
-#     Adds Gaussian noise to the PA and L (mean 0, std 0.05)
-#     """
-#     def __call__(self, sample):
-#         pa_img, l_img = sample['PA'], sample['L']
-
-#         pa_img += torch.randn_like(pa_img) * 0.05
-#         l_img += torch.randn_like(l_img) * 0.05
-
-#         sample['PA'] = pa_img
-#         sample['L'] = l_img
-#         return sample
-
-
-# class RandomRotation(object):
-#     """
-#     Adds a random rotation to the PA and L (between -5 and +5).
-#     """
-#     def __init__(self):
-#         self.rot = torchvision.transforms.RandomRotation(5)
-    
-#     def __call__(self, sample):
-        
-
-#         sample['PA'] = self.rot(sample['PA'])
-#         if "L" in sample:
-#             sample['L'] = self.rot(sample['L'])
-#         return sample
-    
-# class RandomAffine(object):
-    
-#     def __init__(self, **kwargs):
-#         self.kwargs = kwargs
-#         self.aff = torchvision.transforms.RandomAffine(**self.kwargs)
-        
-#     def __call__(self, sample):
-        
-#         sample['PA'] = self.aff(sample['PA'])
-#         if "L" in sample:
-#             sample['L'] = self.aff(sample['L'])
-        
-#         return sample
-    
