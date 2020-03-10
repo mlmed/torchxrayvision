@@ -79,6 +79,11 @@ class Dataset():
     def totals(self):
         counts = [dict(collections.Counter(items[~np.isnan(items)]).most_common()) for items in self.labels.T]
         return dict(zip(self.pathologies,counts))
+    def check_paths_exist(self):
+        if not os.path.isdir(self.imgpath):
+            raise Exception("imgpath must be a directory")
+        if not os.path.isfile(self.csvpath):
+            raise Exception("csvpath must be a file")
         
     
 class Merge_Dataset(Dataset):
@@ -155,7 +160,7 @@ class FilterDataset(Dataset):
 
 class NIH_Dataset(Dataset):
 
-    def __init__(self, datadir, 
+    def __init__(self, imgpath, 
                  csvpath=os.path.join(thispath, "Data_Entry_2017.csv.gz"), 
                  transform=None, 
                  data_aug=None, 
@@ -167,7 +172,8 @@ class NIH_Dataset(Dataset):
         super(NIH_Dataset, self).__init__()
 
         np.random.seed(seed)  # Reset the seed so all runs are the same.
-        self.datadir = datadir
+        self.imgpath = imgpath
+        self.csvpath = csvpath
         self.transform = transform
         self.data_aug = data_aug
         
@@ -179,7 +185,7 @@ class NIH_Dataset(Dataset):
         self.pathologies = sorted(self.pathologies)
 
         # Load data
-        self.csvpath = csvpath
+        self.check_paths_exist()
         self.csv = pd.read_csv(self.csvpath, nrows=nrows)
         self.MAXVAL = 255  # Range [0 255]
 
@@ -207,7 +213,7 @@ class NIH_Dataset(Dataset):
 
     def __getitem__(self, idx):
         imgid = self.csv['Image Index'].iloc[idx]
-        img_path = os.path.join(self.datadir, imgid)
+        img_path = os.path.join(self.imgpath, imgid)
         #print(img_path)
         img = imread(img_path)
         img = normalize(img, self.MAXVAL)  
@@ -231,13 +237,13 @@ class NIH_Dataset(Dataset):
     
 class Kaggle_Dataset(Dataset):
 
-    def __init__(self, datadir, csvpath, transform=None, data_aug=None, 
+    def __init__(self, imgpath, csvpath, transform=None, data_aug=None, 
                  nrows=None, seed=0,
                  pure_labels=False, unique_patients=True):
 
         super(Kaggle_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
-        self.datadir = datadir
+        self.imgpath = imgpath
         self.transform = transform
         self.data_aug = data_aug
         
@@ -268,7 +274,7 @@ class Kaggle_Dataset(Dataset):
 
     def __getitem__(self, idx):
         imgid = self.csv['patientId'].iloc[idx]
-        img_path = os.path.join(self.datadir, imgid + ".jpg")
+        img_path = os.path.join(self.imgpath, imgid + ".jpg")
         #print(img_path)
         img = imread(img_path)
         img = normalize(img, self.MAXVAL)  
@@ -292,13 +298,13 @@ class Kaggle_Dataset(Dataset):
 
 class NIH_Google_Dataset(Dataset):
 
-    def __init__(self, datadir, csvpath, transform=None, data_aug=None, 
+    def __init__(self, imgpath, csvpath, transform=None, data_aug=None, 
                  nrows=None, seed=0,
                  pure_labels=False, unique_patients=True):
 
         super(NIH_Google_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
-        self.datadir = datadir
+        self.imgpath = imgpath
         self.transform = transform
         self.data_aug = data_aug
         
@@ -339,7 +345,7 @@ class NIH_Google_Dataset(Dataset):
 
     def __getitem__(self, idx):
         imgid = self.csv['Image Index'].iloc[idx]
-        img_path = os.path.join(self.datadir, imgid)
+        img_path = os.path.join(self.imgpath, imgid)
         #print(img_path)
         img = imread(img_path)
         img = normalize(img, self.MAXVAL)  
@@ -364,8 +370,13 @@ class NIH_Google_Dataset(Dataset):
     
 class PC_Dataset(Dataset):
 
-    def __init__(self, datadir, csvpath, transform=None, data_aug=None,
-                 flat_dir=True, seed=0, unique_patients=True):
+    def __init__(self, imgpath, 
+                 csvpath=os.path.join(thispath, "PADCHEST_chest_x_ray_images_labels_160K_01.02.19.csv.gz"), 
+                 transform=None, 
+                 data_aug=None,
+                 flat_dir=True, 
+                 seed=0, 
+                 unique_patients=True):
 
         super(PC_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
@@ -390,11 +401,13 @@ class PC_Dataset(Dataset):
         mapping["Pleural_Thickening"] = ["pleural thickening"]
         mapping["Consolidation"] = ["air bronchogram"]
         
-        self.datadir = datadir
+        self.imgpath = imgpath
         self.transform = transform
         self.data_aug = data_aug
         self.flat_dir = flat_dir
         self.csvpath = csvpath
+        
+        self.check_paths_exist()
         self.csv = pd.read_csv(self.csvpath, low_memory=False)
         self.MAXVAL = 65535
 
@@ -435,7 +448,7 @@ class PC_Dataset(Dataset):
     def __getitem__(self, idx):
 
         imgid = self.csv['ImageID'].iloc[idx]
-        img_path = os.path.join(self.datadir,imgid)
+        img_path = os.path.join(self.imgpath,imgid)
         img = imread(img_path)
         img = normalize(img, self.MAXVAL)   
         
@@ -458,7 +471,7 @@ class PC_Dataset(Dataset):
 
 class CheX_Dataset(Dataset):
 
-    def __init__(self, datadir, csvpath, transform=None, data_aug=None,
+    def __init__(self, imgpath, csvpath, transform=None, data_aug=None,
                  flat_dir=True, seed=0, unique_patients=True):
 
         super(CheX_Dataset, self).__init__()
@@ -481,7 +494,7 @@ class CheX_Dataset(Dataset):
         
         self.pathologies = sorted(self.pathologies)
         
-        self.datadir = datadir
+        self.imgpath = imgpath
         self.transform = transform
         self.data_aug = data_aug
         self.csvpath = csvpath
@@ -525,7 +538,7 @@ class CheX_Dataset(Dataset):
         
         imgid = self.csv['Path'].iloc[idx]
         imgid = imgid.replace("CheXpert-v1.0-small/","")
-        img_path = os.path.join(self.datadir, imgid)
+        img_path = os.path.join(self.imgpath, imgid)
         img = imread(img_path)
         img = normalize(img, self.MAXVAL)      
         
@@ -548,7 +561,7 @@ class CheX_Dataset(Dataset):
     
 class MIMIC_Dataset(Dataset):
 
-    def __init__(self, datadir, csvpath,metacsvpath, transform=None, data_aug=None,
+    def __init__(self, imgpath, csvpath,metacsvpath, transform=None, data_aug=None,
                  flat_dir=True, seed=0, unique_patients=True):
 
         super(MIMIC_Dataset, self).__init__()
@@ -571,7 +584,7 @@ class MIMIC_Dataset(Dataset):
         
         self.pathologies = sorted(self.pathologies)
         
-        self.datadir = datadir
+        self.imgpath = imgpath
         self.transform = transform
         self.data_aug = data_aug
         self.csvpath = csvpath
@@ -623,7 +636,7 @@ class MIMIC_Dataset(Dataset):
         studyid = str(self.csv.iloc[idx]["study_id"])
         dicom_id = str(self.csv.iloc[idx]["dicom_id"])
         
-        img_path = os.path.join(self.datadir, "p" + subjectid[:2], "p" + subjectid, "s" + studyid, dicom_id + ".jpg")
+        img_path = os.path.join(self.imgpath, "p" + subjectid[:2], "p" + subjectid, "s" + studyid, dicom_id + ".jpg")
         img = imread(img_path)
         img = normalize(img, self.MAXVAL)      
         
@@ -646,7 +659,7 @@ class MIMIC_Dataset(Dataset):
     
 class Openi_Dataset(Dataset):
 
-    def __init__(self, datadir, xmlpath, 
+    def __init__(self, imgpath, xmlpath, 
                  dicomcsv_path=os.path.join(thispath, "nlmcxr_dicom_metadata.csv.gz"),
                  tsnepacsv_path=os.path.join(thispath, "nlmcxr_tsne_pa.csv.gz"),
                  filter_pa=True,
@@ -657,7 +670,7 @@ class Openi_Dataset(Dataset):
         super(Openi_Dataset, self).__init__()
         import xml
         np.random.seed(seed)  # Reset the seed so all runs are the same.
-        self.datadir = datadir
+        self.imgpath = imgpath
         self.transform = transform
         self.data_aug = data_aug
         
@@ -745,7 +758,7 @@ class Openi_Dataset(Dataset):
 
     def __getitem__(self, idx):
         imageid = self.csv.iloc[idx].imageid
-        img_path = os.path.join(self.datadir,imageid + ".png")
+        img_path = os.path.join(self.imgpath,imageid + ".png")
         #print(img_path)
         img = imread(img_path)
         img = normalize(img, self.MAXVAL)  
