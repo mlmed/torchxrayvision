@@ -59,10 +59,21 @@ class DenseNet(nn.Module):
     """
 
     def __init__(self, growth_rate=32, block_config=(6, 12, 24, 16), num_init_features=64, bn_size=4,
-                 drop_rate=0, num_classes=1000, in_channels=3):
+                 drop_rate=0, num_classes=18, in_channels=1, weights=None):
 
         super(DenseNet, self).__init__()
 
+        if weights != None:
+            if weights == "all":
+                weights = "nih-pc-chex-mimic_ch-google-openi-kaggle"
+            params = "torchxrayvision/models_data/{}-densenet121-d121-tw-lr001-rot45-tr15-sc15-seed0-best.pt".format(weights)
+            torch.nn.Module.dump_patches=False
+            model = torch.load(params, map_location='cpu')
+            self.features = model.features
+            self.classifier = model.classifier
+            return
+            
+        
         # First convolution
         self.features = nn.Sequential(OrderedDict([
             ('conv0', nn.Conv2d(in_channels, num_init_features, kernel_size=7, stride=2, padding=3, bias=False)),
@@ -119,5 +130,3 @@ def get_densenet_params(arch):
         ret = dict(growth_rate=32, block_config=(6, 12, 24, 16), num_init_features=64)
     return ret
 
-if __name__ == "__main__":
-    pass
