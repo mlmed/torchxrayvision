@@ -138,15 +138,18 @@ class FilterDataset(Dataset):
         self.dataset = dataset
         self.pathologies = dataset.pathologies
         
-        self.idxs = np.where(np.nansum(dataset.labels, axis=1) > 0)[0]
+#         self.idxs = np.where(np.nansum(dataset.labels, axis=1) > 0)[0]
         
+        self.idxs = []
         if labels:
-            print("filtering for ", dict(zip(labels, np.asarray(self.pathologies)[labels])))
-            
-            singlelabel = np.nanargmax(dataset.labels[self.idxs], axis=1)
-            subset = [k in labels for k in singlelabel]
-            self.idxs = self.idxs[np.array(subset)]
-            
+            for label in labels:
+                print("filtering for ", label)
+                
+                self.idxs += list(np.where(dataset.labels[:,dataset.pathologies.index(label)] == 1)[0])
+#             singlelabel = np.nanargmax(dataset.labels[self.idxs], axis=1)
+#             subset = [k in labels for k in singlelabel]
+#             self.idxs = self.idxs[np.array(subset)]
+        
         self.labels = self.dataset.labels[self.idxs]
                 
     def __repr__(self):
@@ -238,9 +241,15 @@ class NIH_Dataset(Dataset):
     
 class Kaggle_Dataset(Dataset):
 
-    def __init__(self, imgpath, csvpath, transform=None, data_aug=None, 
-                 nrows=None, seed=0,
-                 pure_labels=False, unique_patients=True):
+    def __init__(self, 
+                 imgpath, 
+                 csvpath=os.path.join(thispath, "stage_2_train_labels.csv.zip"),
+                 transform=None, 
+                 data_aug=None, 
+                 nrows=None, 
+                 seed=0,
+                 pure_labels=False, 
+                 unique_patients=True):
 
         super(Kaggle_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
@@ -802,7 +811,80 @@ class Openi_Dataset(Dataset):
             
         return {"PA":img, "lab":self.labels[idx], "idx":idx}
 
+class COVID19_Dataset(Dataset):
+
+    def __init__(self, 
+                 imgpath=os.path.join(thispath, "covid-chestxray-dataset", "images"), 
+                 csvpath=os.path.join(thispath, "covid-chestxray-dataset", "metadata.csv"), 
+                 transform=None, 
+                 data_aug=None, 
+                 nrows=None, 
+                 seed=0,
+                 pure_labels=False, 
+                 unique_patients=True):
+
+        super(COVID19_Dataset, self).__init__()
+        np.random.seed(seed)  # Reset the seed so all runs are the same.
+        self.imgpath = imgpath
+        self.transform = transform
+        self.data_aug = data_aug
+        
+        self.pathologies = ["Pneumonia", "COVID-19", "SARS", "MERS"]
+        self.pathologies = sorted(self.pathologies)
+
+        mapping = dict()
+        mapping["Pneumonia"] = ["COVID-19", "SARS", "MERS"]
+        
+        # Load data
+        self.csvpath = csvpath
+        self.csv = pd.read_csv(self.csvpath, nrows=nrows)
+        self.MAXVAL = 255  # Range [0 255]
+
+        # Keep only the PA view.
+        idx_pa = self.csv["view"] == "PA"
+        self.csv = self.csv[idx_pa]
+        
+        self.labels = []
+        for pathology in self.pathologies:
+            mask = self.csv["finding"].str.contains(pathology)
+            if pathology in mapping:
+                for syn in mapping[pathology]:
+                    #print("mapping", syn)
+                    mask |= self.csv["finding"].str.contains(syn)
+            self.labels.append(mask.values)
+        self.labels = np.asarray(self.labels).T
+        self.labels = self.labels.astype(np.float32)
+
+    def __repr__(self):
+        pprint.pprint(self.totals())
+        return self.__class__.__name__ + " num_samples={}".format(len(self))
     
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        imgid = self.csv['filename'].iloc[idx]
+        img_path = os.path.join(self.imgpath, imgid)
+        #print(img_path)
+        img = imread(img_path)
+        img = normalize(img, self.MAXVAL)  
+
+        # Check that images are 2D arrays
+        if len(img.shape) > 2:
+            img = img[:, :, 0]
+        if len(img.shape) < 2:
+            print("error, dimension lower than 2 for image")
+
+        # Add color channel
+        img = img[None, :, :]                    
+                               
+        if self.transform is not None:
+            img = self.transform(img)
+
+        if self.data_aug is not None:
+            img = self.data_aug(img)
+            
+        return {"PA":img, "lab":self.labels[idx], "idx":idx}
     
     
     
