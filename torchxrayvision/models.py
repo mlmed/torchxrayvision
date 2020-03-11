@@ -3,6 +3,7 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import urllib
 
 class _DenseLayer(nn.Sequential):
     def __init__(self, num_input_features, growth_rate, bn_size, drop_rate):
@@ -61,18 +62,7 @@ class DenseNet(nn.Module):
     def __init__(self, growth_rate=32, block_config=(6, 12, 24, 16), num_init_features=64, bn_size=4,
                  drop_rate=0, num_classes=18, in_channels=1, weights=None):
 
-        super(DenseNet, self).__init__()
-
-        if weights != None:
-            if weights == "all":
-                weights = "nih-pc-chex-mimic_ch-google-openi-kaggle"
-            params = "torchxrayvision/models_data/{}-densenet121-d121-tw-lr001-rot45-tr15-sc15-seed0-best.pt".format(weights)
-            torch.nn.Module.dump_patches=False
-            model = torch.load(params, map_location='cpu')
-            self.features = model.features
-            self.classifier = model.classifier
-            return
-            
+        super(DenseNet, self).__init__()            
         
         # First convolution
         self.features = nn.Sequential(OrderedDict([
@@ -109,6 +99,15 @@ class DenseNet(nn.Module):
                 nn.init.constant_(m.bias, 0)
             elif isinstance(m, nn.Linear):
                 nn.init.constant_(m.bias, 0)
+                
+        if weights != None:
+            if weights == "all":
+                weights = "nih-pc-chex-mimic_ch-google-openi-kaggle"
+            # a = urllib.request.urlopen("https://github.com/ieee8023/torchxrayvision/releases/download/v1/chex-densenet121-d121-tw-lr001-rot45-tr15-sc15-seed0-best.pt")
+            params = "torchxrayvision/models_data/{}-densenet121-d121-tw-lr001-rot45-tr15-sc15-seed0-best.pt".format(weights)
+            savedmodel = torch.load(params, map_location='cpu')
+            self.load_state_dict(savedmodel.state_dict())
+            return
 
     def forward(self, x):
         features = self.features(x)
