@@ -2,10 +2,6 @@
 
 This code is still under development
 
-Design goals:
-
-- Object oriented and modular
-
 ## models
 
 ```
