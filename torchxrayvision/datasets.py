@@ -829,11 +829,16 @@ class COVID19_Dataset(Dataset):
         self.transform = transform
         self.data_aug = data_aug
         
-        self.pathologies = ["Pneumonia", "COVID-19", "SARS", "MERS"]
+        # defined here to make the code easier to read
+        pneumonias = ["COVID-19", "SARS", "MERS", "ARDS", "Streptococcus"]
+        
+        self.pathologies = ["Pneumonia","Viral Pneumonia", "Bacterial Pneumonia", "No Finding"] + pneumonias
         self.pathologies = sorted(self.pathologies)
 
         mapping = dict()
-        mapping["Pneumonia"] = ["COVID-19", "SARS", "MERS"]
+        mapping["Pneumonia"] = pneumonias
+        mapping["Viral Pneumonia"] = ["COVID-19", "SARS", "MERS"]
+        mapping["Bacterial Pneumonia"] = ["Streptococcus"]
         
         # Load data
         self.csvpath = csvpath
