@@ -1,5 +1,7 @@
 # torchxrayvision
 
+A library for chest X-ray datasets and models. Including pre-trainined models.
+
 This code is still under development
 
 ## models
