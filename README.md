@@ -48,5 +48,5 @@ xrv.datasets.relabel_dataset(pathologies, d_nih) # has side effects
 Cite:
 
 ```
-Joseph Paul Cohen et al, TorchXrayVision: A library of chest X-ray datasets and models. https://github.com/mlmed/torchxrayvision, 2020
+Joseph Paul Cohen, Joseph Viviano, and Hadrien Bertrand. TorchXrayVision: A library of chest X-ray datasets and models. https://github.com/mlmed/torchxrayvision, 2020
 ```
