@@ -44,3 +44,9 @@ relabel_dataset will align labels to have the same order as the pathologies argu
 ```
 xrv.datasets.relabel_dataset(pathologies, d_nih) # has side effects
 ```
+
+Cite:
+
+```
+Joseph Paul Cohen et al, TorchXrayVision: A library of chest X-ray datasets and models. https://github.com/mlmed/torchxrayvision, 2020
+```
