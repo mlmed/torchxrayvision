@@ -48,11 +48,15 @@ xrv.datasets.relabel_dataset(pathologies, d_nih) # has side effects
 Cite:
 
 ```
-Joseph Paul Cohen, Joseph Viviano, and Hadrien Bertrand. TorchXrayVision: A library of chest X-ray datasets and models. https://github.com/mlmed/torchxrayvision, 2020
+Joseph Paul Cohen, Joseph Viviano, Mohammad Hashir, and Hadrien Bertrand. 
+TorchXrayVision: A library of chest X-ray datasets and models. 
+https://github.com/mlmed/torchxrayvision, 2020
 ```
 and
 ```
-Cohen, J. P., Hashir, M., Brooks, R., & Bertrand, H. On the limits of cross-domain generalization in automated X-ray prediction. 2020 arXiv preprint arXiv:2002.02497.
+Cohen, J. P., Hashir, M., Brooks, R., & Bertrand, H. 
+On the limits of cross-domain generalization in automated X-ray prediction. 2020 
+arXiv preprint [https://arxiv.org/abs/2002.02497](https://arxiv.org/abs/2002.02497)
 
 @article{cohen2020limits,
   title={On the limits of cross-domain generalization in automated X-ray prediction},
