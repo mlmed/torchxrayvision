@@ -4,6 +4,18 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import urllib
+import pathlib
+import os
+
+model_urls = {
+    'all': 'https://github.com/mlmed/torchxrayvision/releases/download/v1/nih-pc-chex-mimic_ch-google-openi-kaggle-densenet121-d121-tw-lr001-rot45-tr15-sc15-seed0-best.pt',
+    'nih': 'https://github.com/mlmed/torchxrayvision/releases/download/v1/nih-densenet121-d121-tw-lr001-rot45-tr15-sc15-seed0-best.pt',
+    'pc': 'https://github.com/mlmed/torchxrayvision/releases/download/v1/pc-densenet121-d121-tw-lr001-rot45-tr15-sc15-seed0-best.pt',
+    'chex': 'https://github.com/mlmed/torchxrayvision/releases/download/v1/chex-densenet121-d121-tw-lr001-rot45-tr15-sc15-seed0-best.pt',
+    'kaggle': 'https://github.com/mlmed/torchxrayvision/releases/download/v1/chex-densenet121-d121-tw-lr001-rot45-tr15-sc15-seed0-best.pt',
+    'mimic_nb': 'https://github.com/mlmed/torchxrayvision/releases/download/v1/chex-densenet121-d121-tw-lr001-rot45-tr15-sc15-seed0-best.pt',
+    'mimic_ch': 'https://github.com/mlmed/torchxrayvision/releases/download/v1/chex-densenet121-d121-tw-lr001-rot45-tr15-sc15-seed0-best.pt',
+}
 
 class _DenseLayer(nn.Sequential):
     def __init__(self, num_input_features, growth_rate, bn_size, drop_rate):
@@ -60,7 +72,7 @@ class DenseNet(nn.Module):
     """
 
     def __init__(self, growth_rate=32, block_config=(6, 12, 24, 16), num_init_features=64, bn_size=4,
-                 drop_rate=0, num_classes=18, in_channels=1, weights=None):
+                 drop_rate=0, num_classes=18, in_channels=1, weights=None, progress=True):
 
         super(DenseNet, self).__init__()            
         
@@ -101,11 +113,22 @@ class DenseNet(nn.Module):
                 nn.init.constant_(m.bias, 0)
                 
         if weights != None:
-            if weights == "all":
-                weights = "nih-pc-chex-mimic_ch-google-openi-kaggle"
-            # a = urllib.request.urlopen("https://github.com/ieee8023/torchxrayvision/releases/download/v1/chex-densenet121-d121-tw-lr001-rot45-tr15-sc15-seed0-best.pt")
-            params = "torchxrayvision/models_data/{}-densenet121-d121-tw-lr001-rot45-tr15-sc15-seed0-best.pt".format(weights)
-            savedmodel = torch.load(params, map_location='cpu')
+            
+            if not weights in model_urls.keys():
+                raise Exception("weights value must be in {}".format(list(model_urls.keys())))
+            
+            url = model_urls[weights]
+            weights_filename = os.path.basename(url)
+            weights_storage_folder = os.path.expanduser(os.path.join("~",".torchxrayvision","models_data"))
+            weights_filename_local = os.path.expanduser(os.path.join(weights_storage_folder,weights_filename))
+              
+            if not os.path.isfile(weights_filename_local):
+                print("Downloading weights...")
+                print("If this fails you can run `wget {} -O {}`".format(url, weights_filename_local))
+                pathlib.Path(weights_storage_folder).mkdir(parents=True, exist_ok=True)
+                download(url, weights_filename_local)
+
+            savedmodel = torch.load(weights_filename_local, map_location='cpu')
             self.load_state_dict(savedmodel.state_dict())
             return
 
@@ -129,3 +152,26 @@ def get_densenet_params(arch):
         ret = dict(growth_rate=32, block_config=(6, 12, 24, 16), num_init_features=64)
     return ret
 
+                                      
+import sys
+import requests
+
+# from here https://sumit-ghosh.com/articles/python-download-progress-bar/
+def download(url, filename):
+    with open(filename, 'wb') as f:
+        response = requests.get(url, stream=True)
+        total = response.headers.get('content-length')
+
+        if total is None:
+            f.write(response.content)
+        else:
+            downloaded = 0
+            total = int(total)
+            for data in response.iter_content(chunk_size=max(int(total/1000), 1024*1024)):
+                downloaded += len(data)
+                f.write(data)
+                done = int(50*downloaded/total)
+                sys.stdout.write('\r[{}{}]'.format('█' * done, '.' * (50-done)))
+                sys.stdout.flush()
+    sys.stdout.write('\n')
+                                      
