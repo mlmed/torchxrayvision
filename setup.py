@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="torchxrayvision",
-    version="0.0.1",
+    version="0.0.2",
     author="Joseph Paul Cohen",
     author_email="joseph@josephpcohen.com",
     description="A small example package",
