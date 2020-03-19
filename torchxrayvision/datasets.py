@@ -163,7 +163,18 @@ class FilterDataset(Dataset):
         return self.dataset[self.idxs[idx]]
 
 class NIH_Dataset(Dataset):
+    """
+    NIH ChestX-ray8 dataset
 
+    Dataset release website:
+    https://www.nih.gov/news-events/news-releases/nih-clinical-center-provides-one-largest-publicly-available-chest-x-ray-datasets-scientific-community
+    
+    Download full size images here:
+    https://academictorrents.com/details/557481faacd824c83fbf57dcf7b6da9383b3235a
+    
+    Download resized (224x224) images here:
+    https://academictorrents.com/details/e615d3aebce373f1dc8bd9d11064da55bdadede0
+    """
     def __init__(self, imgpath, 
                  csvpath=os.path.join(thispath, "Data_Entry_2017.csv.gz"), 
                  transform=None, 
@@ -240,7 +251,15 @@ class NIH_Dataset(Dataset):
         return {"PA":img, "lab":self.labels[idx], "idx":idx}
     
 class Kaggle_Dataset(Dataset):
-
+    """
+    RSNA Pneumonia Detection Challenge
+    
+    Challenge site:
+    https://www.kaggle.com/c/rsna-pneumonia-detection-challenge
+    
+    JPG files stored here:
+    https://academictorrents.com/details/95588a735c9ae4d123f3ca408e56570409bcf2a9
+    """
     def __init__(self, 
                  imgpath, 
                  csvpath=os.path.join(thispath, "stage_2_train_labels.csv.zip"),
@@ -315,6 +334,7 @@ class NIH_Google_Dataset(Dataset):
     McKinney, Gavin E. Duggan, Krish Eswaran, Po-Hsuan Cameron Chen, Yun Liu, 
     Sreenivasa Raju Kalidindi, Alexander Ding, Greg S. Corrado, Daniel Tse, and 
     Shravya Shetty. Radiology 2020
+    
     https://pubs.rsna.org/doi/10.1148/radiol.2019191293
     """
     
@@ -394,7 +414,19 @@ class NIH_Google_Dataset(Dataset):
     
     
 class PC_Dataset(Dataset):
-
+    """
+    PadChest dataset
+    Hospital San Juan de Alicante – University of Alicante
+    
+    Dataset website:
+    http://bimcv.cipf.es/bimcv-projects/padchest/
+    
+    Download full size images here:
+    https://academictorrents.com/details/dec12db21d57e158f78621f06dcbe78248d14850
+    
+    Download resized (224x224) images here:
+    https://academictorrents.com/details/e0aeda79626589f31e8bf016660da801f5add88e
+    """
     def __init__(self, imgpath, 
                  csvpath=os.path.join(thispath, "PADCHEST_chest_x_ray_images_labels_160K_01.02.19.csv.gz"), 
                  transform=None, 
@@ -495,7 +527,13 @@ class PC_Dataset(Dataset):
         return {"PA":img, "lab":self.labels[idx], "idx":idx}
 
 class CheX_Dataset(Dataset):
-
+    """
+    CheXpert: A Large Chest Radiograph Dataset with Uncertainty Labels and Expert Comparison.
+Jeremy Irvin *, Pranav Rajpurkar *, Michael Ko, Yifan Yu, Silviana Ciurea-Ilcus, Chris Chute, Henrik Marklund, Behzad Haghgoo, Robyn Ball, Katie Shpanskaya, Jayne Seekins, David A. Mong, Safwan S. Halabi, Jesse K. Sandberg, Ricky Jones, David B. Larson, Curtis P. Langlotz, Bhavik N. Patel, Matthew P. Lungren, Andrew Y. Ng
+    
+    Dataset website here:
+    https://stanfordmlgroup.github.io/competitions/chexpert/
+    """
     def __init__(self, imgpath, csvpath, transform=None, data_aug=None,
                  flat_dir=True, seed=0, unique_patients=True):
 
@@ -585,7 +623,14 @@ class CheX_Dataset(Dataset):
         return {"PA":img, "lab":self.labels[idx], "idx":idx}
     
 class MIMIC_Dataset(Dataset):
-
+    """
+    Johnson AE, Pollard TJ, Berkowitz S, Greenbaum NR, Lungren MP, Deng CY, Mark RG, Horng S. MIMIC-CXR: A large publicly available database of labeled chest radiographs. arXiv preprint arXiv:1901.07042. 2019 Jan 21.
+    
+    https://arxiv.org/abs/1901.07042
+    
+    Dataset website here:
+    https://physionet.org/content/mimic-cxr-jpg/2.0.0/
+    """
     def __init__(self, imgpath, csvpath,metacsvpath, transform=None, data_aug=None,
                  flat_dir=True, seed=0, unique_patients=True):
 
@@ -683,7 +728,15 @@ class MIMIC_Dataset(Dataset):
         return {"PA":img, "lab":self.labels[idx], "idx":idx}
     
 class Openi_Dataset(Dataset):
-
+    """
+    OpenI 
+    
+    Dataset website:
+    https://openi.nlm.nih.gov/faq
+    
+    Download images:
+    https://academictorrents.com/details/5a3a439df24931f410fac269b87b050203d9467d
+    """
     def __init__(self, imgpath, 
                  xmlpath=os.path.join(thispath, "NLMCXR_reports.tgz"), 
                  dicomcsv_path=os.path.join(thispath, "nlmcxr_dicom_metadata.csv.gz"),
@@ -812,7 +865,12 @@ class Openi_Dataset(Dataset):
         return {"PA":img, "lab":self.labels[idx], "idx":idx}
 
 class COVID19_Dataset(Dataset):
+    """
+    COVID-19 image data collection
 
+    https://github.com/ieee8023/covid-chestxray-dataset
+    """
+    
     def __init__(self, 
                  imgpath=os.path.join(thispath, "covid-chestxray-dataset", "images"), 
                  csvpath=os.path.join(thispath, "covid-chestxray-dataset", "metadata.csv"), 
@@ -845,8 +903,9 @@ class COVID19_Dataset(Dataset):
         self.csv = pd.read_csv(self.csvpath, nrows=nrows)
         self.MAXVAL = 255  # Range [0 255]
 
-        # Keep only the PA view.
-        idx_pa = self.csv["view"] == "PA"
+        # Keep only the frontal views.
+        #idx_pa = self.csv["view"].isin(["PA", "AP", "AP Supine"])
+        idx_pa = self.csv["view"].isin(["PA"])
         self.csv = self.csv[idx_pa]
         
         self.labels = []
