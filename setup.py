@@ -21,11 +21,11 @@ setuptools.setup(
     ],
     python_requires='>=3.6',
     install_requires=[
-        'torch',
-        'torchvision',
-        'scikit-image',
-        'tqdm',
-        'numpy',
-        'pandas'
+        'torch>=1',
+        'torchvision>=0.5',
+        'scikit-image>=0.16',
+        'tqdm>=4',
+        'numpy>=1',
+        'pandas>=1'
     ],
 )
