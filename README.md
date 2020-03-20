@@ -4,6 +4,14 @@ A library for chest X-ray datasets and models. Including pre-trainined models.
 
 This code is still under development
 
+## Getting started
+
+```
+pip install torchxrayvision
+
+import torchxrayvision as xrv
+```
+
 ## models
 
 ```
@@ -35,7 +43,7 @@ d_nih2 = xrv.datasets.NIH_Google_Dataset(imgpath="path to NIH images")
 d_pc = xrv.datasets.PC_Dataset(imgpath="path to image folder")
 
 
-d_covid19 = xrv.datasets.COVID19_Dataset()
+d_covid19 = xrv.datasets.COVID19_Dataset() # specify imgpath and csvpath for the dataset
 ```
 
 ## dataset tools
