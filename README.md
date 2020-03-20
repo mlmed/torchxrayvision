@@ -39,11 +39,13 @@ xrv.datasets.default_pathologies
 ## models
 
 ```
+model = xrv.models.DenseNet(weights="all")
+model = xrv.models.DenseNet(weights="kaggle")
 model = xrv.models.DenseNet(weights="nih")
 model = xrv.models.DenseNet(weights="chex")
 model = xrv.models.DenseNet(weights="minix_nb")
 model = xrv.models.DenseNet(weights="minix_ch")
-model = xrv.models.DenseNet(weights="all")
+
 ```
 
 
