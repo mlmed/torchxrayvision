@@ -12,6 +12,30 @@ pip install torchxrayvision
 import torchxrayvision as xrv
 ```
 
+These are default pathologies:
+```
+xrv.datasets.default_pathologies 
+
+['Atelectasis',
+ 'Consolidation',
+ 'Infiltration',
+ 'Pneumothorax',
+ 'Edema',
+ 'Emphysema',
+ 'Fibrosis',
+ 'Effusion',
+ 'Pneumonia',
+ 'Pleural_Thickening',
+ 'Cardiomegaly',
+ 'Nodule',
+ 'Mass',
+ 'Hernia',
+ 'Lung Lesion',
+ 'Fracture',
+ 'Lung Opacity',
+ 'Enlarged Cardiomediastinum']
+```
+
 ## models
 
 ```
@@ -50,7 +74,7 @@ d_covid19 = xrv.datasets.COVID19_Dataset() # specify imgpath and csvpath for the
 
 relabel_dataset will align labels to have the same order as the pathologies argument.
 ```
-xrv.datasets.relabel_dataset(pathologies, d_nih) # has side effects
+xrv.datasets.relabel_dataset(xrv.datasets.default_pathologies , d_nih) # has side effects
 ```
 
 Cite:
