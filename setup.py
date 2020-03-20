@@ -20,4 +20,12 @@ setuptools.setup(
         "Topic :: Scientific/Engineering :: Medical Science Apps."
     ],
     python_requires='>=3.6',
+    install_requires=[
+        'torch',
+        'torchvision',
+        'scikit-image',
+        'tqdm',
+        'numpy',
+        'pandas'
+    ],
 )
