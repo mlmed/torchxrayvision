@@ -79,7 +79,7 @@ relabel_dataset will align labels to have the same order as the pathologies argu
 xrv.datasets.relabel_dataset(xrv.datasets.default_pathologies , d_nih) # has side effects
 ```
 
-Cite:
+## Citation
 
 ```
 Joseph Paul Cohen, Joseph Viviano, Mohammad Hashir, and Hadrien Bertrand. 
