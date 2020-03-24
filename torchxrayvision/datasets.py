@@ -874,6 +874,7 @@ class COVID19_Dataset(Dataset):
     def __init__(self, 
                  imgpath=os.path.join(thispath, "covid-chestxray-dataset", "images"), 
                  csvpath=os.path.join(thispath, "covid-chestxray-dataset", "metadata.csv"), 
+                 views=["PA"],
                  transform=None, 
                  data_aug=None, 
                  nrows=None, 
@@ -886,6 +887,7 @@ class COVID19_Dataset(Dataset):
         self.imgpath = imgpath
         self.transform = transform
         self.data_aug = data_aug
+        self.views = views
         
         # defined here to make the code easier to read
         pneumonias = ["COVID-19", "SARS", "MERS", "ARDS", "Streptococcus"]
@@ -905,7 +907,7 @@ class COVID19_Dataset(Dataset):
 
         # Keep only the frontal views.
         #idx_pa = self.csv["view"].isin(["PA", "AP", "AP Supine"])
-        idx_pa = self.csv["view"].isin(["PA"])
+        idx_pa = self.csv["view"].isin(self.views)
         self.csv = self.csv[idx_pa]
         
         self.labels = []
@@ -921,7 +923,7 @@ class COVID19_Dataset(Dataset):
 
     def __repr__(self):
         pprint.pprint(self.totals())
-        return self.__class__.__name__ + " num_samples={}".format(len(self))
+        return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
     
     def __len__(self):
         return len(self.labels)
