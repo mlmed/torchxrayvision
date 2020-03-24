@@ -38,6 +38,8 @@ xrv.datasets.default_pathologies
 
 ## models
 
+Specify weights for pretrained models (currently all DenseNet121)
+
 ```
 model = xrv.models.DenseNet(weights="all")
 model = xrv.models.DenseNet(weights="kaggle")
