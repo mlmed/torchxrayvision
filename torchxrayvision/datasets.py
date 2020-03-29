@@ -868,7 +868,9 @@ class COVID19_Dataset(Dataset):
     """
     COVID-19 image data collection
 
-    https://github.com/ieee8023/covid-chestxray-dataset
+    Dataset: https://github.com/ieee8023/covid-chestxray-dataset
+    
+    Paper: https://arxiv.org/abs/2003.11597
     """
     
     def __init__(self, 
@@ -890,15 +892,16 @@ class COVID19_Dataset(Dataset):
         self.views = views
         
         # defined here to make the code easier to read
-        pneumonias = ["COVID-19", "SARS", "MERS", "ARDS", "Streptococcus"]
+        pneumonias = ["COVID-19", "SARS", "MERS", "ARDS", "Streptococcus", "Pneumocystis", "Klebsiella"]
         
-        self.pathologies = ["Pneumonia","Viral Pneumonia", "Bacterial Pneumonia", "No Finding"] + pneumonias
+        self.pathologies = ["Pneumonia","Viral Pneumonia", "Bacterial Pneumonia", "Fungal Pneumonia", "No Finding"] + pneumonias
         self.pathologies = sorted(self.pathologies)
 
         mapping = dict()
         mapping["Pneumonia"] = pneumonias
         mapping["Viral Pneumonia"] = ["COVID-19", "SARS", "MERS"]
-        mapping["Bacterial Pneumonia"] = ["Streptococcus"]
+        mapping["Bacterial Pneumonia"] = ["Streptococcus", "Klebsiella"]
+        mapping["Fungal Pneumonia"] = ["Pneumocystis"]
         
         # Load data
         self.csvpath = csvpath
