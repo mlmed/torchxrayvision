@@ -892,7 +892,7 @@ class COVID19_Dataset(Dataset):
         self.views = views
         
         # defined here to make the code easier to read
-        pneumonias = ["COVID-19", "SARS", "MERS", "ARDS", "Streptococcus", "Pneumocystis", "Klebsiella"]
+        pneumonias = ["COVID-19", "SARS", "MERS", "ARDS", "Streptococcus", "Pneumocystis", "Klebsiella", "Chlamydophila"]
         
         self.pathologies = ["Pneumonia","Viral Pneumonia", "Bacterial Pneumonia", "Fungal Pneumonia", "No Finding"] + pneumonias
         self.pathologies = sorted(self.pathologies)
@@ -900,7 +900,7 @@ class COVID19_Dataset(Dataset):
         mapping = dict()
         mapping["Pneumonia"] = pneumonias
         mapping["Viral Pneumonia"] = ["COVID-19", "SARS", "MERS"]
-        mapping["Bacterial Pneumonia"] = ["Streptococcus", "Klebsiella"]
+        mapping["Bacterial Pneumonia"] = ["Streptococcus", "Klebsiella", "Chlamydophila"]
         mapping["Fungal Pneumonia"] = ["Pneumocystis"]
         
         # Load data
