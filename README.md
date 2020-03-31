@@ -39,6 +39,7 @@ xrv.datasets.default_pathologies
 ## models
 
 Specify weights for pretrained models (currently all DenseNet121)
+Note: Each pretrained model has 18 outputs. The `all` model has every output trained. However, for the other weights some targets are not trained and will predict randomly becuase they do not exist in the training dataset. The only valid outputs are listed in the field `{dataset}.pathologies` on the dataset that corresponds to the weights. 
 
 ```
 model = xrv.models.DenseNet(weights="all")
