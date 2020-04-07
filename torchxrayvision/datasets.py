@@ -204,6 +204,9 @@ class NIH_Dataset(Dataset):
         self.csv = pd.read_csv(self.csvpath, nrows=nrows)
         self.MAXVAL = 255  # Range [0 255]
 
+        # Remove images with view position other than PA
+        self.csv = self.csv[self.csv['View Position'] == 'PA']
+
         # Remove multi-finding images.
         if pure_labels:
             self.csv = self.csv[~self.csv["Finding Labels"].str.contains("\|")]
