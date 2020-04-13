@@ -177,6 +177,7 @@ class NIH_Dataset(Dataset):
     """
     def __init__(self, imgpath, 
                  csvpath=os.path.join(thispath, "Data_Entry_2017.csv.gz"), 
+                 views=["PA"],
                  transform=None, 
                  data_aug=None, 
                  nrows=None, 
@@ -203,9 +204,12 @@ class NIH_Dataset(Dataset):
         self.check_paths_exist()
         self.csv = pd.read_csv(self.csvpath, nrows=nrows)
         self.MAXVAL = 255  # Range [0 255]
-
-        # Remove images with view position other than PA
-        self.csv = self.csv[self.csv['View Position'] == 'PA']
+        
+        if type(views) is not list:
+            views = [views]
+        self.views = views
+        # Remove images with view position other than specified
+        self.csv = self.csv[self.csv['View Position'].isin(self.views)]
 
         # Remove multi-finding images.
         if pure_labels:
@@ -224,7 +228,7 @@ class NIH_Dataset(Dataset):
 
     def __repr__(self):
         pprint.pprint(self.totals())
-        return self.__class__.__name__ + " num_samples={}".format(len(self))
+        return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
     
     def __len__(self):
         return len(self.labels)
@@ -251,7 +255,7 @@ class NIH_Dataset(Dataset):
         if self.data_aug is not None:
             img = self.data_aug(img)
             
-        return {"PA":img, "lab":self.labels[idx], "idx":idx}
+        return {"img":img, "lab":self.labels[idx], "idx":idx}
     
 class Kaggle_Dataset(Dataset):
     """
@@ -265,7 +269,9 @@ class Kaggle_Dataset(Dataset):
     """
     def __init__(self, 
                  imgpath, 
-                 csvpath=os.path.join(thispath, "stage_2_train_labels.csv.zip"),
+                 csvpath=os.path.join(thispath, "kaggle_stage_2_train_labels.csv.zip"),
+                 dicomcsvpath=os.path.join(thispath, "kaggle_stage_2_train_images_dicom_headers.csv.gz"),
+                 views=["PA"],
                  transform=None, 
                  data_aug=None, 
                  nrows=None, 
@@ -286,9 +292,20 @@ class Kaggle_Dataset(Dataset):
         # Load data
         self.csvpath = csvpath
         self.csv = pd.read_csv(self.csvpath, nrows=nrows)
+        
+        self.dicomcsvpath = dicomcsvpath
+        self.dicomcsv = pd.read_csv(self.dicomcsvpath, nrows=nrows, index_col="PatientID")
+        
+        self.csv = self.csv.join(self.dicomcsv, on="patientId")
+        
         self.MAXVAL = 255  # Range [0 255]
+        
+        if type(views) is not list:
+            views = [views]
+        self.views = views
+        # Remove images with view position other than specified
+        self.csv = self.csv[self.csv['ViewPosition'].isin(self.views)]
 
-            
         # Get our classes.
         self.labels = []
         self.labels.append(self.csv["Target"].values)
@@ -299,7 +316,7 @@ class Kaggle_Dataset(Dataset):
 
     def __repr__(self):
         pprint.pprint(self.totals())
-        return self.__class__.__name__ + " num_samples={}".format(len(self))
+        return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
     
     def __len__(self):
         return len(self.labels)
@@ -326,7 +343,7 @@ class Kaggle_Dataset(Dataset):
         if self.data_aug is not None:
             img = self.data_aug(img)
             
-        return {"PA":img, "lab":self.labels[idx], "idx":idx}
+        return {"img":img, "lab":self.labels[idx], "idx":idx}
 
 class NIH_Google_Dataset(Dataset):
 
@@ -343,6 +360,7 @@ class NIH_Google_Dataset(Dataset):
     
     def __init__(self, imgpath, 
                  csvpath=os.path.join(thispath, "google2019_nih-chest-xray-labels.csv.gz"), 
+                 views=["PA"],
                  transform=None, 
                  data_aug=None, 
                  nrows=None, 
@@ -365,6 +383,12 @@ class NIH_Google_Dataset(Dataset):
         self.csvpath = csvpath
         self.csv = pd.read_csv(self.csvpath, nrows=nrows)
         self.MAXVAL = 255  # Range [0 255]
+        
+        if type(views) is not list:
+            views = [views]
+        self.views = views
+        # Remove images with view position other than specified
+        self.csv = self.csv[self.csv['View Position'].isin(self.views)]
 
         if unique_patients:
             self.csv = self.csv.groupby("Patient ID").first().reset_index()
@@ -386,7 +410,7 @@ class NIH_Google_Dataset(Dataset):
 
     def __repr__(self):
         pprint.pprint(self.totals())
-        return self.__class__.__name__ + " num_samples={}".format(len(self))
+        return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
     
     def __len__(self):
         return len(self.labels)
@@ -413,7 +437,7 @@ class NIH_Google_Dataset(Dataset):
         if self.data_aug is not None:
             img = self.data_aug(img)
             
-        return {"PA":img, "lab":self.labels[idx], "idx":idx}
+        return {"img":img, "lab":self.labels[idx], "idx":idx}
     
     
 class PC_Dataset(Dataset):
@@ -432,6 +456,7 @@ class PC_Dataset(Dataset):
     """
     def __init__(self, imgpath, 
                  csvpath=os.path.join(thispath, "PADCHEST_chest_x_ray_images_labels_160K_01.02.19.csv.gz"), 
+                 views=["PA"],
                  transform=None, 
                  data_aug=None,
                  flat_dir=True, 
@@ -471,8 +496,14 @@ class PC_Dataset(Dataset):
         self.csv = pd.read_csv(self.csvpath, low_memory=False)
         self.MAXVAL = 65535
 
-        # Keep only the PA view.
-        idx_pa = self.csv['Projection'].str.contains("PA")
+        # standardize view names
+        self.csv.loc[self.csv["Projection"].isin(["AP_horizontal"]),"Projection"] = "AP Supine"
+        
+        # Keep only the specified views
+        if type(views) is not list:
+            views = [views]
+        self.views = views
+        idx_pa = self.csv['Projection'].isin(self.views)
         self.csv = self.csv[idx_pa]
 
         # remove null stuff
@@ -527,7 +558,7 @@ class PC_Dataset(Dataset):
         if self.data_aug is not None:
             img = self.data_aug(img)
 
-        return {"PA":img, "lab":self.labels[idx], "idx":idx}
+        return {"img":img, "lab":self.labels[idx], "idx":idx}
 
 class CheX_Dataset(Dataset):
     """
@@ -537,7 +568,7 @@ Jeremy Irvin *, Pranav Rajpurkar *, Michael Ko, Yifan Yu, Silviana Ciurea-Ilcus,
     Dataset website here:
     https://stanfordmlgroup.github.io/competitions/chexpert/
     """
-    def __init__(self, imgpath, csvpath, transform=None, data_aug=None,
+    def __init__(self, imgpath, csvpath, views=["PA"], transform=None, data_aug=None,
                  flat_dir=True, seed=0, unique_patients=True):
 
         super(CheX_Dataset, self).__init__()
@@ -567,7 +598,10 @@ Jeremy Irvin *, Pranav Rajpurkar *, Michael Ko, Yifan Yu, Silviana Ciurea-Ilcus,
         self.csv = pd.read_csv(self.csvpath)
 
         # Keep only the PA view.
-        idx_pa = self.csv['Frontal/Lateral'].str.contains("Frontal")
+        if type(views) is not list:
+            views = [views]
+        self.views = views
+        idx_pa = self.csv["AP/PA"].isin(self.views)
         self.csv = self.csv[idx_pa]
 
         if unique_patients:
@@ -595,7 +629,7 @@ Jeremy Irvin *, Pranav Rajpurkar *, Michael Ko, Yifan Yu, Silviana Ciurea-Ilcus,
         
     def __repr__(self):
         pprint.pprint(self.totals())
-        return self.__class__.__name__ + " num_samples={}".format(len(self))
+        return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
     
     def __len__(self):
         return len(self.labels)
@@ -623,7 +657,7 @@ Jeremy Irvin *, Pranav Rajpurkar *, Michael Ko, Yifan Yu, Silviana Ciurea-Ilcus,
         if self.data_aug is not None:
             img = self.data_aug(img)
 
-        return {"PA":img, "lab":self.labels[idx], "idx":idx}
+        return {"img":img, "lab":self.labels[idx], "idx":idx}
     
 class MIMIC_Dataset(Dataset):
     """
@@ -634,7 +668,7 @@ class MIMIC_Dataset(Dataset):
     Dataset website here:
     https://physionet.org/content/mimic-cxr-jpg/2.0.0/
     """
-    def __init__(self, imgpath, csvpath,metacsvpath, transform=None, data_aug=None,
+    def __init__(self, imgpath, csvpath,metacsvpath, views=["PA"], transform=None, data_aug=None,
                  flat_dir=True, seed=0, unique_patients=True):
 
         super(MIMIC_Dataset, self).__init__()
@@ -671,7 +705,11 @@ class MIMIC_Dataset(Dataset):
         self.csv = self.csv.join(self.metacsv).reset_index()
 
         # Keep only the PA view.
-        idx_pa = self.csv["ViewPosition"] == "PA"
+        if type(views) is not list:
+            views = [views]
+        self.views = views
+        
+        idx_pa = self.csv["ViewPosition"].isin(views)
         self.csv = self.csv[idx_pa]
 
         if unique_patients:
@@ -698,7 +736,7 @@ class MIMIC_Dataset(Dataset):
         
     def __repr__(self):
         pprint.pprint(self.totals())
-        return self.__class__.__name__ + " num_samples={}".format(len(self))
+        return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
     
     def __len__(self):
         return len(self.labels)
@@ -728,7 +766,7 @@ class MIMIC_Dataset(Dataset):
         if self.data_aug is not None:
             img = self.data_aug(img)
 
-        return {"PA":img, "lab":self.labels[idx], "idx":idx}
+        return {"img":img, "lab":self.labels[idx], "idx":idx}
     
 class Openi_Dataset(Dataset):
     """
@@ -865,7 +903,7 @@ class Openi_Dataset(Dataset):
         if self.data_aug is not None:
             img = self.data_aug(img)
             
-        return {"PA":img, "lab":self.labels[idx], "idx":idx}
+        return {"img":img, "lab":self.labels[idx], "idx":idx}
 
 class COVID19_Dataset(Dataset):
     """
@@ -956,7 +994,7 @@ class COVID19_Dataset(Dataset):
         if self.data_aug is not None:
             img = self.data_aug(img)
             
-        return {"PA":img, "lab":self.labels[idx], "idx":idx}
+        return {"img":img, "lab":self.labels[idx], "idx":idx}
     
     
     
