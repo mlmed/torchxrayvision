@@ -162,6 +162,28 @@ class FilterDataset(Dataset):
     def __getitem__(self, idx):
         return self.dataset[self.idxs[idx]]
 
+class SubsetDataset(Dataset):
+    def __init__(self, dataset, idxs=None):
+        super(SubsetDataset, self).__init__()
+        self.dataset = dataset
+        self.pathologies = dataset.pathologies
+        
+        self.idxs = idxs
+        
+        self.labels = self.dataset.labels[self.idxs]
+        self.csv = self.dataset.csv.iloc[self.idxs]
+                
+    def __repr__(self):
+        pprint.pprint(self.totals())
+        return self.__class__.__name__ + " num_samples={}".format(len(self))
+    
+    def __len__(self):
+        return len(self.idxs)
+
+    def __getitem__(self, idx):
+        return self.dataset[self.idxs[idx]]
+
+    
 class NIH_Dataset(Dataset):
     """
     NIH ChestX-ray8 dataset
