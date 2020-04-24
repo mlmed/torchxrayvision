@@ -7,6 +7,7 @@ import urllib
 import pathlib
 import os
 import numpy as np
+import warnings; warnings.filterwarnings("ignore")
 
 model_urls = {}
 model_urls['all'] = {
