@@ -119,6 +119,12 @@ class Merge_Dataset(Dataset):
                 new_labels[i,shift*size:shift*size+size] = self.labels[i]
             self.labels = new_labels
             
+        try:
+            self.csv = pd.concat([d.csv for d in datasets])
+        except:
+            print("Could not merge dataframes (.csv not available):", sys.exc_info()[0])
+            
+            
     def __repr__(self):
         pprint.pprint(self.totals())
         return self.__class__.__name__ + " num_samples={}".format(len(self))
@@ -145,7 +151,7 @@ class FilterDataset(Dataset):
             for label in labels:
                 print("filtering for ", label)
                 
-                self.idxs += list(np.where(dataset.labels[:,dataset.pathologies.index(label)] == 1)[0])
+                self.idxs += list(np.where(dataset.labels[:,list(dataset.pathologies).index(label)] == 1)[0])
 #             singlelabel = np.nanargmax(dataset.labels[self.idxs], axis=1)
 #             subset = [k in labels for k in singlelabel]
 #             self.idxs = self.idxs[np.array(subset)]
@@ -646,7 +652,7 @@ Jeremy Irvin *, Pranav Rajpurkar *, Michael Ko, Yifan Yu, Silviana Ciurea-Ilcus,
         self.labels[self.labels == -1] = np.nan
         
         # rename pathologies
-        self.pathologies = np.char.replace(self.pathologies, "Pleural Effusion", "Effusion")
+        self.pathologies = list(np.char.replace(self.pathologies, "Pleural Effusion", "Effusion"))
         
         
     def __repr__(self):
