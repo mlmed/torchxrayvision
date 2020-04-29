@@ -157,6 +157,7 @@ class FilterDataset(Dataset):
 #             self.idxs = self.idxs[np.array(subset)]
         
         self.labels = self.dataset.labels[self.idxs]
+        self.csv = self.dataset.csv.iloc[self.idxs]
                 
     def __repr__(self):
         pprint.pprint(self.totals())
