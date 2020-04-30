@@ -480,8 +480,8 @@ class PC_Dataset(Dataset):
     Download full size images here:
     https://academictorrents.com/details/dec12db21d57e158f78621f06dcbe78248d14850
     
-    Download resized (224x224) images here:
-    https://academictorrents.com/details/e0aeda79626589f31e8bf016660da801f5add88e
+    Download resized (224x224) images here (recropped):
+    https://academictorrents.com/details/96ebb4f92b85929eadfb16761f310a6d04105797
     """
     def __init__(self, imgpath, 
                  csvpath=os.path.join(thispath, "PADCHEST_chest_x_ray_images_labels_160K_01.02.19.csv.gz"), 
