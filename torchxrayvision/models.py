@@ -179,15 +179,15 @@ class DenseNet(nn.Module):
         return out
 
 def op_norm(outputs, op_threshs):
-    
+    outputs_new = torch.zeros(outputs.shape)
     for i in range(len(outputs)):
         for t in range(len(outputs[0])):
             if (outputs[i,t]<op_threshs[t]):
-                outputs[i,t] = outputs[i,t]/(op_threshs[t]*2) 
+                outputs_new[i,t] = outputs[i,t]/(op_threshs[t]*2) 
             else:
-                outputs[i,t] = 1-((1-outputs[i,t])/((1-(op_threshs[t]))*2)) 
+                outputs_new[i,t] = 1-((1-outputs[i,t])/((1-(op_threshs[t]))*2)) 
             
-    return outputs
+    return outputs_new
 
     
 def get_densenet_params(arch):
