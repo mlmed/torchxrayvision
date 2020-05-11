@@ -10,6 +10,7 @@ import numpy as np
 import os,sys,os.path
 import pandas as pd
 import pickle
+import pydicom
 import skimage
 import glob
 import collections
@@ -21,6 +22,7 @@ import torchvision.transforms.functional as TF
 import skimage.transform
 import warnings
 import tarfile
+import zipfile
 
 default_pathologies = [  'Atelectasis',
                  'Consolidation',
@@ -81,6 +83,8 @@ class Dataset():
         counts = [dict(collections.Counter(items[~np.isnan(items)]).most_common()) for items in self.labels.T]
         return dict(zip(self.pathologies,counts))
     def check_paths_exist(self):
+        #if self.imagezipfile is not None:
+            
         if not os.path.isdir(self.imgpath):
             raise Exception("imgpath must be a directory")
         if not os.path.isfile(self.csvpath):
@@ -212,7 +216,8 @@ class NIH_Dataset(Dataset):
                  nrows=None, 
                  seed=0,
                  pure_labels=False, 
-                 unique_patients=True):
+                 unique_patients=True,
+                 normalize=True):
         
         super(NIH_Dataset, self).__init__()
 
@@ -228,7 +233,8 @@ class NIH_Dataset(Dataset):
                             "Cardiomegaly", "Nodule", "Mass", "Hernia"]
         
         self.pathologies = sorted(self.pathologies)
-
+        
+        self.normalize = normalize
         # Load data
         self.check_paths_exist()
         self.csv = pd.read_csv(self.csvpath, nrows=nrows)
@@ -267,7 +273,8 @@ class NIH_Dataset(Dataset):
         img_path = os.path.join(self.imgpath, imgid)
         #print(img_path)
         img = imread(img_path)
-        img = normalize(img, self.MAXVAL)  
+        if self.normalize:
+            img = normalize(img, self.MAXVAL)  
 
         # Check that images are 2D arrays
         if len(img.shape) > 2:
@@ -306,7 +313,9 @@ class Kaggle_Dataset(Dataset):
                  nrows=None, 
                  seed=0,
                  pure_labels=False, 
-                 unique_patients=True):
+                 unique_patients=True,
+                 normalize=True,
+                 extension=".jpg"):
 
         super(Kaggle_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
@@ -317,6 +326,12 @@ class Kaggle_Dataset(Dataset):
         self.pathologies = ["Pneumonia", "Lung Opacity"]
         
         self.pathologies = sorted(self.pathologies)
+        
+        self.normalize=normalize
+        
+        self.extension = extension
+        self.use_pydicom=( extension == ".dcm" ) 
+        
 
         # Load data
         self.csvpath = csvpath
@@ -352,10 +367,14 @@ class Kaggle_Dataset(Dataset):
 
     def __getitem__(self, idx):
         imgid = self.csv['patientId'].iloc[idx]
-        img_path = os.path.join(self.imgpath, imgid + ".jpg")
+        img_path = os.path.join(self.imgpath, imgid + self.extension)
         #print(img_path)
-        img = imread(img_path)
-        img = normalize(img, self.MAXVAL)  
+        if self.use_pydicom:
+            img=pydicom.filereader.dcmread(img_path).pixel_array
+        else:
+            img = imread(img_path)
+        if self.normalize:
+            img = normalize(img, self.MAXVAL)  
 
         # Check that images are 2D arrays
         if len(img.shape) > 2:
@@ -395,7 +414,8 @@ class NIH_Google_Dataset(Dataset):
                  nrows=None, 
                  seed=0,
                  pure_labels=False, 
-                 unique_patients=True):
+                 unique_patients=True,
+                 normalize=True):
 
         super(NIH_Google_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
@@ -407,6 +427,8 @@ class NIH_Google_Dataset(Dataset):
                             "Nodule or mass"]
         
         self.pathologies = sorted(self.pathologies)
+        
+        self.normalize = normalize
 
         # Load data
         self.csvpath = csvpath
@@ -449,7 +471,8 @@ class NIH_Google_Dataset(Dataset):
         img_path = os.path.join(self.imgpath, imgid)
         #print(img_path)
         img = imread(img_path)
-        img = normalize(img, self.MAXVAL)  
+        if self.normalize:
+            img = normalize(img, self.MAXVAL)  
 
         # Check that images are 2D arrays
         if len(img.shape) > 2:
