@@ -26,6 +26,7 @@ setuptools.setup(
         'scikit-image>=0.16',
         'tqdm>=4',
         'numpy>=1',
-        'pandas>=1'
+        'pandas>=1',
+        'pydicom>=1'
     ],
 )
