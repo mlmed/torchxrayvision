@@ -27,6 +27,7 @@ setuptools.setup(
         'tqdm>=4',
         'numpy>=1',
         'pandas>=1',
-        'pydicom>=1'
+        'pydicom>=1',
+        'requests>=1'
     ],
 )
