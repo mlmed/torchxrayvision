@@ -1060,13 +1060,25 @@ class ToPILImage(object):
 
 
 class XRayResizer(object):
-    def __init__(self, size):
+    def __init__(self, size, engine="skimage"):
         self.size = size
+        self.engine = engine
+        if 'cv2' in sys.modules:
+            print("Setting XRayResizer engine to cv2 could increase performance.")
 
     def __call__(self, img):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            return skimage.transform.resize(img, (1, self.size, self.size), mode='constant').astype(np.float32)
+        if self.engine == "skimage":
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                return skimage.transform.resize(img, (1, self.size, self.size), mode='constant').astype(np.float32)
+        elif self.engine == "cv2":
+            import cv2 # pip install opencv-python
+            return cv2.resize(img[0,:,:], 
+                              (self.size, self.size), 
+                              interpolation = cv2.INTER_AREA
+                             ).reshape(1,self.size,self.size).astype(np.float32)
+        else:
+            raise Exception("Unknown engine, Must be skimage (default) or cv2.")
 
 class XRayCenterCrop(object):
     

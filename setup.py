@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="torchxrayvision",
-    version="0.0.6",
+    version="0.0.8",
     author="Joseph Paul Cohen",
     author_email="joseph@josephpcohen.com",
     description="A small example package",
@@ -26,6 +26,8 @@ setuptools.setup(
         'scikit-image>=0.16',
         'tqdm>=4',
         'numpy>=1',
-        'pandas>=1'
+        'pandas>=1',
+        'pydicom>=1',
+        'requests>=1'
     ],
 )
