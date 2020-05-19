@@ -1069,8 +1069,7 @@ class NLMTB_Dataset(Dataset):
     def __init__(self, 
                  imgpath, 
                  transform=None, 
-                 data_aug=None, 
-                 nrows=None, 
+                 data_aug=None,
                  seed=0,
                  views=["PA", "AP"]
         ):
