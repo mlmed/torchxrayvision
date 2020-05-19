@@ -53,6 +53,7 @@ model = xrv.models.DenseNet(weights="minix_ch")
 
 
 ## datasets
+Only stats for PA/AP views are shown. Datasets may include more.
 
 ```
 transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
@@ -73,9 +74,20 @@ d_pc = xrv.datasets.PC_Dataset(imgpath="path to image folder")
 
 
 d_covid19 = xrv.datasets.COVID19_Dataset() # specify imgpath and csvpath for the dataset
+```
 
-d_tb = xrv.datasets.Tuberculosis_Dataset(montgomery_path="path to MontgomerySet", 
-										 chinaset_path="path to ChinaSet_AllFiles")
+National Library of Medicine Tuberculosis Datasets [paper](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4256233/)
+
+```
+d_nlmtb = xrv.datasets.NLMTB_Dataset(imgpath="path to MontgomerySet or ChinaSet_AllFiles")
+
+Using MontgomerySet data:
+NLMTB_Dataset num_samples=138 views=['PA']
+{'Tuberculosis': {0: 80, 1: 58}}
+or using ChinaSet_AllFiles data:
+NLMTB_Dataset num_samples=662 views=['PA', 'AP']
+{'Tuberculosis': {0: 326, 1: 336}}
+
 ```
 
 ## dataset tools

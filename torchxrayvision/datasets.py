@@ -969,7 +969,7 @@ class COVID19_Dataset(Dataset):
     def __init__(self, 
                  imgpath=os.path.join(thispath, "covid-chestxray-dataset", "images"), 
                  csvpath=os.path.join(thispath, "covid-chestxray-dataset", "metadata.csv"), 
-                 views=["PA"],
+                 views=["PA", "AP"],
                  transform=None, 
                  data_aug=None, 
                  nrows=None, 
@@ -1048,73 +1048,71 @@ class COVID19_Dataset(Dataset):
             
         return {"img":img, "lab":self.labels[idx], "idx":idx}
     
-class Tuberculosis_Dataset(torch.utils.data.Dataset):
+class NLMTB_Dataset(Dataset):
     """
-    TODO: Discuss compatibility with other datasets here
-
-    Tuberculosis Dataset
+    National Library of Medicine Tuberculosis Datasets
+    https://lhncbc.nlm.nih.gov/publication/pub9931
+    https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4256233/
+    
+    Jaeger S, Candemir S, Antani S, Wáng YX, Lu PX, Thoma G. Two public chest X-ray datasets for computer-aided screening of pulmonary diseases. Quant Imaging Med Surg. 2014 Dec;4(6):475-7. doi: 10.3978/j.issn.2223-4292.2014.11.20. PMID: 25525580; PMCID: PMC4256233.
 
     Download Links:
     Montgomery County
     https://academictorrents.com/details/ac786f74878a5775c81d490b23842fd4736bfe33
+    http://openi.nlm.nih.gov/imgs/collections/NLM-MontgomeryCXRSet.zip
 
     Shenzhen
     https://academictorrents.com/details/462728e890bd37c05e9439c885df7afc36209cc8
+    http://openi.nlm.nih.gov/imgs/collections/ChinaSet_AllFiles.zip
     """
     
     def __init__(self, 
-                 montgomery_path=os.path.join(thispath, "MontgomerySet"), 
-                 chinaset_path=os.path.join(thispath, "ChinaSet_AllFiles"), 
+                 imgpath, 
                  transform=None, 
                  data_aug=None, 
                  nrows=None, 
                  seed=0,
+                 views=["PA", "AP"]
         ):
         """
         Args:
-            montgomery_path (str): Path to `MontgomerySet` folder.
-            chinaset_path (str): Path to `ChinaSet_AllFiles` folder
+            img_path (str): Path to `MontgomerySet` or `ChinaSet_AllFiles` folder
         """
 
-        super(Tuberculosis_Dataset, self).__init__()
+        super(NLMTB_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
-        self.montgomery_path = montgomery_path
-        self.chinaset_path = chinaset_path
+        self.imgpath = imgpath
         self.transform = transform
         self.data_aug = data_aug
         
         file_list = []
         source_list = []
-        for fpath in glob.glob(os.path.join(montgomery_path, "CXR_png", "*.png")):
-            file_list.append(fpath)
-            source_list.append("Montgomery")
+        for fname in sorted(os.listdir(os.path.join(self.imgpath, "CXR_png"))):
+            if fname.endswith(".png"):
+                file_list.append(fname)
 
-        for fpath in glob.glob(os.path.join(chinaset_path, "CXR_png", "*.png")):
-            file_list.append(fpath)
-            source_list.append("Chinaset")
-
-        df = pd.DataFrame({"path": file_list, "source": source_list})
-        if nrows is not None:
-            df = df.sample(n=nrows, random_state=seed)
+        self.csv = pd.DataFrame({"fname": file_list})
 
         #Label is the last digit on the simage filename
-        df["label"] = df["path"].apply(lambda x: int(x.split(".")[-2][-1]))
+        self.csv["label"] = self.csv["fname"].apply(lambda x: int(x.split(".")[-2][-1]))
 
-        self.df = df
+        self.labels = self.csv["label"].values.reshape(-1,1)
+        self.pathologies = ["Tuberculosis"]
+        self.views = views
+        
+        
         self.MAXVAL = 255
 
-    # TODO: Discuss
-    # def __repr__(self):
-    #     pprint.pprint(self.totals())
-    #     return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
+    def __repr__(self):
+        pprint.pprint(self.totals())
+        return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
     
     def __len__(self):
-        return len(self.df)
+        return len(self.labels)
 
     def __getitem__(self, idx):
-        item = self.df.iloc[idx]
-        img_path = item["path"]
-        label = item["label"]
+        item = self.csv.iloc[idx]
+        img_path = os.path.join(self.imgpath, "CXR_png", item["fname"])
         #print(img_path)
         img = imread(img_path)
         img = normalize(img, self.MAXVAL)  
@@ -1134,7 +1132,7 @@ class Tuberculosis_Dataset(torch.utils.data.Dataset):
         if self.data_aug is not None:
             img = self.data_aug(img)
             
-        return {"img":img, "lab":label, "idx":idx}    
+        return {"img":img, "lab":self.labels[idx], "idx":idx}    
     
     
 class ToPILImage(object):
