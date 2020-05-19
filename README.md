@@ -73,6 +73,9 @@ d_pc = xrv.datasets.PC_Dataset(imgpath="path to image folder")
 
 
 d_covid19 = xrv.datasets.COVID19_Dataset() # specify imgpath and csvpath for the dataset
+
+d_tb = xrv.datasets.Tuberculosis_Dataset(montgomery_path="path to MontgomerySet", 
+										 chinaset_path="path to ChinaSet_AllFiles")
 ```
 
 ## dataset tools
