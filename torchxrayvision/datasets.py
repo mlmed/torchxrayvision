@@ -1048,7 +1048,93 @@ class COVID19_Dataset(Dataset):
             
         return {"img":img, "lab":self.labels[idx], "idx":idx}
     
+class Tuberculosis_Dataset(torch.utils.data.Dataset):
+    """
+    TODO: Discuss compatibility with other datasets here
+
+    Tuberculosis Dataset
+
+    Download Links:
+    Montgomery County
+    https://academictorrents.com/details/ac786f74878a5775c81d490b23842fd4736bfe33
+
+    Shenzhen
+    https://academictorrents.com/details/462728e890bd37c05e9439c885df7afc36209cc8
+    """
     
+    def __init__(self, 
+                 montgomery_path=os.path.join(thispath, "MontgomerySet"), 
+                 chinaset_path=os.path.join(thispath, "ChinaSet_AllFiles"), 
+                 transform=None, 
+                 data_aug=None, 
+                 nrows=None, 
+                 seed=0,
+        ):
+        """
+        Args:
+            montgomery_path (str): Path to `MontgomerySet` folder.
+            chinaset_path (str): Path to `ChinaSet_AllFiles` folder
+        """
+
+        super(Tuberculosis_Dataset, self).__init__()
+        np.random.seed(seed)  # Reset the seed so all runs are the same.
+        self.montgomery_path = montgomery_path
+        self.chinaset_path = chinaset_path
+        self.transform = transform
+        self.data_aug = data_aug
+        
+        file_list = []
+        source_list = []
+        for fpath in glob.glob(os.path.join(montgomery_path, "CXR_png", "*.png")):
+            file_list.append(fpath)
+            source_list.append("Montgomery")
+
+        for fpath in glob.glob(os.path.join(chinaset_path, "CXR_png", "*.png")):
+            file_list.append(fpath)
+            source_list.append("Chinaset")
+
+        df = pd.DataFrame({"path": file_list, "source": source_list})
+        if nrows is not None:
+            df = df.sample(n=nrows, random_state=seed)
+
+        #Label is the last digit on the simage filename
+        df["label"] = df["path"].apply(lambda x: int(x.split(".")[-2][-1]))
+
+        self.df = df
+        self.MAXVAL = 255
+
+    # TODO: Discuss
+    # def __repr__(self):
+    #     pprint.pprint(self.totals())
+    #     return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
+    
+    def __len__(self):
+        return len(self.df)
+
+    def __getitem__(self, idx):
+        item = self.df.iloc[idx]
+        img_path = item["path"]
+        label = item["label"]
+        #print(img_path)
+        img = imread(img_path)
+        img = normalize(img, self.MAXVAL)  
+
+        # Check that images are 2D arrays
+        if len(img.shape) > 2:
+            img = img[:, :, 0]
+        if len(img.shape) < 2:
+            print("error, dimension lower than 2 for image")
+
+        # Add color channel
+        img = img[None, :, :]                    
+                               
+        if self.transform is not None:
+            img = self.transform(img)
+
+        if self.data_aug is not None:
+            img = self.data_aug(img)
+            
+        return {"img":img, "lab":label, "idx":idx}    
     
     
 class ToPILImage(object):
