@@ -47,7 +47,7 @@ def test_dataloader_merging_incorrect_alignment():
     assert "incorrect pathology alignment" in str(excinfo.value)
     
     
-def test_dataloader_merging():
+def test_resize():
     
     for filename in ["16747_3_1.jpg", "covid-19-pneumonia-58-prior.jpg"]
         img = imread(filename)
