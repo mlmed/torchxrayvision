@@ -96,7 +96,12 @@ if cfg.saliency_path:
     blurred = skimage.filters.gaussian(grads**2, sigma=(5, 5), truncate=3.5)
     
     full_frame()
-    plt.imshow(img[0][0].detach(), cmap="gray")
-    plt.imshow(blurred, alpha=0.5);
+    my_dpi = 100
+    fig = plt.figure(frameon=False, figsize=(224/my_dpi, 224/my_dpi), dpi=my_dpi)
+    ax = plt.Axes(fig, [0., 0., 1., 1.])
+    ax.set_axis_off()
+    fig.add_axes(ax)
+    ax.imshow(img[0][0].detach(), cmap="gray", aspect='auto')
+    ax.imshow(blurred, alpha=0.5);
     plt.savefig(cfg.saliency_path)
    
