@@ -70,8 +70,8 @@ with torch.no_grad():
         model2 = model2.cuda()
         
     outputs = model2(img)
-    print("geographic_extent (0-8):",str(outputs["geographic_extent"].cpu().numpy()))
-    print("opacity (0-6):",str(outputs["opacity"].cpu().numpy()))
+    print("geographic_extent (0-8):","{:1.4}".format(outputs["geographic_extent"].cpu().numpy()))
+    print("opacity (0-6):","{:1.4}".format(outputs["opacity"].cpu().numpy()))
     
     
     
