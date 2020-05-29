@@ -29,4 +29,10 @@ $ python predict_severity.py 01E392EE-69F9-4E33-BFCE-E5C968654078.jpeg  -salienc
 
 ```
 
+| Image             | Saliency map | Predictions       |
+|-------------------------------|-------------------------------|-----------|
+| ![](examples/2966893D-5DDF-4B68-9E2B-4979D5956C8E.jpeg-resize.jpg)| ![](examples/2966893D-5DDF-4B68-9E2B-4979D5956C8E.jpeg-heatmap.jpg)| geographic_extent (0-8): 5.979 <br>opacity (0-6): 4.17 |
+| ![](examples/31BA3780-2323-493F-8AED-62081B9C383B.jpeg-resize.jpg)| ![](examples/31BA3780-2323-493F-8AED-62081B9C383B.jpeg-heatmap.jpg)| geographic_extent (0-8): 6.293 <br>opacity (0-6): 4.367 |
+| ![](examples/41591_2020_819_Fig1_HTML.webp-day5.png-resize.jpg)| ![](examples/41591_2020_819_Fig1_HTML.webp-day5.png-heatmap.jpg)| geographic_extent (0-8): 3.067 <br>opacity (0-6): 2.335 |
+| ![](examples/8FDE8DBA-CFBD-4B4C-B1A4-6F36A93B7E87.jpeg-resize.jpg)| ![](examples/8FDE8DBA-CFBD-4B4C-B1A4-6F36A93B7E87.jpeg-heatmap.jpg)| geographic_extent (0-8): 0.9483 <br>opacity (0-6): 1.0 |
 
