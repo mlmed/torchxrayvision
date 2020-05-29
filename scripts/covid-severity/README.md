@@ -20,10 +20,12 @@ year = {2020}
 To run the CLI:
 
 ```
-python predict_severity.py ../../tests/16747_3_1.jpg 
+$ python predict_severity.py 2966893D-5DDF-4B68-9E2B-4979D5956C8E.jpeg
+geographic_extent (0-8): 5.978744940174467
+opacity (0-6): 4.169582852893416
 
 # or to output a saliency map:
-python predict_severity.py ../../tests/16747_3_1.jpg -saliency_path 16747_3_1-heatmap.jpg
+$ python predict_severity.py 01E392EE-69F9-4E33-BFCE-E5C968654078.jpeg  -saliency_path heatmap.jpg
 
 ```
 
