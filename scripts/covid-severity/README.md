@@ -1,3 +1,5 @@
+## Predicting COVID-19 Pneumonia Severity on Chest X-ray with Deep Learning
+
 Data is here: [Pneumonia severity scores for 94 images](https://github.com/ieee8023/covid-chestxray-dataset/blob/master/annotations/covid-severity-scores.csv)
 
   - **geographic_extent_mean**: The extent of lung involvement by ground glass opacity or consolidation for each lung. The total extent score ranged from 0 to 8.		
