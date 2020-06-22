@@ -141,7 +141,9 @@ class DenseNet(nn.Module):
             elif isinstance(m, nn.Linear):
                 nn.init.constant_(m.bias, 0)
                 
-        self.op_threshs = op_threshs
+        # needs to be register_buffer here so it will go to cuda/cpu easily
+        self.register_buffer('op_threshs', op_threshs)
+
                 
         if weights != None:
             
@@ -165,7 +167,7 @@ class DenseNet(nn.Module):
             self.eval()
             
             if "op_threshs" in model_urls[weights]:
-                self.op_threshs = model_urls[weights]["op_threshs"]
+                self.op_threshs = torch.tensor(model_urls[weights]["op_threshs"])
 
     def forward(self, x):
         features = self.features(x)
@@ -179,14 +181,19 @@ class DenseNet(nn.Module):
         return out
 
 def op_norm(outputs, op_threshs):
-    outputs_new = torch.zeros(outputs.shape, device=outputs.device)
-    for i in range(len(outputs)):
-        for t in range(len(outputs[0])):
-            if (outputs[i,t]<op_threshs[t]):
-                outputs_new[i,t] = outputs[i,t]/(op_threshs[t]*2) 
-            else:
-                outputs_new[i,t] = 1-((1-outputs[i,t])/((1-(op_threshs[t]))*2)) 
-            
+    """normalize outputs according to operating points for a given model.
+    Args: 
+        outputs: outputs of self.classifier(). torch.Size(batch_size, num_tasks) 
+        op_threshs_arr: torch.Size(batch_size, num_tasks) with self.op_threshs expanded.
+    Returns:
+        outputs_new: normalized outputs, torch.Size(batch_size, num_tasks)
+    """
+    op_threshs = op_threshs.expand(outputs.shape[0],-1)
+    outputs_new = torch.zeros(outputs.shape, device = outputs.device)
+    mask_leq = outputs<op_threshs
+    outputs_new[mask_leq] = outputs[mask_leq]/(op_threshs[mask_leq]*2)
+    outputs_new[~mask_leq] = 1.0 - ((1.0 - outputs[~mask_leq])/((1-op_threshs[~mask_leq])*2))
+    
     return outputs_new
 
     
