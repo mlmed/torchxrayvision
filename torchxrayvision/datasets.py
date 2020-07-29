@@ -23,6 +23,7 @@ import skimage.transform
 import warnings
 import tarfile
 import zipfile
+import random
 
 default_pathologies = [  'Atelectasis',
                  'Consolidation',
@@ -209,7 +210,7 @@ class NIH_Dataset(Dataset):
     https://academictorrents.com/details/e615d3aebce373f1dc8bd9d11064da55bdadede0
     """
     def __init__(self, imgpath, 
-                 csvpath=os.path.join(thispath, "Data_Entry_2017.csv.gz"), 
+                 csvpath=os.path.join(thispath, "Data_Entry_2017_v2020.csv.gz"), 
                  views=["PA"],
                  transform=None, 
                  data_aug=None, 
@@ -217,7 +218,8 @@ class NIH_Dataset(Dataset):
                  seed=0,
                  pure_labels=False, 
                  unique_patients=True,
-                 normalize=True):
+                 normalize=True,
+                 pathology_masks=False):
         
         super(NIH_Dataset, self).__init__()
 
@@ -226,6 +228,7 @@ class NIH_Dataset(Dataset):
         self.csvpath = csvpath
         self.transform = transform
         self.data_aug = data_aug
+        self.pathology_masks = pathology_masks
         
         self.pathologies = ["Atelectasis", "Consolidation", "Infiltration",
                             "Pneumothorax", "Edema", "Emphysema", "Fibrosis",
@@ -245,13 +248,26 @@ class NIH_Dataset(Dataset):
         self.views = views
         # Remove images with view position other than specified
         self.csv = self.csv[self.csv['View Position'].isin(self.views)]
-
+        
         # Remove multi-finding images.
         if pure_labels:
             self.csv = self.csv[~self.csv["Finding Labels"].str.contains("\|")]
-
+        
         if unique_patients:
-            self.csv = self.csv.groupby("Patient ID").first().reset_index()
+            self.csv = self.csv.groupby("Patient ID").first()
+        
+        self.csv = self.csv.reset_index()
+        
+        ####### pathology masks ########
+        # load nih pathology masks
+        self.pathology_maskscsv = pd.read_csv(os.path.join(thispath, "BBox_List_2017.csv.gz"), 
+                names=["Image Index","Finding Label","x","y","w","h","_1","_2","_3"],
+               skiprows=1)
+        
+        # change label name to match
+        self.pathology_maskscsv["Finding Label"][self.pathology_maskscsv["Finding Label"] == "Infiltrate"] = "Infiltration"
+        self.csv["has_masks"] = self.csv["Image Index"].isin(self.pathology_maskscsv["Image Index"])
+        ####### pathology masks ########    
             
         # Get our classes.
         self.labels = []
@@ -260,6 +276,7 @@ class NIH_Dataset(Dataset):
             
         self.labels = np.asarray(self.labels).T
         self.labels = self.labels.astype(np.float32)
+        
 
     def __repr__(self):
         pprint.pprint(self.totals())
@@ -269,6 +286,12 @@ class NIH_Dataset(Dataset):
         return len(self.labels)
 
     def __getitem__(self, idx):
+        
+        sample = {}
+        sample["idx"] = idx
+        sample["lab"] = self.labels[idx]
+        
+        
         imgid = self.csv['Image Index'].iloc[idx]
         img_path = os.path.join(self.imgpath, imgid)
         #print(img_path)
@@ -283,15 +306,55 @@ class NIH_Dataset(Dataset):
             print("error, dimension lower than 2 for image")
 
         # Add color channel
-        img = img[None, :, :]                    
-                               
-        if self.transform is not None:
-            img = self.transform(img)
+        sample["img"] = img[None, :, :]                    
 
-        if self.data_aug is not None:
-            img = self.data_aug(img)
+        transform_seed = np.random.randint(2147483647)
+        
+        if self.pathology_masks:
+            sample["pathology_masks"] = self.get_mask_dict(imgid, sample["img"].shape[2])
             
-        return {"img":img, "lab":self.labels[idx], "idx":idx}
+        if self.transform is not None:
+            random.seed(transform_seed)
+            sample["img"] = self.transform(sample["img"])
+            if self.pathology_masks:
+                for i in sample["pathology_masks"].keys():
+                    random.seed(transform_seed)
+                    sample["pathology_masks"][i] = self.transform(sample["pathology_masks"][i])
+  
+        if self.data_aug is not None:
+            random.seed(transform_seed)
+            sample["img"] = self.data_aug(sample["img"])
+            if self.pathology_masks:
+                for i in sample["pathology_masks"].keys():
+                    random.seed(transform_seed)
+                    sample["pathology_masks"][i] = self.data_aug(sample["pathology_masks"][i])
+            
+        return sample
+    
+    def get_mask_dict(self, image_name, this_size):
+
+        base_size = 1024
+        scale = this_size/base_size
+
+        images_with_masks = self.pathology_maskscsv[self.pathology_maskscsv["Image Index"] == image_name]
+        path_mask = {}
+
+        for i in range(len(images_with_masks)):
+            row = images_with_masks.iloc[i]
+            
+            # don't add masks for labels we don't have
+            if row["Finding Label"] in self.pathologies:
+                mask = np.zeros([this_size,this_size])
+                xywh = np.asarray([row.x,row.y,row.w,row.h])
+                xywh = xywh*scale
+                xywh = xywh.astype(int)
+                mask[xywh[1]:xywh[1]+xywh[3],xywh[0]:xywh[0]+xywh[2]] = 1
+                
+                # resize so image resizing works
+                mask = mask[None, :, :] 
+                
+                path_mask[self.pathologies.index(row["Finding Label"])] = mask
+        return path_mask
     
 class Kaggle_Dataset(Dataset):
     """
