@@ -356,9 +356,11 @@ class NIH_Dataset(Dataset):
                 path_mask[self.pathologies.index(row["Finding Label"])] = mask
         return path_mask
     
-class Kaggle_Dataset(Dataset):
+class RSNA_Pneumonia_Dataset(Dataset):
     """
     RSNA Pneumonia Detection Challenge
+    
+    More info: https://www.rsna.org/en/education/ai-resources-and-training/ai-image-challenge/RSNA-Pneumonia-Detection-Challenge-2018
     
     Challenge site:
     https://www.kaggle.com/c/rsna-pneumonia-detection-challenge
@@ -380,7 +382,7 @@ class Kaggle_Dataset(Dataset):
                  normalize=True,
                  extension=".jpg"):
 
-        super(Kaggle_Dataset, self).__init__()
+        super(RSNA_Pneumonia_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.imgpath = imgpath
         self.transform = transform

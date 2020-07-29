@@ -59,7 +59,7 @@ Only stats for PA/AP views are shown. Datasets may include more.
 transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
                                             xrv.datasets.XRayResizer(224)])
 
-d_kaggle = xrv.datasets.Kaggle_Dataset(imgpath="path to stage_2_train_images_jpg",
+d_kaggle = xrv.datasets.RSNA_Pneumonia_Dataset(imgpath="path to stage_2_train_images_jpg",
                                        transform=transform)
                 
 d_chex = xrv.datasets.CheX_Dataset(imgpath="path to CheXpert-v1.0-small",
