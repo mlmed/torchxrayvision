@@ -7,6 +7,8 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 from tqdm import tqdm
 import numpy as np
+from io import BytesIO
+import tarfile
 import os,sys,os.path
 import pandas as pd
 import pickle
@@ -92,6 +94,7 @@ class Dataset():
             raise Exception("csvpath must be a file")
         
     
+
 class Merge_Dataset(Dataset):
     def __init__(self, datasets, seed=0, label_concat=False):
         super(Merge_Dataset, self).__init__()
@@ -195,7 +198,23 @@ class SubsetDataset(Dataset):
     def __getitem__(self, idx):
         return self.dataset[self.idxs[idx]]
 
-    
+class TarDataset(Dataset):
+    def __init__(self, imgpath):
+        if imgpath.endswith(".tar"):
+            self.tarred = tarfile.open(imgpath)
+            self.tar_paths = self.tarred.getmembers()
+        else:
+            self.tarred = None
+    def get_image(self, path):
+        if self.tarred is None:
+            return imread(os.path.join(self.imgpath, path))
+        else:
+            for tar_path in self.tar_paths:
+                name = tar_path.name
+                if name.endswith(path):
+                    bytes = self.tarred.extractfile(name).read()
+                    return np.array(Image.open(BytesIO(bytes)))
+
 class NIH_Dataset(Dataset):
     """
     NIH ChestX-ray8 dataset
@@ -293,9 +312,9 @@ class NIH_Dataset(Dataset):
         
         
         imgid = self.csv['Image Index'].iloc[idx]
-        img_path = os.path.join(self.imgpath, imgid)
+        #img_path = os.path.join(self.imgpath, imgid)
         #print(img_path)
-        img = imread(img_path)
+        img = self.get_image(imgid)
         if self.normalize:
             img = normalize(img, self.MAXVAL)  
 
@@ -776,7 +795,7 @@ Jeremy Irvin *, Pranav Rajpurkar *, Michael Ko, Yifan Yu, Silviana Ciurea-Ilcus,
 
         return {"img":img, "lab":self.labels[idx], "idx":idx}
     
-class MIMIC_Dataset(Dataset):
+class MIMIC_Dataset(TarDataset):
     """
     Johnson AE, Pollard TJ, Berkowitz S, Greenbaum NR, Lungren MP, Deng CY, Mark RG, Horng S. MIMIC-CXR: A large publicly available database of labeled chest radiographs. arXiv preprint arXiv:1901.07042. 2019 Jan 21.
     
@@ -788,7 +807,7 @@ class MIMIC_Dataset(Dataset):
     def __init__(self, imgpath, csvpath,metacsvpath, views=["PA"], transform=None, data_aug=None,
                  flat_dir=True, seed=0, unique_patients=True):
 
-        super(MIMIC_Dataset, self).__init__()
+        super(MIMIC_Dataset, self).__init__(imgpath)
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.MAXVAL = 255
         
@@ -807,7 +826,7 @@ class MIMIC_Dataset(Dataset):
                             "Support Devices"]
         
         self.pathologies = sorted(self.pathologies)
-        
+
         self.imgpath = imgpath
         self.transform = transform
         self.data_aug = data_aug
@@ -815,10 +834,12 @@ class MIMIC_Dataset(Dataset):
         self.csv = pd.read_csv(self.csvpath)
         self.metacsvpath = metacsvpath
         self.metacsv = pd.read_csv(self.metacsvpath)
-        
+
+
         self.csv = self.csv.set_index(['subject_id', 'study_id'])
+
         self.metacsv = self.metacsv.set_index(['subject_id', 'study_id'])
-        
+
         self.csv = self.csv.join(self.metacsv).reset_index()
 
         # Keep only the PA view.
@@ -859,14 +880,14 @@ class MIMIC_Dataset(Dataset):
         return len(self.labels)
 
     def __getitem__(self, idx):
-        
+
         subjectid = str(self.csv.iloc[idx]["subject_id"])
         studyid = str(self.csv.iloc[idx]["study_id"])
         dicom_id = str(self.csv.iloc[idx]["dicom_id"])
         
-        img_path = os.path.join(self.imgpath, "p" + subjectid[:2], "p" + subjectid, "s" + studyid, dicom_id + ".jpg")
-        img = imread(img_path)
-        img = normalize(img, self.MAXVAL)      
+        img_fname = os.path.join("p" + subjectid[:2], "p" + subjectid, "s" + studyid, dicom_id + ".jpg")
+        img = self.get_image(img_fname)
+        img = normalize(img, self.MAXVAL)
         
         # Check that images are 2D arrays
         if len(img.shape) > 2:
@@ -879,7 +900,7 @@ class MIMIC_Dataset(Dataset):
 
         if self.transform is not None:
             img = self.transform(img)
-            
+
         if self.data_aug is not None:
             img = self.data_aug(img)
 
@@ -1205,7 +1226,6 @@ class ToPILImage(object):
 
     def __call__(self, x):
         return(self.to_pil(x[0]))
-
 
 class XRayResizer(object):
     def __init__(self, size, engine="skimage"):
