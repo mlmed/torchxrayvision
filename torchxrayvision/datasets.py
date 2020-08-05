@@ -647,7 +647,9 @@ class PC_Dataset(Dataset):
         self.pathologies = ["Atelectasis", "Consolidation", "Infiltration",
                             "Pneumothorax", "Edema", "Emphysema", "Fibrosis",
                             "Effusion", "Pneumonia", "Pleural_Thickening",
-                            "Cardiomegaly", "Nodule", "Mass", "Hernia","Fracture"]
+                            "Cardiomegaly", "Nodule", "Mass", "Hernia","Fracture", 
+                            "Granuloma", "Flattened Diaphragm", "Bronchiectasis",
+                            "Pleural Thickening"]
         
         self.pathologies = sorted(self.pathologies)
         
