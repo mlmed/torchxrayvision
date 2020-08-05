@@ -380,6 +380,7 @@ class RSNA_Pneumonia_Dataset(Dataset):
                  pure_labels=False, 
                  unique_patients=True,
                  normalize=True,
+                 pathology_masks=False,
                  extension=".jpg"):
 
         super(RSNA_Pneumonia_Dataset, self).__init__()
@@ -387,6 +388,7 @@ class RSNA_Pneumonia_Dataset(Dataset):
         self.imgpath = imgpath
         self.transform = transform
         self.data_aug = data_aug
+        self.pathology_masks = pathology_masks
         
         self.pathologies = ["Pneumonia", "Lung Opacity"]
         
@@ -400,7 +402,11 @@ class RSNA_Pneumonia_Dataset(Dataset):
 
         # Load data
         self.csvpath = csvpath
-        self.csv = pd.read_csv(self.csvpath, nrows=nrows)
+        self.raw_csv = pd.read_csv(self.csvpath, nrows=nrows)
+        
+        # the labels have multiple instances for each mask 
+        # so we just need one to get the target label
+        self.csv = self.raw_csv.groupby("patientId").first()
         
         self.dicomcsvpath = dicomcsvpath
         self.dicomcsv = pd.read_csv(self.dicomcsvpath, nrows=nrows, index_col="PatientID")
@@ -414,12 +420,17 @@ class RSNA_Pneumonia_Dataset(Dataset):
         self.views = views
         # Remove images with view position other than specified
         self.csv = self.csv[self.csv['ViewPosition'].isin(self.views)]
+        
+        self.csv = self.csv.reset_index()
 
         # Get our classes.
         self.labels = []
         self.labels.append(self.csv["Target"].values)
         self.labels.append(self.csv["Target"].values) #same labels for both
-            
+        
+        # set if we have masks
+        self.csv["has_masks"] = ~np.isnan(self.csv["x"])
+        
         self.labels = np.asarray(self.labels).T
         self.labels = self.labels.astype(np.float32)
 
@@ -431,6 +442,11 @@ class RSNA_Pneumonia_Dataset(Dataset):
         return len(self.labels)
 
     def __getitem__(self, idx):
+        
+        sample = {}
+        sample["idx"] = idx
+        sample["lab"] = self.labels[idx]
+        
         imgid = self.csv['patientId'].iloc[idx]
         img_path = os.path.join(self.imgpath, imgid + self.extension)
         #print(img_path)
@@ -448,15 +464,60 @@ class RSNA_Pneumonia_Dataset(Dataset):
             print("error, dimension lower than 2 for image")
 
         # Add color channel
-        img = img[None, :, :]                    
+        sample["img"] = img[None, :, :]                
                                
-        if self.transform is not None:
-            img = self.transform(img)
-
-        if self.data_aug is not None:
-            img = self.data_aug(img)
+        transform_seed = np.random.randint(2147483647)
+        
+        if self.pathology_masks:
+            sample["pathology_masks"] = self.get_mask_dict(imgid, sample["img"].shape[2])
             
-        return {"img":img, "lab":self.labels[idx], "idx":idx}
+        if self.transform is not None:
+            random.seed(transform_seed)
+            sample["img"] = self.transform(sample["img"])
+            if self.pathology_masks:
+                for i in sample["pathology_masks"].keys():
+                    random.seed(transform_seed)
+                    sample["pathology_masks"][i] = self.transform(sample["pathology_masks"][i])
+  
+        if self.data_aug is not None:
+            random.seed(transform_seed)
+            sample["img"] = self.data_aug(sample["img"])
+            if self.pathology_masks:
+                for i in sample["pathology_masks"].keys():
+                    random.seed(transform_seed)
+                    sample["pathology_masks"][i] = self.data_aug(sample["pathology_masks"][i])
+            
+        return sample
+    
+    def get_mask_dict(self, image_name, this_size):
+
+        base_size = 1024
+        scale = this_size/base_size
+
+        images_with_masks = self.raw_csv[self.raw_csv["patientId"] == image_name]
+        path_mask = {}
+
+        # all masks are for both pathologies
+        for patho in ["Pneumonia", "Lung Opacity"]:
+            
+            
+            mask = np.zeros([this_size,this_size])
+            
+            # don't add masks for labels we don't have
+            if patho in self.pathologies:
+                
+                for i in range(len(images_with_masks)):
+                    row = images_with_masks.iloc[i]
+                    xywh = np.asarray([row.x,row.y,row.width,row.height])
+                    xywh = xywh*scale
+                    xywh = xywh.astype(int)
+                    mask[xywh[1]:xywh[1]+xywh[3],xywh[0]:xywh[0]+xywh[2]] = 1
+                
+            # resize so image resizing works
+            mask = mask[None, :, :] 
+                
+            path_mask[self.pathologies.index(patho)] = mask
+        return path_mask
 
 class NIH_Google_Dataset(Dataset):
 
