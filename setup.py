@@ -5,10 +5,10 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="torchxrayvision",
-    version="0.0.10",
+    version="0.0.11",
     author="Joseph Paul Cohen",
     author_email="joseph@josephpcohen.com",
-    description="A small example package",
+    description="TorchXrayVision: A library of chest X-ray datasets and models",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/mlmed/torchxrayvision",
