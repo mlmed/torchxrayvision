@@ -13,7 +13,7 @@ import torchxrayvision as xrv
 ```
 
 These are default pathologies:
-```
+```python3
 xrv.datasets.default_pathologies 
 
 ['Atelectasis',
@@ -41,7 +41,7 @@ xrv.datasets.default_pathologies
 Specify weights for pretrained models (currently all DenseNet121)
 Note: Each pretrained model has 18 outputs. The `all` model has every output trained. However, for the other weights some targets are not trained and will predict randomly becuase they do not exist in the training dataset. The only valid outputs are listed in the field `{dataset}.pathologies` on the dataset that corresponds to the weights. 
 
-```
+```python3
 model = xrv.models.DenseNet(weights="all")
 model = xrv.models.DenseNet(weights="kaggle")
 model = xrv.models.DenseNet(weights="nih")
@@ -55,7 +55,7 @@ model = xrv.models.DenseNet(weights="minix_ch")
 ## datasets
 Only stats for PA/AP views are shown. Datasets may include more.
 
-```
+```python3
 transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
                                             xrv.datasets.XRayResizer(224)])
 
@@ -78,7 +78,7 @@ d_covid19 = xrv.datasets.COVID19_Dataset() # specify imgpath and csvpath for the
 
 National Library of Medicine Tuberculosis Datasets [paper](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4256233/)
 
-```
+```python3
 d_nlmtb = xrv.datasets.NLMTB_Dataset(imgpath="path to MontgomerySet or ChinaSet_AllFiles")
 
 Using MontgomerySet data:
@@ -93,7 +93,7 @@ NLMTB_Dataset num_samples=662 views=['PA', 'AP']
 ## dataset tools
 
 relabel_dataset will align labels to have the same order as the pathologies argument.
-```
+```python3
 xrv.datasets.relabel_dataset(xrv.datasets.default_pathologies , d_nih) # has side effects
 ```
 
