@@ -169,6 +169,10 @@ class DenseNet(nn.Module):
                 download(url, weights_filename_local)
 
             savedmodel = torch.load(weights_filename_local, map_location='cpu')
+            # patch to load old models https://github.com/pytorch/pytorch/issues/42242
+            for mod in savedmodel.modules():
+                if not hasattr(mod, "_non_persistent_buffers_set"):
+                    mod._non_persistent_buffers_set = set()
             self.load_state_dict(savedmodel.state_dict())
             
             self.eval()

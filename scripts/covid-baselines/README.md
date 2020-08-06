@@ -1,1 +1,1 @@
-# Baselines for the COVID-19 image data collection 
+Moved to [https://github.com/mlmed/covid-baselines](https://github.com/mlmed/covid-baselines)

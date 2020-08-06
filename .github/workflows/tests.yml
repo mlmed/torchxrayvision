@@ -10,6 +10,8 @@ on:
     paths:
       - 'torchxrayvision/**'
       - 'tests/**'
+      - 'setup.py'
+      - '.github/**'
   pull_request:
     branches: [ master ]
     paths:
