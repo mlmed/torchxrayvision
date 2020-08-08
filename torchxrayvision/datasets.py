@@ -94,7 +94,6 @@ class Dataset():
             raise Exception("csvpath must be a file")
         
     
-
 class Merge_Dataset(Dataset):
     def __init__(self, datasets, seed=0, label_concat=False):
         super(Merge_Dataset, self).__init__()
@@ -197,6 +196,7 @@ class SubsetDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.dataset[self.idxs[idx]]
+
 
 class TarDataset(Dataset):
     def __init__(self, imgpath):
@@ -888,7 +888,7 @@ class MIMIC_Dataset(TarDataset):
                             "Support Devices"]
         
         self.pathologies = sorted(self.pathologies)
-
+        
         self.imgpath = imgpath
         self.transform = transform
         self.data_aug = data_aug
@@ -901,7 +901,7 @@ class MIMIC_Dataset(TarDataset):
         self.csv = self.csv.set_index(['subject_id', 'study_id'])
 
         self.metacsv = self.metacsv.set_index(['subject_id', 'study_id'])
-
+        
         self.csv = self.csv.join(self.metacsv).reset_index()
 
         # Keep only the PA view.
@@ -942,7 +942,7 @@ class MIMIC_Dataset(TarDataset):
         return len(self.labels)
 
     def __getitem__(self, idx):
-
+        
         subjectid = str(self.csv.iloc[idx]["subject_id"])
         studyid = str(self.csv.iloc[idx]["study_id"])
         dicom_id = str(self.csv.iloc[idx]["dicom_id"])
@@ -962,7 +962,7 @@ class MIMIC_Dataset(TarDataset):
 
         if self.transform is not None:
             img = self.transform(img)
-
+            
         if self.data_aug is not None:
             img = self.data_aug(img)
 
@@ -1288,6 +1288,7 @@ class ToPILImage(object):
 
     def __call__(self, x):
         return(self.to_pil(x[0]))
+
 
 class XRayResizer(object):
     def __init__(self, size, engine="skimage"):
