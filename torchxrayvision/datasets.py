@@ -210,7 +210,7 @@ class TarDataset(Dataset):
             else:
                 self.tarred = tarfile.open(imgpath)
                 tarfile_contents[absolute_tarpath] = self.tarred
-            self.tar_paths = self.tarred.getmembers()
+            self.tar_paths = self.tarred.getnames()
         else:
             self.tarred = None
     def get_image(self, path):
@@ -218,9 +218,8 @@ class TarDataset(Dataset):
             return imread(os.path.join(self.imgpath, path))
         else:
             for tar_path in self.tar_paths:
-                name = tar_path.name
                 if name.endswith(path):
-                    bytes = self.tarred.extractfile(name).read()
+                    bytes = self.tarred.extractfile(tar_path).read()
                     return np.array(Image.open(BytesIO(bytes)))
 
 class NIH_Dataset(TarDataset):
