@@ -49,6 +49,8 @@ default_pathologies = [  'Atelectasis',
 
 thispath = os.path.dirname(os.path.realpath(__file__))
 
+tarfile_contents = {}
+
 def normalize(sample, maxval):
     """Scales images to be roughly [-1024 1024]."""
     sample = (2 * (sample.astype(np.float32) / maxval) - 1.) * 1024
@@ -202,6 +204,12 @@ class TarDataset(Dataset):
     def __init__(self, imgpath):
         if tarfile.is_tarfile(imgpath):
             self.tarred = tarfile.open(imgpath)
+            absolute_tarpath = os.path.abspath(imgpath)
+            if absolute_tarpath in tarfile_contents:
+                self.tarred = tarfile_contents[absolute_tarpath]
+            else:
+                self.tarred = tarfile.open(imgpath)
+                tarfile_contents[absolute_tarpath] = self.tarred
             self.tar_paths = self.tarred.getmembers()
         else:
             self.tarred = None
@@ -868,7 +876,6 @@ class MIMIC_Dataset(TarDataset):
     """
     def __init__(self, imgpath, csvpath,metacsvpath, views=["PA"], transform=None, data_aug=None,
                  flat_dir=True, seed=0, unique_patients=True):
-
         super(MIMIC_Dataset, self).__init__(imgpath)
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.MAXVAL = 255
