@@ -200,7 +200,7 @@ class SubsetDataset(Dataset):
 
 class TarDataset(Dataset):
     def __init__(self, imgpath):
-        if imgpath.endswith(".tar"):
+        if tarfile.is_tarfile(imgpath):
             self.tarred = tarfile.open(imgpath)
             self.tar_paths = self.tarred.getmembers()
         else:
@@ -215,7 +215,7 @@ class TarDataset(Dataset):
                     bytes = self.tarred.extractfile(name).read()
                     return np.array(Image.open(BytesIO(bytes)))
 
-class NIH_Dataset(Dataset):
+class NIH_Dataset(TarDataset):
     """
     NIH ChestX-ray8 dataset
 
@@ -314,7 +314,7 @@ class NIH_Dataset(Dataset):
         imgid = self.csv['Image Index'].iloc[idx]
         #img_path = os.path.join(self.imgpath, imgid)
         #print(img_path)
-        img = imread(img_path)
+        img = self.get_image(imgid)
         if self.normalize:
             img = normalize(img, self.MAXVAL)  
 
