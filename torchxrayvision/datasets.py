@@ -46,7 +46,7 @@ default_pathologies = [  'Atelectasis',
                  'Lung Opacity',
                  'Enlarged Cardiomediastinum'
                 ]
-
+	
 thispath = os.path.dirname(os.path.realpath(__file__))
 
 tarfile_contents = {}
@@ -98,7 +98,6 @@ class Dataset():
     
 class Merge_Dataset(Dataset):
     def __init__(self, datasets, seed=0, label_concat=False):
-        super(Merge_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.datasets = datasets
         self.length = 0
@@ -132,6 +131,8 @@ class Merge_Dataset(Dataset):
             self.csv = pd.concat([d.csv for d in datasets])
         except:
             print("Could not merge dataframes (.csv not available):", sys.exc_info()[0])
+
+        super(Merge_Dataset, self).__init__()
             
             
     def __repr__(self):
@@ -199,28 +200,36 @@ class SubsetDataset(Dataset):
     def __getitem__(self, idx):
         return self.dataset[self.idxs[idx]]
 
-
 class TarDataset(Dataset):
+    path_length = None
     def __init__(self, imgpath):
-        if tarfile.is_tarfile(imgpath):
+        self.filename_mapping = {}
+        if not os.path.isdir(imgpath):
             self.tarred = tarfile.open(imgpath)
             absolute_tarpath = os.path.abspath(imgpath)
             if absolute_tarpath in tarfile_contents:
-                self.tarred = tarfile_contents[absolute_tarpath]
+                self.tarred, self.filename_mapping = tarfile_contents[absolute_tarpath]
             else:
                 self.tarred = tarfile.open(imgpath)
-                tarfile_contents[absolute_tarpath] = self.tarred
-            self.tar_paths = self.tarred.getnames()
+                self.tar_paths = self.tarred.getnames()
+                for tar_path in self.tar_paths:
+                    if tar_path.endswith("jpg"):
+                        tar_path_part, filename = os.path.split(tar_path)
+                        for i in range(self.path_length - 1):
+                            tar_path_part, filename_part = os.path.split(tar_path_part)
+                            filename = os.path.join(filename_part, filename)
+                        self.filename_mapping[filename] = tar_path
+                tarfile_contents[absolute_tarpath] = self.tarred, self.filename_mapping
         else:
             self.tarred = None
+
     def get_image(self, path):
         if self.tarred is None:
             return imread(os.path.join(self.imgpath, path))
         else:
-            for tar_path in self.tar_paths:
-                if name.endswith(path):
-                    bytes = self.tarred.extractfile(tar_path).read()
-                    return np.array(Image.open(BytesIO(bytes)))
+            tar_path = self.filename_mapping[path]
+            bytes = self.tarred.extractfile(tar_path).read()
+            return np.array(Image.open(BytesIO(bytes)))
 
 class NIH_Dataset(TarDataset):
     """
@@ -247,7 +256,7 @@ class NIH_Dataset(TarDataset):
                  normalize=True,
                  pathology_masks=False):
         
-        super(NIH_Dataset, self).__init__()
+        super(NIH_Dataset, self).__init__(imgpath)
 
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.imgpath = imgpath
@@ -865,6 +874,7 @@ Jeremy Irvin *, Pranav Rajpurkar *, Michael Ko, Yifan Yu, Silviana Ciurea-Ilcus,
         return {"img":img, "lab":self.labels[idx], "idx":idx}
     
 class MIMIC_Dataset(TarDataset):
+    path_length = 4
     """
     Johnson AE, Pollard TJ, Berkowitz S, Greenbaum NR, Lungren MP, Deng CY, Mark RG, Horng S. MIMIC-CXR: A large publicly available database of labeled chest radiographs. arXiv preprint arXiv:1901.07042. 2019 Jan 21.
     
@@ -875,7 +885,6 @@ class MIMIC_Dataset(TarDataset):
     """
     def __init__(self, imgpath, csvpath,metacsvpath, views=["PA"], transform=None, data_aug=None,
                  flat_dir=True, seed=0, unique_patients=True):
-        super(MIMIC_Dataset, self).__init__(imgpath)
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.MAXVAL = 255
         
@@ -902,7 +911,6 @@ class MIMIC_Dataset(TarDataset):
         self.csv = pd.read_csv(self.csvpath)
         self.metacsvpath = metacsvpath
         self.metacsv = pd.read_csv(self.metacsvpath)
-
 
         self.csv = self.csv.set_index(['subject_id', 'study_id'])
 
@@ -938,6 +946,8 @@ class MIMIC_Dataset(TarDataset):
         
         # rename pathologies
         self.pathologies = np.char.replace(self.pathologies, "Pleural Effusion", "Effusion")
+
+        super(MIMIC_Dataset, self).__init__(imgpath)
         
         
     def __repr__(self):
@@ -947,13 +957,16 @@ class MIMIC_Dataset(TarDataset):
     def __len__(self):
         return len(self.labels)
 
-    def __getitem__(self, idx):
-        
+    def get_imgid(self, idx):
         subjectid = str(self.csv.iloc[idx]["subject_id"])
         studyid = str(self.csv.iloc[idx]["study_id"])
         dicom_id = str(self.csv.iloc[idx]["dicom_id"])
-        
         img_fname = os.path.join("p" + subjectid[:2], "p" + subjectid, "s" + studyid, dicom_id + ".jpg")
+        return img_fname
+
+    def __getitem__(self, idx):
+        img_fname = self.get_imgid(idx)
+
         img = self.get_image(img_fname)
         img = normalize(img, self.MAXVAL)
         
