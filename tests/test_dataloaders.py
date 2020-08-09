@@ -49,7 +49,7 @@ def test_dataloader_merging_incorrect_alignment():
     
 def test_mimic_tar():
     #Load tarred and untarred datasets
-    mimic_test_dir = Path("tests/gen_mimic")
+    mimic_test_dir = Path("gen_mimic")
     metacsvpath = mimic_test_dir/"mimic-cxr-2.0.0-metadata.csv"
     csvpath = mimic_test_dir/"mimic-cxr-2.0.0-negbio.csv"
     tarred = xrv.datasets.MIMIC_Dataset(
