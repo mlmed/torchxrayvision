@@ -8,7 +8,6 @@ from torchvision import transforms
 from tqdm import tqdm
 import numpy as np
 from io import BytesIO
-import tarfile
 import os,sys,os.path
 import pandas as pd
 import pickle
@@ -211,15 +210,18 @@ class TarDataset(Dataset):
                 self.tarred, self.filename_mapping = tarfile_contents[absolute_tarpath]
             else:
                 self.tarred = tarfile.open(imgpath)
-                self.tar_paths = self.tarred.getnames()
-                for tar_path in self.tar_paths:
-                    if tar_path.endswith("jpg"):
+                tar_infos = self.tarred.getmembers()
+                print("tarpaths")
+                for tar_info in tar_infos:
+                    if tar_info.type != "DIRTYPE":
+                        tar_path = tar_info.name
                         tar_path_part, filename = os.path.split(tar_path)
                         for i in range(self.path_length - 1):
                             tar_path_part, filename_part = os.path.split(tar_path_part)
                             filename = os.path.join(filename_part, filename)
                         self.filename_mapping[filename] = tar_path
                 tarfile_contents[absolute_tarpath] = self.tarred, self.filename_mapping
+            print(self.filename_mapping)
         else:
             self.tarred = None
 
@@ -231,7 +233,16 @@ class TarDataset(Dataset):
             bytes = self.tarred.extractfile(tar_path).read()
             return np.array(Image.open(BytesIO(bytes)))
 
+    def check_paths_exist(self):
+        #if self.imagezipfile is not None:
+            
+        if not (os.path.isdir(self.imgpath) or tarfile.is_tarfile(self.imgpath)):
+            raise Exception("imgpath must be a directory or tarfile")
+        if not os.path.isfile(self.csvpath):
+            raise Exception("csvpath must be a file")
+
 class NIH_Dataset(TarDataset):
+    path_length = 1
     """
     NIH ChestX-ray8 dataset
 
