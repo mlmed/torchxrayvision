@@ -1,5 +1,7 @@
 import pytest
+import pickle
 import torchxrayvision as xrv
+from pathlib import Path
  
 dataset_classes = [xrv.datasets.NIH_Dataset,
                    xrv.datasets.PC_Dataset,
@@ -45,3 +47,21 @@ def test_dataloader_merging_incorrect_alignment():
         
     assert "incorrect pathology alignment" in str(excinfo.value)
     
+def test_mimic_tar():
+    #Load tarred and untarred datasets
+    mimic_test_dir = Path("tests/gen_mimic")
+    metacsvpath = mimic_test_dir/"mimic-cxr-2.0.0-metadata.csv"
+    csvpath = mimic_test_dir/"mimic-cxr-2.0.0-negbio.csv"
+    tarred = xrv.datasets.MIMIC_Dataset(
+        imgpath=mimic_test_dir/"images-224.tar",
+        csvpath=csvpath,
+        metacsvpath=metacsvpath,
+    )
+    extracted = xrv.datasets.MIMIC_Dataset(
+        imgpath=mimic_test_dir/"images-224"/"files",
+        csvpath=csvpath,
+        metacsvpath=metacsvpath
+    )
+    #Assert items are the same
+    for tarred_item, extracted_item in zip(tarred, extracted):
+        assert pickle.dumps(tarred_item) == pickle.dumps(extracted_item)
