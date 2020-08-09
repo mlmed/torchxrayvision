@@ -1,6 +1,7 @@
 import pytest
 import pickle
 import torchxrayvision as xrv
+import os
 from pathlib import Path
  
 dataset_classes = [xrv.datasets.NIH_Dataset,
@@ -48,8 +49,9 @@ def test_dataloader_merging_incorrect_alignment():
     assert "incorrect pathology alignment" in str(excinfo.value)
     
 def test_mimic_tar():
+    print(os.getcwd())
     #Load tarred and untarred datasets
-    mimic_test_dir = Path("gen_mimic")
+    mimic_test_dir = Path("tests/gen_mimic")
     metacsvpath = mimic_test_dir/"mimic-cxr-2.0.0-metadata.csv"
     csvpath = mimic_test_dir/"mimic-cxr-2.0.0-negbio.csv"
     tarred = xrv.datasets.MIMIC_Dataset(

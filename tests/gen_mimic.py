@@ -107,6 +107,7 @@ def generate_test_images(random_metadata, extracted, tarname, dimensions):
         generate_random_image(dimensions).save(img_path)
     tarred = tarfile.TarFile.open(tarname, "w")
     tarred.add(extracted)
+    tarred.close()
 
 def generate_test_data(n, directory, dimensions=(224, 224), tarname=None, extracted=None):
     directory = Path(directory)

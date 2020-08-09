@@ -1,11 +1,11 @@
 dicom_id,subject_id,study_id,PerformedProcedureStepDescription,ViewPosition,Rows,Columns,StudyDate,StudyTime,ProcedureCodeSequence_CodeMeaning,ViewCodeSequence_CodeMeaning,PatientOrientationCodeSequence_CodeMeaning
-e5ce94fb-90955d5d-5c7a4c11-8db716bb,a70cb8db,07eacc76,CHEST (PA AND LAT),PA,224,224,0,0,CHEST (PA AND LAT),postero-anterior,Erect
-1f3c638a-e4844bfc-dcbbfc10-8a0cc71c,8ebfeda5,70705588,CHEST (PA AND LAT),LATERAL,224,224,0,0,CHEST (PA AND LAT),lateral,Recumbent
-aae03d7a-e16fa38c-8656b49d-9fd28376,ce5242a2,10b21223,CHEST (PA AND LAT),LATERAL,224,224,0,0,CHEST (PA AND LAT),lateral,Erect
-725fda26-4d46206e-3c37e541-fea8a836,bd6f6445,e3b296ad,CHEST (PA AND LAT),PA,224,224,0,0,CHEST (PA AND LAT),postero-anterior,Erect
-59d8c93d-a81a8b6f-cf4603aa-58c1bd3f,20b295ad,1427bd21,CHEST (PA AND LAT),PA,224,224,0,0,CHEST (PA AND LAT),postero-anterior,Erect
-d8f741cc-5a4a1760-b6d254f6-27283d44,41cf86ae,5beae017,CHEST (PA AND LAT),PA,224,224,0,0,CHEST (PA AND LAT),postero-anterior,Recumbent
-c64423ec-029fb876-bfca6f94-7c728757,467a0f6a,bf161f1c,CHEST (PA AND LAT),LATERAL,224,224,0,0,CHEST (PA AND LAT),lateral,Erect
-89aa4a05-4d9851d9-9302caef-06b28de1,24e3a4bb,06eea572,CHEST (PA AND LAT),PA,224,224,0,0,CHEST (PA AND LAT),postero-anterior,Erect
-2dc30e97-a2a94a74-4338318e-3619c4ae,cd435694,60638bce,CHEST (PA AND LAT),PA,224,224,0,0,CHEST (PA AND LAT),postero-anterior,Recumbent
-8ed429bf-3dcf34fb-2f3d28b4-022700b0,758d8d65,47afa62f,CHEST (PA AND LAT),PA,224,224,0,0,CHEST (PA AND LAT),postero-anterior,Recumbent
+c5402f0b-2ecf6365-bd88b424-252ad568,085cff35,a433a81c,CHEST (PA AND LAT),PA,224,224,0,0,CHEST (PA AND LAT),postero-anterior,Recumbent
+63036743-d14a06a9-2784f480-257e30e1,edc6b925,d03e6b53,CHEST (PA AND LAT),PA,224,224,0,0,CHEST (PA AND LAT),postero-anterior,Recumbent
+9160eb4a-257a3140-8f138287-8981fc11,0639398e,ab8e71f2,CHEST (PA AND LAT),LATERAL,224,224,0,0,CHEST (PA AND LAT),lateral,Recumbent
+746857e8-930e2b92-830ba925-90a97e7e,67111dd3,97d40f2a,CHEST (PA AND LAT),PA,224,224,0,0,CHEST (PA AND LAT),postero-anterior,Recumbent
+1d5cc6d7-8c6bc168-7b694c53-4df47582,182aeefb,5239d871,CHEST (PA AND LAT),LATERAL,224,224,0,0,CHEST (PA AND LAT),lateral,Recumbent
+7d4c4448-a12969b6-e4f1fce9-e42b5a6c,88530ff8,732de0c4,CHEST (PA AND LAT),LATERAL,224,224,0,0,CHEST (PA AND LAT),lateral,Erect
+c94bbfae-e39038df-5b7efb8e-31f9ee55,32b572e6,9ba81d90,CHEST (PA AND LAT),LATERAL,224,224,0,0,CHEST (PA AND LAT),lateral,Erect
+da54bf19-4bfcbe16-b364a677-b61c0743,636c6ae0,c8cca22c,CHEST (PA AND LAT),LATERAL,224,224,0,0,CHEST (PA AND LAT),lateral,Erect
+d8d6c36e-f6d5be79-6d8d0627-4d147195,709a3d20,04003d64,CHEST (PA AND LAT),PA,224,224,0,0,CHEST (PA AND LAT),postero-anterior,Erect
+1c9bdf33-12762299-6e5a617d-b2b0ef88,700bf17d,da301b01,CHEST (PA AND LAT),PA,224,224,0,0,CHEST (PA AND LAT),postero-anterior,Recumbent
