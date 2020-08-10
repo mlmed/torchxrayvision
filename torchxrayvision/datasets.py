@@ -199,7 +199,93 @@ class SubsetDataset(Dataset):
     def __getitem__(self, idx):
         return self.dataset[self.idxs[idx]]
 
+class CompressedInterface:
+    def __init__(self, filename):
+        self.compressed, self.filename_mapping = self.get_cached_filename_mapping()
+        if self.compressed is None:
+            self.compressed, self.filename_mapping = self.index(filename)
+    def get_cached_filename_mapping(self):
+        pass
+    def get_image(self, imgid):
+        archive_path = self.filename_mapping[imgid]
+        return self.extract_from_file(archive_path)
+
+def last_n_in_filepath(filepath, n):
+    if n < 1:
+        return ""
+    start_part, end_part = os.path.split(filepath)
+    for i in range(n - 1):
+        start_part, middle_part = os.path.split(start_part)
+        end_part = os.path.join(middle_part, end_part)
+    return end_part
+
+class TarInterface(CompressedInterface):
+    @classmethod
+    def matches(cls, filename):
+        return tarfile.is_tarfile(filename)
+    def index(self, imgpath):
+        compressed = tarfile.open(imgpath)
+        tar_infos = compressed.getmembers()
+        filename_mapping = {}
+        for tar_info in tar_infos:
+            if tar_info.type != "DIRTYPE":
+                tar_path = tar_info.name
+                imgid = last_n_in_filepath(tar_path)
+            filename_mapping[imgid] = tar_path
+        return compressed, filename_mapping
+#                tarfile_contents[absolute_tarpath] = self.tarred, self.filename_mapping
+    def extract_from_file(self, tar_path):
+        bytes = self.compressed.extractfile(tar_path).read()
+        return np.array(Image.open(BytesIO(bytes)))
+
+class ZipInterface(CompressedInterface):
+    @classmethod
+    def matches(cls, filename):
+        return zipfile.is_zipfile(filename)
+    def index(self, imgpath):
+        compressed = ZipFile(imgpath)
+        zip_infos = compressed.infolist()
+        for zip_info in zip_infos:
+            if not zip_info.is_dir():
+                zip_path = zip_path.filename
+                imgid = last_n_in_filepath(zip_path)
+            filename_mapping[imgid] = zip_path
+    def extract_from_file(self, zip_path):
+        bytes = self.compressed.open(zip_path)
+        return np.array(Image.open(BytesIO(bytes))
+
+class FolderInterface:
+    @classmethod
+    def matches(cls, filename):
+        return os.path.is_dir(filename)
+    def __init__(self, path):
+        self.path = path
+    def get_image(self, imgid):
+        return imread(os.path.join(self.path, imgid))
+
+class StorageAgnosticDataset:
+    path_length = None
+    def __init__(self):
+        interfaces = [FolderInterface, TarInterface, ZipInterface]
+        for interface in self.interfaces:
+            if interface.matches(filename):
+                self.interface = interface(filename, self.path_length)
+        #else:
+        #    raise ValueError("No matching interface for {}".format(filename))
+
+class ZipDataset(Dataset):
+    def __init__(self, imgpath):
+        pass
+
 class TarDataset(Dataset):
+    def is_compressed(self, filename):
+        return tarfile.is_tarfile(filename)
+    def index_files(self):
+        tar_path = self.filename_mapping[path]
+        bytes = self.tarred.extractfile(tar_path).read()
+        return np.array(Image.open(BytesIO(bytes)))
+
+class TarDatasetOriginal(Dataset):
     path_length = None
     def __init__(self, imgpath):
         self.filename_mapping = {}
