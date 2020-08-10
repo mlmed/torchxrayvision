@@ -277,7 +277,7 @@ class ZipDataset(Dataset):
     def __init__(self, imgpath):
         pass
 
-class TarDataset(Dataset):
+class TarDataset(StorageAgnosticDataset):
     def is_compressed(self, filename):
         return tarfile.is_tarfile(filename)
     def index_files(self):
