@@ -200,12 +200,13 @@ class SubsetDataset(Dataset):
         return self.dataset[self.idxs[idx]]
 
 class CompressedInterface:
-    def __init__(self, filename):
+    def __init__(self, filename, path_length):
+        self.path_length = path_length
         self.compressed, self.filename_mapping = self.get_cached_filename_mapping()
         if self.compressed is None:
             self.compressed, self.filename_mapping = self.index(filename)
     def get_cached_filename_mapping(self):
-        pass
+        return None, None
     def get_image(self, imgid):
         archive_path = self.filename_mapping[imgid]
         return self.extract_from_file(archive_path)
@@ -230,7 +231,7 @@ class TarInterface(CompressedInterface):
         for tar_info in tar_infos:
             if tar_info.type != "DIRTYPE":
                 tar_path = tar_info.name
-                imgid = last_n_in_filepath(tar_path)
+                imgid = last_n_in_filepath(tar_path, self.path_length)
             filename_mapping[imgid] = tar_path
         return compressed, filename_mapping
 #                tarfile_contents[absolute_tarpath] = self.tarred, self.filename_mapping
@@ -252,22 +253,22 @@ class ZipInterface(CompressedInterface):
             filename_mapping[imgid] = zip_path
     def extract_from_file(self, zip_path):
         bytes = self.compressed.open(zip_path)
-        return np.array(Image.open(BytesIO(bytes))
+        return np.array(Image.open(BytesIO(bytes)))
 
 class FolderInterface:
     @classmethod
     def matches(cls, filename):
-        return os.path.is_dir(filename)
-    def __init__(self, path):
+        return os.path.isdir(filename)
+    def __init__(self, path, *args):
         self.path = path
     def get_image(self, imgid):
         return imread(os.path.join(self.path, imgid))
 
 class StorageAgnosticDataset:
     path_length = None
-    def __init__(self):
+    def __init__(self, filename):
         interfaces = [FolderInterface, TarInterface, ZipInterface]
-        for interface in self.interfaces:
+        for interface in interfaces:
             if interface.matches(filename):
                 self.interface = interface(filename, self.path_length)
         #else:
@@ -971,7 +972,7 @@ Jeremy Irvin *, Pranav Rajpurkar *, Michael Ko, Yifan Yu, Silviana Ciurea-Ilcus,
 
         return {"img":img, "lab":self.labels[idx], "idx":idx}
     
-class MIMIC_Dataset(TarDataset):
+class MIMIC_Dataset(StorageAgnosticDataset):
     path_length = 4
     """
     Johnson AE, Pollard TJ, Berkowitz S, Greenbaum NR, Lungren MP, Deng CY, Mark RG, Horng S. MIMIC-CXR: A large publicly available database of labeled chest radiographs. arXiv preprint arXiv:1901.07042. 2019 Jan 21.
@@ -1065,7 +1066,7 @@ class MIMIC_Dataset(TarDataset):
     def __getitem__(self, idx):
         img_fname = self.get_imgid(idx)
 
-        img = self.get_image(img_fname)
+        img = self.interface.get_image(img_fname)
         img = normalize(img, self.MAXVAL)
         
         # Check that images are 2D arrays
