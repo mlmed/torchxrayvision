@@ -664,7 +664,8 @@ class NIH_Google_Dataset(Dataset):
         return {"img":img, "lab":self.labels[idx], "idx":idx}
     
     
-class PC_Dataset(Dataset):
+class PC_Dataset(TarDataset):
+    path_length = 1
     """
     PadChest dataset
     Hospital San Juan de Alicante – University of Alicante
@@ -687,7 +688,7 @@ class PC_Dataset(Dataset):
                  seed=0, 
                  unique_patients=True):
 
-        super(PC_Dataset, self).__init__()
+        super(PC_Dataset, self).__init__(imgpath)
         np.random.seed(seed)  # Reset the seed so all runs are the same.
 
         self.pathologies = ["Atelectasis", "Consolidation", "Infiltration",
