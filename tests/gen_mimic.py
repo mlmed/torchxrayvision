@@ -8,6 +8,8 @@ import argparse
 from pathlib import Path
 import os
 
+from random_data import write_random_images
+
 def show(x):
     print(x)
     return x
@@ -91,35 +93,30 @@ def generate_random_metadata(n, dimensions):
     return pd.DataFrame(meta_rows), pd.DataFrame(csv_rows)
 
 
-def generate_random_image(dimensions):
-    return Image.fromarray(np.random.random(dimensions)).convert("L")
 
-def generate_test_images(random_metadata, extracted, tarname, dimensions):
+def generate_test_images(random_metadata, extracted, tarname, zipname, dimensions):
+    paths = []
     for _, row in random_metadata.iterrows():
         subjectid = row["subject_id"]
         studyid = row["study_id"]
         dicom_id = row["dicom_id"]
         img_fname = os.path.join("p" + subjectid[:2], "p" + subjectid, "s" + studyid, dicom_id + ".jpg")
-        print(type(extracted))
-        img_path = extracted/"files"/img_fname
-        print(img_path)
-        os.makedirs(os.path.dirname(img_path))
-        generate_random_image(dimensions).save(img_path)
-    tarred = tarfile.TarFile.open(tarname, "w")
-    tarred.add(extracted)
-    tarred.close()
+        paths.append(Path("files")/img_fname)
+    write_random_images(paths, extracted, tarname, zipname, dimensions)
 
-def generate_test_data(n, directory, dimensions=(224, 224), tarname=None, extracted=None):
+def generate_test_data(n, directory, dimensions=(224, 224), tarname=None, zipname=None, extracted=None):
     directory = Path(directory)
     if tarname is None:
         tarname = directory/"images-224.tar"
+    if zipname is None:
+        zipname = directory/"images-224.zip"
     if extracted is None:
         extracted = directory/"images-224"
     random_metadata, random_csvdata = generate_random_metadata(
         n,
         dimensions
     )
-    generate_test_images(random_metadata, extracted, tarname, dimensions)
+    generate_test_images(random_metadata, extracted, tarname, zipname, dimensions)
     random_metadata.to_csv(
         directory/mimic_metadata_filename,
         index=False
