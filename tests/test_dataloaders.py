@@ -3,7 +3,7 @@ import pickle
 import torchxrayvision as xrv
 import os
 from pathlib import Path
- 
+
 dataset_classes = [xrv.datasets.NIH_Dataset,
                    xrv.datasets.PC_Dataset,
                    xrv.datasets.NIH_Google_Dataset,
@@ -67,3 +67,47 @@ def test_mimic_tar():
     #Assert items are the same
     for tarred_item, extracted_item in zip(tarred, extracted):
         assert pickle.dumps(tarred_item) == pickle.dumps(extracted_item)
+
+def all_equal(items):
+    if len(items) == 1:
+        return True
+    return all([item == items[0] for item in items[1:]])
+
+def _test_opening_formats(dataset_class, imgpaths, **kwargs):
+    sources = [dataset_class(imgpath=path, **kwargs) for path in imgpaths]
+    for one_item_from_each in zip(*sources):
+        assert all_equal([pickle.dumps(item) for item in one_item_from_each])
+
+def test_mimic_formats():
+    _test_opening_formats(
+        xrv.datasets.MIMIC_Dataset,
+        imgpaths=[
+            "tests/gen_mimic/images-224/files",
+            "tests/gen_mimic/images-224.tar",
+            "tests/gen_mimic/images-224.zip"
+        ],
+        csvpath="tests/gen_mimic/mimic-cxr-2.0.0-negbio.csv",
+        metacsvpath="tests/gen_mimic/mimic-cxr-2.0.0-metadata.csv"
+    )
+
+def test_nih_formats():
+    _test_opening_formats(
+        xrv.datasets.NIH_Dataset,
+        imgpaths=[
+            "tests/NIH_test_data/folder",
+            "tests/NIH_test_data/tar.tar",
+            "tests/NIH_test_data/zip.zip"
+        ],
+        csvpath="tests/nih.csv"
+    )
+
+def test_pc_formats():
+    _test_opening_formats(
+        xrv.datasets.PC_Dataset,
+        imgpaths=[
+            "tests/PC_test_data/folder",
+            "tests/PC_test_data/tar.tar",
+            "tests/PC_test_data/zip.zip"
+        ],
+        csvpath="tests/pc.csv"
+    )
