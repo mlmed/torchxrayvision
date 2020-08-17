@@ -43,11 +43,12 @@ Note: Each pretrained model has 18 outputs. The `all` model has every output tra
 
 ```python3
 model = xrv.models.DenseNet(weights="all")
-model = xrv.models.DenseNet(weights="kaggle")
-model = xrv.models.DenseNet(weights="nih")
-model = xrv.models.DenseNet(weights="chex")
-model = xrv.models.DenseNet(weights="minix_nb")
-model = xrv.models.DenseNet(weights="minix_ch")
+model = xrv.models.DenseNet(weights="kaggle") # RSNA Pneumonia Challenge
+model = xrv.models.DenseNet(weights="nih") # NIH chest X-ray8
+model = xrv.models.DenseNet(weights="pc") # PadChest (University of Alicante)
+model = xrv.models.DenseNet(weights="chex") # CheXpert (Stanford)
+model = xrv.models.DenseNet(weights="minix_nb") # MIMIC-CXR (MIT)
+model = xrv.models.DenseNet(weights="minix_ch") # MIMIC-CXR (MIT)
 
 ```
 
