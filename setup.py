@@ -32,5 +32,5 @@ setuptools.setup(
     ],
     packages=['torchxrayvision'],
     package_dir={'torchxrayvision': 'torchxrayvision'},
-    package_data={'torchxrayvision': ['*']},
+    package_data={'torchxrayvision': ['*.gz','*.tgz','*.zip']},
 )
