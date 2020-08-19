@@ -5,14 +5,14 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="torchxrayvision",
-    version="0.0.14",
+    version="0.0.15",
     author="Joseph Paul Cohen",
     author_email="joseph@josephpcohen.com",
     description="TorchXrayVision: A library of chest X-ray datasets and models",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/mlmed/torchxrayvision",
-    packages=setuptools.find_packages(),
+#    packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
@@ -30,4 +30,7 @@ setuptools.setup(
         'pydicom>=1',
         'requests>=1'
     ],
+    packages=['torchxrayvision'],
+    package_dir={'torchxrayvision': 'torchxrayvision'},
+    package_data={'torchxrayvision': ['*']},
 )
