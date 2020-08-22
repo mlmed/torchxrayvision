@@ -1,3 +1,5 @@
+<img src="docs/torchxrayvision-logo.png" width="300px"/>
+
 # torchxrayvision
 
 A library for chest X-ray datasets and models. Including pre-trainined models.
