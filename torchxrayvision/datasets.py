@@ -366,7 +366,7 @@ def create_interface(filename, path_length):
         if interface.matches(filename):
             return interface(filename, path_length)
 
-class NIH_Dataset:
+class NIH_Dataset(Dataset):
     path_length = 1
     """
     NIH ChestX-ray8 dataset
