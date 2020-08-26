@@ -9,6 +9,7 @@ from tqdm import tqdm
 import numpy as np
 from io import BytesIO
 import os,sys,os.path
+import pdb
 import pandas as pd
 import pickle
 import pydicom
@@ -25,6 +26,9 @@ import warnings
 import tarfile
 import zipfile
 import random
+from pathlib import Path
+
+Image.init()
 
 default_pathologies = [  'Atelectasis',
                  'Consolidation',
@@ -208,17 +212,45 @@ def last_n_in_filepath(filepath, n):
         end_part = os.path.join(middle_part, end_part)
     return end_part
 
-class TarInterface:
+#TODO:use .torchxrayvision
+
+stored_mapping_filename = "stored_mappings"
+
+if os.path.exists(stored_mapping_filename):
+    with open(stored_mapping_filename, "rb") as handle:
+        stored_mappings = pickle.load(handle)
+else:
+    stored_mappings = {}
+
+class Interface:
+    path_length = 0
+    def load_dataset(self, filename):
+        timestamp = os.path.getmtime(filename)
+        if not (filename, timestamp) in stored_mappings:
+            compressed, mapping = self.index(filename)
+            compressed = [i.offset for i in compressed.members]
+            stored_mappings[(filename, timestamp)] = (compressed, mapping)
+            with open(stored_mapping_filename,"wb") as handle:
+                print(stored_mappings)
+                print(handle)
+                pickle.dump(stored_mappings, handle)
+        else:
+            compressed_offsets, mapping = zip_mapping[(filename, timestamp)]
+            compressed = 
+        return compressed, mapping
+    def convert_to_image(self, filename, bytes):
+        if str(filename).endswith(".dcm"):
+            return pydicom.filereader.dcmread(BytesIO(bytes), force=True).pixel_array
+        else:
+            return np.array(Image.open(BytesIO(bytes)))
+
+class TarInterface(Interface):
     @classmethod
     def matches(cls, filename):
-        return tarfile.is_tarfile(filename)
+        return not os.path.isdir(filename) and tarfile.is_tarfile(filename)
     def __init__(self, filename, path_length):
         self.path_length = path_length
-        self.compressed, self.filename_mapping = self.get_cached_filename_mapping()
-        if self.compressed is None:
-            self.compressed, self.filename_mapping = self.index(filename)
-    def get_cached_filename_mapping(self):
-        return None, None
+        self.compressed, self.filename_mapping = self.load_dataset(filename)
     def get_image(self, imgid):
         archive_path = self.filename_mapping[imgid]
         return self.extract_from_file(archive_path)
@@ -232,21 +264,19 @@ class TarInterface:
                 imgid = last_n_in_filepath(tar_path, self.path_length)
             filename_mapping[imgid] = tar_path
         return compressed, filename_mapping
+    def close(self):
+        self.compressed.close()
     def extract_from_file(self, tar_path):
         bytes = self.compressed.extractfile(tar_path).read()
-        return np.array(Image.open(BytesIO(bytes)))
+        return self.convert_to_image(tar_path, bytes)
 
-class ZipInterface:
+class ZipInterface(Interface):
     @classmethod
     def matches(cls, filename):
-        return zipfile.is_zipfile(filename)
+        return not os.path.isdir(filename) and zipfile.is_zipfile(filename)
     def __init__(self, filename, path_length):
         self.path_length = path_length
-        self.compressed, self.filename_mapping = self.get_cached_filename_mapping()
-        if self.compressed is None:
-            self.compressed, self.filename_mapping = self.index(filename)
-    def get_cached_filename_mapping(self):
-        return None, None
+        self.compressed, self.filename_mapping = self.load_dataset(filename)
     def get_image(self, imgid):
         archive_path = self.filename_mapping[imgid]
         return self.extract_from_file(archive_path)
@@ -255,27 +285,83 @@ class ZipInterface:
         zip_infos = compressed.infolist()
         filename_mapping = {}
         for zip_info in zip_infos:
-                print(zip_info)
-            #if not zip_info.is_dir():
+#                print(zip_info)
+            if not zip_info.is_dir():
                 zip_path = zip_info.filename
                 imgid = last_n_in_filepath(zip_path, self.path_length)
                 filename_mapping[imgid] = zip_path
         return compressed, filename_mapping
     def extract_from_file(self, zip_path):
         bytes = self.compressed.open(zip_path).read()
-        return np.array(Image.open(BytesIO(bytes)))
+        return self.convert_to_image(zip_path, bytes)
+    def close(self):
+        self.compressed.close()
 
-class FolderInterface:
+class FolderInterface(Interface):
     @classmethod
     def matches(cls, filename):
         return os.path.isdir(filename)
-    def __init__(self, path, *args):
-        self.path = path
+    def __init__(self, filename, path_length):
+        self.path_length = path_length
+        self.path, self.filename_mapping = self.load_dataset(filename)
     def get_image(self, imgid):
-        return imread(os.path.join(self.path, imgid))
+        archive_path = self.filename_mapping[imgid]
+        with open(archive_path,"rb") as handle:
+            image = self.convert_to_image(archive_path, handle.read())
+        return image
+    def index(self, imgpath):
+        filename_mapping = {}
+        for path in Path(imgpath).rglob("*"):
+            #print(path)
+            if not os.path.isdir(path):
+                imgid = last_n_in_filepath(path, self.path_length)
+                filename_mapping[imgid] = path
+        #print(filename_mapping)
+        return imgpath, filename_mapping
+    def close(self):
+        pass
+
+def is_image(filename):
+    _, extension = os.path.splitext(filename)
+    return extension in Image.EXTENSION
+
+archive_interfaces = [ZipInterface, TarInterface]
+
+def is_archive(filename):
+    return any(interface.matches(filename) for interface in archive_interfaces)
+
+class ArchiveFolder(Interface):
+    @classmethod
+    def matches(cls, filename):
+        #print("Checking archive folder")
+        for item in Path(filename).rglob("*"):
+            if is_image(item):
+                return False
+            if is_archive(item):
+                return True
+        return False
+    def __init__(self, filename, path_length):
+        self.path_length = path_length
+        self.archives, self.filename_mapping = self.load_dataset(filename)
+    def get_image(self, imgid):
+        path_to_archive = self.filename_mapping[imgid]
+        return self.archives[path_to_archive].get_image(imgid)
+    def index(self, filename):
+        filename_mapping = {}
+        archives = {}
+        for path_to_archive in Path(filename).rglob("*"):
+            if is_archive(path_to_archive):
+                archive = create_interface(path_to_archive, self.path_length)
+                archives[path_to_archive] = archive
+                for path_in_csv, path_in_archive in archive.filename_mapping.items():
+                    filename_mapping[path_in_csv] = path_to_archive
+        return archives, filename_mapping
+    def close(self):
+        for archive_path, archive in self.archives.items():
+            archive.close()
 
 def create_interface(filename, path_length):
-    interfaces = [FolderInterface, TarInterface, ZipInterface]
+    interfaces = [ArchiveFolder, FolderInterface, TarInterface, ZipInterface]
     for interface in interfaces:
         if interface.matches(filename):
             return interface(filename, path_length)
@@ -441,6 +527,7 @@ class NIH_Dataset:
         return path_mask
     
 class RSNA_Pneumonia_Dataset(Dataset):
+    path_length = 1
     """
     RSNA Pneumonia Detection Challenge
     
@@ -518,6 +605,8 @@ class RSNA_Pneumonia_Dataset(Dataset):
         self.labels = np.asarray(self.labels).T
         self.labels = self.labels.astype(np.float32)
 
+        self.image_interface = create_interface(imgpath, self.path_length)
+
     def __repr__(self):
         pprint.pprint(self.totals())
         return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
@@ -531,13 +620,15 @@ class RSNA_Pneumonia_Dataset(Dataset):
         sample["idx"] = idx
         sample["lab"] = self.labels[idx]
         
-        imgid = self.csv['patientId'].iloc[idx]
-        img_path = os.path.join(self.imgpath, imgid + self.extension)
+        imgid = self.csv['patientId'].iloc[idx] + self.extension
+        #img_path = os.path.join(self.imgpath, imgid + self.extension)
         #print(img_path)
-        if self.use_pydicom:
-            img=pydicom.filereader.dcmread(img_path).pixel_array
-        else:
-            img = imread(img_path)
+        
+        #if self.use_pydicom:
+        #    img=pydicom.filereader.dcmread(img_path).pixel_array
+        #else:
+        #    img = imread(img_path)
+        img = self.image_interface.get_image(imgid)
         if self.normalize:
             img = normalize(img, self.MAXVAL)  
 
@@ -604,7 +695,7 @@ class RSNA_Pneumonia_Dataset(Dataset):
         return path_mask
 
 class NIH_Google_Dataset(Dataset):
-
+    path_length = 1
     """
     Chest Radiograph Interpretation with Deep Learning Models: Assessment with 
     Radiologist-adjudicated Reference Standards and Population-adjusted Evaluation
@@ -669,6 +760,8 @@ class NIH_Google_Dataset(Dataset):
         # rename pathologies
         self.pathologies = np.char.replace(self.pathologies, "Airspace opacity", "Lung Opacity")
 
+        self.image_interface = create_interface(imgpath, self.path_length)
+
     def __repr__(self):
         pprint.pprint(self.totals())
         return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
@@ -678,9 +771,10 @@ class NIH_Google_Dataset(Dataset):
 
     def __getitem__(self, idx):
         imgid = self.csv['Image Index'].iloc[idx]
-        img_path = os.path.join(self.imgpath, imgid)
+        #img_path = os.path.join(self.imgpath, imgid)
         #print(img_path)
-        img = imread(img_path)
+        #img = imread(img_path)
+        img = self.image_interface.get(imgid)
         if self.normalize:
             img = normalize(img, self.MAXVAL)  
 
@@ -824,6 +918,7 @@ class PC_Dataset(Dataset):
         return {"img":img, "lab":self.labels[idx], "idx":idx}
 
 class CheX_Dataset(Dataset):
+    path_length = 3 #due to removing CheXpert-... and train in __getitem__
     """
     CheXpert: A Large Chest Radiograph Dataset with Uncertainty Labels and Expert Comparison.
 Jeremy Irvin *, Pranav Rajpurkar *, Michael Ko, Yifan Yu, Silviana Ciurea-Ilcus, Chris Chute, Henrik Marklund, Behzad Haghgoo, Robyn Ball, Katie Shpanskaya, Jayne Seekins, David A. Mong, Safwan S. Halabi, Jesse K. Sandberg, Ricky Jones, David B. Larson, Curtis P. Langlotz, Bhavik N. Patel, Matthew P. Lungren, Andrew Y. Ng
@@ -890,6 +985,8 @@ Jeremy Irvin *, Pranav Rajpurkar *, Michael Ko, Yifan Yu, Silviana Ciurea-Ilcus,
         self.pathologies = list(np.char.replace(self.pathologies, "Pleural Effusion", "Effusion"))
         
         
+        self.image_interface = create_interface(imgpath, self.path_length)
+
     def __repr__(self):
         pprint.pprint(self.totals())
         return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
@@ -900,9 +997,11 @@ Jeremy Irvin *, Pranav Rajpurkar *, Michael Ko, Yifan Yu, Silviana Ciurea-Ilcus,
     def __getitem__(self, idx):
         
         imgid = self.csv['Path'].iloc[idx]
-        imgid = imgid.replace("CheXpert-v1.0-small/","")
-        img_path = os.path.join(self.imgpath, imgid)
-        img = imread(img_path)
+        imgid = last_n_in_filepath(imgid, self.path_length)
+        #imgid = imgid.replace("CheXpert-v1.0-small/","")
+        #img_path = os.path.join(self.imgpath, imgid)
+        img = self.image_interface.get_image(imgid)
+        #img = imread(img_path)
         img = normalize(img, self.MAXVAL)      
         
         # Check that images are 2D arrays
@@ -1037,6 +1136,7 @@ class MIMIC_Dataset(Dataset):
         return {"img":img, "lab":self.labels[idx], "idx":idx}
     
 class Openi_Dataset(Dataset):
+    path_length = 1
     """
     OpenI 
     
@@ -1142,6 +1242,8 @@ class Openi_Dataset(Dataset):
         self.pathologies = np.char.replace(self.pathologies, "Opacity", "Lung Opacity")
         self.pathologies = np.char.replace(self.pathologies, "Lesion", "Lung Lesion")
 
+        self.image_interface = create_interface(imgpath, self.path_length)
+
     def __repr__(self):
         pprint.pprint(self.totals())
         return self.__class__.__name__ + " num_samples={}".format(len(self))
@@ -1150,10 +1252,10 @@ class Openi_Dataset(Dataset):
         return len(self.labels)
 
     def __getitem__(self, idx):
-        imageid = self.csv.iloc[idx].imageid
-        img_path = os.path.join(self.imgpath,imageid + ".png")
+        imageid = self.csv.iloc[idx].imageid + ".png"
+        #img_path = os.path.join(self.imgpath,imageid + ".png")
         #print(img_path)
-        img = imread(img_path)
+        img = self.image_interface.get_image(imageid)
         img = normalize(img, self.MAXVAL)  
 
         # Check that images are 2D arrays
@@ -1174,6 +1276,7 @@ class Openi_Dataset(Dataset):
         return {"img":img, "lab":self.labels[idx], "idx":idx}
 
 class COVID19_Dataset(Dataset):
+    path_length = 1
     """
     COVID-19 image data collection
 
@@ -1233,6 +1336,8 @@ class COVID19_Dataset(Dataset):
         self.labels = np.asarray(self.labels).T
         self.labels = self.labels.astype(np.float32)
 
+        self.image_interface = create_interface(imgpath, self.path_length)
+
     def __repr__(self):
         pprint.pprint(self.totals())
         return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
@@ -1242,9 +1347,10 @@ class COVID19_Dataset(Dataset):
 
     def __getitem__(self, idx):
         imgid = self.csv['filename'].iloc[idx]
-        img_path = os.path.join(self.imgpath, imgid)
+        #img_path = os.path.join(self.imgpath, imgid)
         #print(img_path)
-        img = imread(img_path)
+        #img = imread(img_path)
+        img = self.image_interface.get_image(imgid)
         img = normalize(img, self.MAXVAL)  
 
         # Check that images are 2D arrays
@@ -1265,6 +1371,7 @@ class COVID19_Dataset(Dataset):
         return {"img":img, "lab":self.labels[idx], "idx":idx}
     
 class NLMTB_Dataset(Dataset):
+    path_length = 2
     """
     National Library of Medicine Tuberculosis Datasets
     https://lhncbc.nlm.nih.gov/publication/pub9931
@@ -1302,7 +1409,10 @@ class NLMTB_Dataset(Dataset):
         
         file_list = []
         source_list = []
-        for fname in sorted(os.listdir(os.path.join(self.imgpath, "CXR_png"))):
+
+        self.image_interface = create_interface(imgpath, self.path_length)
+
+        for fname in sorted(self.image_interface.filename_mapping):
             if fname.endswith(".png"):
                 file_list.append(fname)
 
@@ -1327,9 +1437,10 @@ class NLMTB_Dataset(Dataset):
 
     def __getitem__(self, idx):
         item = self.csv.iloc[idx]
-        img_path = os.path.join(self.imgpath, "CXR_png", item["fname"])
+        imgid = item["fname"] #os.path.join("CXR_png", item["fname"])
         #print(img_path)
-        img = imread(img_path)
+        img = self.image_interface.get_image(imgid)
+        #img = imread(img_path)
         img = normalize(img, self.MAXVAL)  
 
         # Check that images are 2D arrays
