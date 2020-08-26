@@ -225,19 +225,19 @@ else:
 class Interface:
     path_length = 0
     def load_dataset(self, filename):
-        timestamp = os.path.getmtime(filename)
-        if not (filename, timestamp) in stored_mappings:
-            compressed, mapping = self.index(filename)
-            compressed = [i.offset for i in compressed.members]
-            stored_mappings[(filename, timestamp)] = (compressed, mapping)
-            with open(stored_mapping_filename,"wb") as handle:
-                print(stored_mappings)
-                print(handle)
-                pickle.dump(stored_mappings, handle)
-        else:
-            compressed_offsets, mapping = zip_mapping[(filename, timestamp)]
-            compressed = 
-        return compressed, mapping
+#        timestamp = os.path.getmtime(filename)
+#        if not (filename, timestamp) in stored_mappings:
+#            compressed, mapping = self.index(filename)
+#            compressed = [i.offset for i in compressed.members]
+#            stored_mappings[(filename, timestamp)] = (compressed, mapping)
+#            with open(stored_mapping_filename,"wb") as handle:
+#                print(stored_mappings)
+#                print(handle)
+#                pickle.dump(stored_mappings, handle)
+#        else:
+#            compressed_offsets, mapping = zip_mapping[(filename, timestamp)]
+#        return compressed, mapping
+        return self.index(filename)
     def convert_to_image(self, filename, bytes):
         if str(filename).endswith(".dcm"):
             return pydicom.filereader.dcmread(BytesIO(bytes), force=True).pixel_array
