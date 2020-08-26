@@ -44,5 +44,9 @@ jobs:
         python -m pip install pytest
         python -m pip install -e .
     - name: Run tests
-      run: pytest
+      run: |
+        cd tests
+        bash bootstrap.sh
+        cd ..
+        pytest
       
