@@ -224,43 +224,58 @@ else:
     stored_mappings = {}
 
 class Interface:
+    """
+    This class has abstract methods for extracting files from an archive based on a partial path.
+    See child classes TarInterface, ZipInterface, FolderInterface, and ArchiveFolder.
+    """
     path_length = 0
     def load_dataset(self, filename):
-#        timestamp = os.path.getmtime(filename)
-#        if not (filename, timestamp) in stored_mappings:
-#            compressed, mapping = self.index(filename)
-#            compressed = [i.offset for i in compressed.members]
-#            stored_mappings[(filename, timestamp)] = (compressed, mapping)
-#            with open(stored_mapping_filename,"wb") as handle:
-#                print(stored_mappings)
-#                print(handle)
-#                pickle.dump(stored_mappings, handle)
-#        else:
-#            compressed_offsets, mapping = zip_mapping[(filename, timestamp)]
-#        return compressed, mapping
-        return self.index(filename)
+        "Load the dataset's index from the cache if available, else create a new one."
+        timestamp = os.path.getmtime(filename)
+        if not (filename, timestamp) in stored_mappings:
+            compressed, mapping = self.index(filename)
+            compressed = [i.offset for i in compressed.members]
+            stored_mappings[(filename, timestamp)] = (compressed, mapping)
+            with open(stored_mapping_filename,"wb") as handle:
+                print(stored_mappings)
+                print(handle)
+                pickle.dump(stored_mappings, handle)
+        else:
+            compressed_offsets, mapping = zip_mapping[(filename, timestamp)]
+        return compressed, mapping
     def convert_to_image(self, filename, bytes):
+        "Convert an image byte array to a numpy array. If the filename ends with .dcm, use pydicom."
         if str(filename).endswith(".dcm"):
             return pydicom.filereader.dcmread(BytesIO(bytes), force=True).pixel_array
         else:
             out = np.array(Image.open(BytesIO(bytes)))
-            print(type(out))
-            print(out)
             return out
 
 class TarInterface(Interface):
+    "This class supports extracting files from a tar archive based on a partial path."
     @classmethod
     def matches(cls, filename):
+        "Return whether the given path is a tar archive."
         return not os.path.isdir(filename) and tarfile.is_tarfile(filename)
     def __init__(self, imgpath, path_length):
+        "Store the archive path, and the length of the partial paths within the archive"
         self.path_length = path_length
         self.imgpath = imgpath
         compressed, self.filename_mapping = self.load_dataset(imgpath)
         self.compressed = {multiprocessing.current_process():compressed}
     def get_image(self, imgid):
+        "Return the image object for the partial path provided."
         archive_path = self.filename_mapping[imgid]
-        return self.extract_from_file(archive_path)
+        if not multiprocessing.current_process().name in self.compressed:
+            #print("Opening tar file on thread:",pid)
+            # check and reset number of open files if too many
+            if len(self.compressed.keys()) > 64:
+                self.compressed = {}
+            self.compressed[multiprocessing.current_process().name] = tarfile.open(self.imgpath)
+        bytes = self.compressed[multiprocessing.current_process().name].extractfile(archive_path).read()
+        return self.convert_to_image(archive_path, bytes)
     def index(self, imgpath):
+        "Create a dictionary mapping imgpath -> path within archive"
         compressed = tarfile.open(imgpath)
         tar_infos = compressed.getmembers()
         filename_mapping = {}
@@ -271,29 +286,35 @@ class TarInterface(Interface):
             filename_mapping[imgid] = tar_path
         return compressed, filename_mapping
     def close(self):
+        "Close all open tarfiles."
         for compressed in self.compressed.values():
             compressed.close()
-    def extract_from_file(self, tar_path):
-        pid = multiprocessing.current_process()
-        if not pid in self.compressed:
-            print("Opening tar file on thread:",pid)
-            self.compressed[pid] = tarfile.open(self.imgpath)
-        bytes = self.compressed[pid].extractfile(tar_path).read()
-        return self.convert_to_image(tar_path, bytes)
 
 class ZipInterface(Interface):
+    "This class supports extracting files from a zip archive based on a partial path."
     @classmethod
     def matches(cls, filename):
+        "Return whether the given path is a zip archive."
         return not os.path.isdir(filename) and zipfile.is_zipfile(filename)
     def __init__(self, imgpath, path_length):
+        "Store the archive path, and the length of the partial paths within the archive"
         self.path_length = path_length
         self.imgpath = imgpath
         compressed, self.filename_mapping = self.load_dataset(imgpath)
-        self.compressed = {multiprocessing.current_process():compressed}
+        self.compressed = {multiprocessing.current_process().name:compressed}
     def get_image(self, imgid):
+        "Return the image object for the partial path provided."
         archive_path = self.filename_mapping[imgid]
-        return self.extract_from_file(archive_path)
+        if not multiprocessing.current_process().name in self.compressed:
+            #print("Opening zip file on thread:",multiprocessing.current_process())
+            # check and reset number of open files if too many
+            if len(self.compressed.keys()) > 64:
+                self.compressed = {}
+            self.compressed[multiprocessing.current_process().name] = zipfile.ZipFile(self.imgpath)
+        bytes = self.compressed[multiprocessing.current_process().name].open(archive_path).read()
+        return self.convert_to_image(archive_path, bytes)
     def index(self, imgpath):
+        "Create a dictionary mapping imgpath -> path within archive"
         compressed = zipfile.ZipFile(imgpath)
         zip_infos = compressed.infolist()
         filename_mapping = {}
@@ -303,53 +324,53 @@ class ZipInterface(Interface):
                 imgid = last_n_in_filepath(zip_path, self.path_length)
                 filename_mapping[imgid] = zip_path
         return compressed, filename_mapping
-    def extract_from_file(self, zip_path):
-        if not multiprocessing.current_process() in self.compressed:
-            print("Opening zip file on thread:",multiprocessing.current_process())
-            self.compressed[multiprocessing.current_process()] = zipfile.ZipFile(self.imgpath)
-        bytes = self.compressed[multiprocessing.current_process()].open(zip_path).read()
-        return self.convert_to_image(zip_path, bytes)
     def close(self):
+        "Close all open zipfiles."
         for compressed in self.compressed.values():
             compressed.close()
 
 class FolderInterface(Interface):
+    "This class supports drawing files from a folder based on a partial path."
     @classmethod
     def matches(cls, filename):
+        "Return whether the given path is a zip archive."
         return os.path.isdir(filename)
     def __init__(self, imgpath, path_length):
+        "Store the archive path, and the length of the partial paths within the archive"
         self.path_length = path_length
         self.path, self.filename_mapping = self.load_dataset(imgpath)
     def get_image(self, imgid):
+        "Return the image object for the partial path provided."
         archive_path = self.filename_mapping[imgid]
         with open(archive_path,"rb") as handle:
             image = self.convert_to_image(archive_path, handle.read())
         return image
     def index(self, imgpath):
+        "Create a dictionary mapping imgpath -> path within archive"
         filename_mapping = {}
         for path in Path(imgpath).rglob("*"):
-            #print(path)
             if not os.path.isdir(path):
                 imgid = last_n_in_filepath(path, self.path_length)
                 filename_mapping[imgid] = path
-        print(filename_mapping)
         return imgpath, filename_mapping
     def close(self):
         pass
 
 def is_image(filename):
+    "Return whether the given filename has an image extension."
     _, extension = os.path.splitext(filename)
     return extension in Image.EXTENSION
 
 archive_interfaces = [ZipInterface, TarInterface]
 
 def is_archive(filename):
+    "Return whether the given filename is a tarfile or zipfile."
     return any(interface.matches(filename) for interface in archive_interfaces)
 
 class ArchiveFolder(Interface):
+    "This class supports extracting files from multiple tar or zip archives under the same root directory."
     @classmethod
     def matches(cls, filename):
-        #print("Checking archive folder")
         for item in Path(filename).rglob("*"):
             if is_image(item):
                 return False
@@ -357,12 +378,21 @@ class ArchiveFolder(Interface):
                 return True
         return False
     def __init__(self, imgpath, path_length):
+        "Store the archive path, and the length of the partial paths within the archive"
         self.path_length = path_length
         self.archives, self.filename_mapping = self.load_dataset(imgpath)
     def get_image(self, imgid):
+        "Return the image object for the partial path provided."
         path_to_archive = self.filename_mapping[imgid]
         return self.archives[path_to_archive].get_image(imgid)
     def index(self, filename):
+        """
+        Create a dictionary mapping imgid -> path to the sub-archive
+        containing the corresponding file.
+        This is different from the index method of ZipInterface and
+        TarInterface, where the dictionary values are the actual file
+        paths.
+        """
         filename_mapping = {}
         archives = {}
         for path_to_archive in Path(filename).rglob("*"):
@@ -373,10 +403,12 @@ class ArchiveFolder(Interface):
                     filename_mapping[path_in_csv] = path_to_archive
         return archives, filename_mapping
     def close(self):
+        "Recursively close all open archives."
         for archive_path, archive in self.archives.items():
             archive.close()
 
 def create_interface(filename, path_length):
+    "Choose the right interface type for the given path, and return an initialized interface."
     interfaces = [ArchiveFolder, FolderInterface, TarInterface, ZipInterface]
     for interface in interfaces:
         if interface.matches(filename):
@@ -480,7 +512,6 @@ class NIH_Dataset(Dataset):
         
         imgid = self.csv['Image Index'].iloc[idx]
         #img_path = os.path.join(self.imgpath, imgid)
-        #print(img_path)
         img = self.image_interface.get_image(imgid)
         if self.normalize:
             img = normalize(img, self.MAXVAL)  

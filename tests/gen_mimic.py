@@ -8,7 +8,7 @@ import argparse
 from pathlib import Path
 import os
 
-from random_data import write_random_images
+from random_data import write_random_images, gen_int, gen_hex, random_pred, random_preds
 
 def show(x):
     print(x)
@@ -28,13 +28,6 @@ def generate_random_metadata(n, dimensions):
              "orientation_code_meaning":["Erect","Recumbent"]
         }
     }
-    def hex(n):
-        hex_chars = list("0123456789abcdef")
-        return "".join(np.random.choice(hex_chars,n))
-
-    def int(n):
-        int_chars = list("0123456789abcdef")
-        return "".join(np.random.choice(int_chars,n))
 
     def generate_random_row(dimensions):
         performed_procedure_step_description = random.choice(
@@ -48,10 +41,10 @@ def generate_random_metadata(n, dimensions):
         view_code_meaning = procedure["view_code_meaning"][view_index]
         #Currently unsure how/if view codes are mapped to orientations
         orientation_code_meaning = random.choice(procedure["orientation_code_meaning"])
-        subject_id = int(8)
-        study_id = int(8)
+        subject_id = gen_int(8)
+        study_id = gen_int(8)
         meta_row = {
-            "dicom_id":"-".join([hex(8) for i in range(4)]),
+            "dicom_id":"-".join([gen_hex(8) for i in range(4)]),
             "subject_id":subject_id,
             "study_id":study_id,
             "PerformedProcedureStepDescription":performed_procedure_step_description,
@@ -65,27 +58,11 @@ def generate_random_metadata(n, dimensions):
             "PatientOrientationCodeSequence_CodeMeaning":orientation_code_meaning
         }
 
-        def random_pred():
-            return random.choice(["1.0","-1.0","0.0",""])
-
         csv_row = {
             "subject_id":subject_id,
             "study_id":study_id,
-            "Atelectasis":random_pred(),
-            "Cardiomegaly":random_pred(),
-            "Consolidation":random_pred(),
-            "Edema":random_pred(),
-            "Enlarged Cardiomediastinum":random_pred(),
-            "Fracture":random_pred(),
-            "Lung Lesion":random_pred(),
-            "Lung Opacity":random_pred(),
-            "No Finding":random_pred(),
-            "Pleural Effusion":random_pred(),
-            "Pleural Other":random_pred(),
-            "Pneumonia":random_pred(),
-            "Pneumothorax":random_pred(),
-            "Support Devices":random_pred()
         }
+        csv_row.update(random_preds())
         return meta_row, csv_row
 
     meta_rows, csv_rows = show(list(zip(*show([generate_random_row(dimensions) for i in range(n)]))))
@@ -94,7 +71,7 @@ def generate_random_metadata(n, dimensions):
 
 
 
-def generate_test_images(random_metadata, extracted, tarname, zipname, dimensions):
+def generate_test_images(random_metadata, extracted, tarname, zipname, folder_of_zip_name, folder_of_tar_gz_name, dimensions):
     paths = []
     for _, row in random_metadata.iterrows():
         subjectid = row["subject_id"]
@@ -102,9 +79,9 @@ def generate_test_images(random_metadata, extracted, tarname, zipname, dimension
         dicom_id = row["dicom_id"]
         img_fname = os.path.join("p" + subjectid[:2], "p" + subjectid, "s" + studyid, dicom_id + ".jpg")
         paths.append(Path("files")/img_fname)
-    write_random_images(paths, extracted, tarname, zipname, dimensions)
+    write_random_images(paths, extracted, tarname, zipname, folder_of_zip_name, folder_of_tar_gz_name, dimensions)
 
-def generate_test_data(n, directory, dimensions=(224, 224), tarname=None, zipname=None, extracted=None):
+def generate_test_data(n, directory, dimensions=(224, 224), tarname=None, zipname=None, folder_of_zip_name=None, folder_of_tar_gz_name = None, extracted=None):
     directory = Path(directory)
     if tarname is None:
         tarname = directory/"images-224.tar"
@@ -112,11 +89,15 @@ def generate_test_data(n, directory, dimensions=(224, 224), tarname=None, zipnam
         zipname = directory/"images-224.zip"
     if extracted is None:
         extracted = directory/"images-224"
+    if folder_of_zip_name is None:
+        folder_of_zip_name = directory/"images-224-zips"
+    if folder_of_tar_gz_name is None:
+        folder_of_tar_gz_name = directory/"images-224-tgzs"
     random_metadata, random_csvdata = generate_random_metadata(
         n,
         dimensions
     )
-    generate_test_images(random_metadata, extracted, tarname, zipname, dimensions)
+    generate_test_images(random_metadata, extracted, tarname, zipname, folder_of_zip_name, folder_of_tar_gz_name, dimensions)
     random_metadata.to_csv(
         directory/mimic_metadata_filename,
         index=False
