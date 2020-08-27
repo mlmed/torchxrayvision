@@ -213,15 +213,11 @@ def last_n_in_filepath(filepath, n):
         end_part = os.path.join(middle_part, end_part)
     return end_part
 
-#TODO:use .torchxrayvision
-
-stored_mapping_filename = "stored_mappings"
-
-if os.path.exists(stored_mapping_filename):
-    with open(stored_mapping_filename, "rb") as handle:
-        stored_mappings = pickle.load(handle)
-else:
-    stored_mappings = {}
+#Initialize pickled cache dictionary to {} if it doesn't exist
+stored_mapping_filename = os.path.expanduser(os.path.join("~",".torchxrayvision","stored_mappings"))
+if not os.path.exists(stored_mapping_filename):
+    with open(stored_mapping_filename, "wb") as handle:
+        pickle.dump({}, handle)
 
 class Interface:
     """
@@ -231,17 +227,21 @@ class Interface:
     path_length = 0
     def load_dataset(self, filename):
         "Load the dataset's index from the cache if available, else create a new one."
+        filename = os.path.abspath(str(filename))
         timestamp = os.path.getmtime(filename)
+        with open(stored_mapping_filename, "rb") as handle:
+            stored_mappings = pickle.load(handle)
         if not (filename, timestamp) in stored_mappings:
+            print("Indexing file paths (one-time). The next load will be faster")
             compressed, mapping = self.index(filename)
-            compressed = [i.offset for i in compressed.members]
-            stored_mappings[(filename, timestamp)] = (compressed, mapping)
             with open(stored_mapping_filename,"wb") as handle:
-                print(stored_mappings)
-                print(handle)
+                stored_mappings[(filename, timestamp)] = mapping
                 pickle.dump(stored_mappings, handle)
         else:
-            compressed_offsets, mapping = zip_mapping[(filename, timestamp)]
+            print("Loading cached file path index")
+            mapping = stored_mappings[(filename, timestamp)]
+            compressed = self.get_archive(filename)
+        print(mapping)
         return compressed, mapping
     def convert_to_image(self, filename, bytes):
         "Convert an image byte array to a numpy array. If the filename ends with .dcm, use pydicom."
@@ -271,9 +271,11 @@ class TarInterface(Interface):
             # check and reset number of open files if too many
             if len(self.compressed.keys()) > 64:
                 self.compressed = {}
-            self.compressed[multiprocessing.current_process().name] = tarfile.open(self.imgpath)
+            self.compressed[multiprocessing.current_process().name] = self.get_archive(self.imgpath)
         bytes = self.compressed[multiprocessing.current_process().name].extractfile(archive_path).read()
         return self.convert_to_image(archive_path, bytes)
+    def get_archive(self, imgpath):
+        return tarfile.open(imgpath)
     def index(self, imgpath):
         "Create a dictionary mapping imgpath -> path within archive"
         compressed = tarfile.open(imgpath)
@@ -282,6 +284,7 @@ class TarInterface(Interface):
         for tar_info in tar_infos:
             if tar_info.type != "DIRTYPE":
                 tar_path = tar_info.name
+                print(self.path_length, tar_path)
                 imgid = last_n_in_filepath(tar_path, self.path_length)
             filename_mapping[imgid] = tar_path
         return compressed, filename_mapping
@@ -313,6 +316,8 @@ class ZipInterface(Interface):
             self.compressed[multiprocessing.current_process().name] = zipfile.ZipFile(self.imgpath)
         bytes = self.compressed[multiprocessing.current_process().name].open(archive_path).read()
         return self.convert_to_image(archive_path, bytes)
+    def get_archive(self, imgpath):
+        return zipfile.ZipFile(imgpath)
     def index(self, imgpath):
         "Create a dictionary mapping imgpath -> path within archive"
         compressed = zipfile.ZipFile(imgpath)
@@ -321,6 +326,7 @@ class ZipInterface(Interface):
         for zip_info in zip_infos:
             if not zip_info.is_dir():
                 zip_path = zip_info.filename
+                print(self.path_length, zip_path)
                 imgid = last_n_in_filepath(zip_path, self.path_length)
                 filename_mapping[imgid] = zip_path
         return compressed, filename_mapping
@@ -339,6 +345,8 @@ class FolderInterface(Interface):
         "Store the archive path, and the length of the partial paths within the archive"
         self.path_length = path_length
         self.path, self.filename_mapping = self.load_dataset(imgpath)
+    def get_archive(self, imgid):
+        pass
     def get_image(self, imgid):
         "Return the image object for the partial path provided."
         archive_path = self.filename_mapping[imgid]
@@ -381,6 +389,8 @@ class ArchiveFolder(Interface):
         "Store the archive path, and the length of the partial paths within the archive"
         self.path_length = path_length
         self.archives, self.filename_mapping = self.load_dataset(imgpath)
+    def get_archive(self, imgpath):
+        return get_interface(imgpath)
     def get_image(self, imgid):
         "Return the image object for the partial path provided."
         path_to_archive = self.filename_mapping[imgid]
@@ -393,15 +403,19 @@ class ArchiveFolder(Interface):
         TarInterface, where the dictionary values are the actual file
         paths.
         """
+        archives = self.get_archive(filename)
         filename_mapping = {}
+        for path_to_archive, archive in archives.items():
+            for path_in_csv, path_in_archive in archive.filename_mapping.items():
+                filename_mapping[path_in_csv] = path_to_archive
+        return archives, filename_mapping
+    def get_archive(self, filename):
         archives = {}
         for path_to_archive in Path(filename).rglob("*"):
             if is_archive(path_to_archive):
                 archive = create_interface(path_to_archive, self.path_length)
                 archives[path_to_archive] = archive
-                for path_in_csv, path_in_archive in archive.filename_mapping.items():
-                    filename_mapping[path_in_csv] = path_to_archive
-        return archives, filename_mapping
+        return archives
     def close(self):
         "Recursively close all open archives."
         for archive_path, archive in self.archives.items():
