@@ -2,14 +2,15 @@ from PIL import Image
 from os.path import join
 from skimage.io import imread, imsave
 from torch import nn
+from copy import copy
 from torch.nn.modules.linear import Linear
 from torch.utils.data import Dataset
 from torchvision import transforms
 from tqdm import tqdm
 import numpy as np
+import multiprocessing
 from io import BytesIO
 import os,sys,os.path
-import pdb
 import pandas as pd
 import pickle
 import pydicom
@@ -242,15 +243,20 @@ class Interface:
         if str(filename).endswith(".dcm"):
             return pydicom.filereader.dcmread(BytesIO(bytes), force=True).pixel_array
         else:
-            return np.array(Image.open(BytesIO(bytes)))
+            out = np.array(Image.open(BytesIO(bytes)))
+            print(type(out))
+            print(out)
+            return out
 
 class TarInterface(Interface):
     @classmethod
     def matches(cls, filename):
         return not os.path.isdir(filename) and tarfile.is_tarfile(filename)
-    def __init__(self, filename, path_length):
+    def __init__(self, imgpath, path_length):
         self.path_length = path_length
-        self.compressed, self.filename_mapping = self.load_dataset(filename)
+        self.imgpath = imgpath
+        compressed, self.filename_mapping = self.load_dataset(imgpath)
+        self.compressed = {multiprocessing.current_process():compressed}
     def get_image(self, imgid):
         archive_path = self.filename_mapping[imgid]
         return self.extract_from_file(archive_path)
@@ -265,18 +271,25 @@ class TarInterface(Interface):
             filename_mapping[imgid] = tar_path
         return compressed, filename_mapping
     def close(self):
-        self.compressed.close()
+        for compressed in self.compressed.values():
+            compressed.close()
     def extract_from_file(self, tar_path):
-        bytes = self.compressed.extractfile(tar_path).read()
+        pid = multiprocessing.current_process()
+        if not pid in self.compressed:
+            print("Opening tar file on thread:",pid)
+            self.compressed[pid] = tarfile.open(self.imgpath)
+        bytes = self.compressed[pid].extractfile(tar_path).read()
         return self.convert_to_image(tar_path, bytes)
 
 class ZipInterface(Interface):
     @classmethod
     def matches(cls, filename):
         return not os.path.isdir(filename) and zipfile.is_zipfile(filename)
-    def __init__(self, filename, path_length):
+    def __init__(self, imgpath, path_length):
         self.path_length = path_length
-        self.compressed, self.filename_mapping = self.load_dataset(filename)
+        self.imgpath = imgpath
+        compressed, self.filename_mapping = self.load_dataset(imgpath)
+        self.compressed = {multiprocessing.current_process():compressed}
     def get_image(self, imgid):
         archive_path = self.filename_mapping[imgid]
         return self.extract_from_file(archive_path)
@@ -285,25 +298,28 @@ class ZipInterface(Interface):
         zip_infos = compressed.infolist()
         filename_mapping = {}
         for zip_info in zip_infos:
-#                print(zip_info)
             if not zip_info.is_dir():
                 zip_path = zip_info.filename
                 imgid = last_n_in_filepath(zip_path, self.path_length)
                 filename_mapping[imgid] = zip_path
         return compressed, filename_mapping
     def extract_from_file(self, zip_path):
-        bytes = self.compressed.open(zip_path).read()
+        if not multiprocessing.current_process() in self.compressed:
+            print("Opening zip file on thread:",multiprocessing.current_process())
+            self.compressed[multiprocessing.current_process()] = zipfile.ZipFile(self.imgpath)
+        bytes = self.compressed[multiprocessing.current_process()].open(zip_path).read()
         return self.convert_to_image(zip_path, bytes)
     def close(self):
-        self.compressed.close()
+        for compressed in self.compressed.values():
+            compressed.close()
 
 class FolderInterface(Interface):
     @classmethod
     def matches(cls, filename):
         return os.path.isdir(filename)
-    def __init__(self, filename, path_length):
+    def __init__(self, imgpath, path_length):
         self.path_length = path_length
-        self.path, self.filename_mapping = self.load_dataset(filename)
+        self.path, self.filename_mapping = self.load_dataset(imgpath)
     def get_image(self, imgid):
         archive_path = self.filename_mapping[imgid]
         with open(archive_path,"rb") as handle:
@@ -316,7 +332,7 @@ class FolderInterface(Interface):
             if not os.path.isdir(path):
                 imgid = last_n_in_filepath(path, self.path_length)
                 filename_mapping[imgid] = path
-        #print(filename_mapping)
+        print(filename_mapping)
         return imgpath, filename_mapping
     def close(self):
         pass
@@ -340,9 +356,9 @@ class ArchiveFolder(Interface):
             if is_archive(item):
                 return True
         return False
-    def __init__(self, filename, path_length):
+    def __init__(self, imgpath, path_length):
         self.path_length = path_length
-        self.archives, self.filename_mapping = self.load_dataset(filename)
+        self.archives, self.filename_mapping = self.load_dataset(imgpath)
     def get_image(self, imgid):
         path_to_archive = self.filename_mapping[imgid]
         return self.archives[path_to_archive].get_image(imgid)
