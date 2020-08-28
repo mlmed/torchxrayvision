@@ -252,3 +252,14 @@ def test_mimic_formats():
         metacsvpath="tests/gen_mimic/mimic-cxr-2.0.0-metadata.csv"
     )
 
+def test_unwriteable():
+    #simulate an unwriteable by deleting stored_mappings.
+
+    #The code only knows how to handle this when xrv.datasets is imported
+    #so it will rely on the code for an unwriteable disk.
+
+    os.remove(os.path.expanduser("~/.torchxrayvision/stored_mappings"))
+    #Test one of the datasets.
+    test_chex_formats()
+
+test_unwriteable()
