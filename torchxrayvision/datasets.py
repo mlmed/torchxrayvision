@@ -213,25 +213,6 @@ def last_n_in_filepath(filepath, n):
         end_part = os.path.join(middle_part, end_part)
     return end_part
 
-#Initialize pickled cache dictionary to {} if it doesn't exist
-stored_mapping_filename = os.path.expanduser(os.path.join("~",".torchxrayvision","stored_mappings"))
-
-disk_unwriteable_out_of_date = False
-if os.path.exists(stored_mapping_filename):
-    try:
-        stored_mappings = pickle.load(handle)
-    except:
-        stored_mappings = {}
-else:
-    stored_mappings = {}
-    try:
-        os.makedirs(os.path.dirname(stored_mapping_filename), exist_ok=True)
-        with open(stored_mapping_filename, "wb") as handle:
-            pickle.dump({}, handle)
-        disk_unwriteable_out_of_date = False
-    except:
-        disk_unwriteable_out_of_date = True
-
 class Interface:
     """
     This class has abstract methods for extracting files from an archive based on a partial path.
@@ -240,33 +221,35 @@ class Interface:
     path_length = 0
     def load_dataset(self, filename, save_to_cache=True, load_from_cache=True):
         "Load the dataset's index from the cache if available, else create a new one."
-        global stored_mappings
-        global disk_unwriteable_out_of_date
 
         filename = os.path.abspath(str(filename))
         timestamp = os.path.getmtime(filename)
         length = self.path_length
 
-        if disk_unwriteable_out_of_date:
-            try:
-                with open(stored_mapping_filename, "rb") as handle:
-                    stored_mappings = pickle.load(handle)
-            except:
-                pass
-        if load_from_cache and (filename, timestamp, length) in stored_mappings:
-            print("Loading cached file path index")
-            mapping = stored_mappings[(filename, timestamp, length)]
+        key = (filename, timestamp, length)
+
+        key_filename = str(hash(key)) + ".pkl"
+
+        filename_mapping_folder = os.path.expanduser(os.path.join(
+            "~", ".torchxrayvision", "filename-mapping-cache"
+        ))
+
+        mapping_filename = os.path.join(filename_mapping_folder, key_filename)
+
+        if os.path.exists(mapping_filename):
+            print("Loading indexed file paths from cache")
+            with open(mapping_filename, "rb") as handle:
+                mapping = pickle.load(handle)
             compressed = self.get_archive(filename)
         else:
             print("Indexing file paths (one-time). The next load will be faster")
             compressed, mapping = self.index(filename)
-            if save_to_cache:
-                stored_mappings[(filename, timestamp, length)] = mapping
-                try: #In case .torchxrayvision is not writeable
-                    with open(stored_mapping_filename,"wb") as handle:
-                        pickle.dump(stored_mappings, handle)
-                except:
-                    disk_unwriteable_out_of_date = False
+            try:
+                os.makedirs(filename_mapping_folder, exist_ok=True)
+                with open(mapping_filename, "wb") as handle:
+                    pickle.dump(mapping, handle)
+            except:
+                pass
         return compressed, mapping
     def convert_to_image(self, filename, bytes):
         "Convert an image byte array to a numpy array. If the filename ends with .dcm, use pydicom."
