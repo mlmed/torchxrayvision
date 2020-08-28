@@ -225,22 +225,24 @@ class Interface:
     See child classes TarInterface, ZipInterface, FolderInterface, and ArchiveFolder.
     """
     path_length = 0
-    def load_dataset(self, filename):
+    def load_dataset(self, filename, save_to_cache=True, load_from_cache=True):
         "Load the dataset's index from the cache if available, else create a new one."
         filename = os.path.abspath(str(filename))
         timestamp = os.path.getmtime(filename)
+        length = self.path_length
         with open(stored_mapping_filename, "rb") as handle:
             stored_mappings = pickle.load(handle)
-        if not (filename, timestamp) in stored_mappings:
+        if load_from_cache and (filename, timestamp, length) in stored_mappings:
+            print("Loading cached file path index")
+            mapping = stored_mappings[(filename, timestamp, length)]
+            compressed = self.get_archive(filename)
+        else:
             print("Indexing file paths (one-time). The next load will be faster")
             compressed, mapping = self.index(filename)
-            with open(stored_mapping_filename,"wb") as handle:
-                stored_mappings[(filename, timestamp)] = mapping
-                pickle.dump(stored_mappings, handle)
-        else:
-            print("Loading cached file path index")
-            mapping = stored_mappings[(filename, timestamp)]
-            compressed = self.get_archive(filename)
+            if save_to_cache:
+                with open(stored_mapping_filename,"wb") as handle:
+                    stored_mappings[(filename, timestamp, length)] = mapping
+                    pickle.dump(stored_mappings, handle)
         print(mapping)
         return compressed, mapping
     def convert_to_image(self, filename, bytes):
@@ -257,11 +259,11 @@ class TarInterface(Interface):
     def matches(cls, filename):
         "Return whether the given path is a tar archive."
         return not os.path.isdir(filename) and tarfile.is_tarfile(filename)
-    def __init__(self, imgpath, path_length):
+    def __init__(self, imgpath, path_length, save_to_cache=True, load_from_cache=True):
         "Store the archive path, and the length of the partial paths within the archive"
         self.path_length = path_length
         self.imgpath = imgpath
-        compressed, self.filename_mapping = self.load_dataset(imgpath)
+        compressed, self.filename_mapping = self.load_dataset(imgpath, save_to_cache, load_from_cache)
         self.compressed = {multiprocessing.current_process():compressed}
     def get_image(self, imgid):
         "Return the image object for the partial path provided."
@@ -299,11 +301,11 @@ class ZipInterface(Interface):
     def matches(cls, filename):
         "Return whether the given path is a zip archive."
         return not os.path.isdir(filename) and zipfile.is_zipfile(filename)
-    def __init__(self, imgpath, path_length):
+    def __init__(self, imgpath, path_length, save_to_cache=True, load_from_cache=True):
         "Store the archive path, and the length of the partial paths within the archive"
         self.path_length = path_length
         self.imgpath = imgpath
-        compressed, self.filename_mapping = self.load_dataset(imgpath)
+        compressed, self.filename_mapping = self.load_dataset(imgpath, save_to_cache, load_from_cache)
         self.compressed = {multiprocessing.current_process().name:compressed}
     def get_image(self, imgid):
         "Return the image object for the partial path provided."
@@ -341,10 +343,10 @@ class FolderInterface(Interface):
     def matches(cls, filename):
         "Return whether the given path is a zip archive."
         return os.path.isdir(filename)
-    def __init__(self, imgpath, path_length):
+    def __init__(self, imgpath, path_length, save_to_cache=True, load_from_cache=True):
         "Store the archive path, and the length of the partial paths within the archive"
         self.path_length = path_length
-        self.path, self.filename_mapping = self.load_dataset(imgpath)
+        self.path, self.filename_mapping = self.load_dataset(imgpath, save_to_cache, load_from_cache)
     def get_archive(self, imgid):
         pass
     def get_image(self, imgid):
@@ -385,10 +387,10 @@ class ArchiveFolder(Interface):
             if is_archive(item):
                 return True
         return False
-    def __init__(self, imgpath, path_length):
+    def __init__(self, imgpath, path_length, save_to_cache=True, load_from_cache=True):
         "Store the archive path, and the length of the partial paths within the archive"
         self.path_length = path_length
-        self.archives, self.filename_mapping = self.load_dataset(imgpath)
+        self.archives, self.filename_mapping = self.load_dataset(imgpath, save_to_cache, load_from_cache)
     def get_archive(self, imgpath):
         return get_interface(imgpath)
     def get_image(self, imgid):

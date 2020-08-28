@@ -51,6 +51,7 @@ def test_dataloader_merging_incorrect_alignment():
         
     assert "incorrect pathology alignment" in str(excinfo.value)
     
+
 def all_equal(items):
     if len(items) == 1:
         return True
@@ -69,18 +70,19 @@ def _test_opening_formats(dataset_class, imgpaths, n=10, **kwargs):
             break
         assert all_equal([pickle.dumps(item) for item in one_item_from_each])
     #Try loading each in a parallel way
-    for source in sources:
-         source.csv = source.csv.iloc[:,:10]
-         dataset = torch.utils.data.DataLoader(
-                     source,
-                     batch_size=10,
-                     shuffle=False,
-                     num_workers=8,
-                     pin_memory=False
-         )
-         for i, _ in enumerate(dataset):
-             if i >= n - 1:
-                 break
+    #for source in sources:
+    #     source.csv = source.csv.iloc[:10]
+    #     source.labels = source.labels[:10]
+    #     dataset = torch.utils.data.DataLoader(
+    #                 source,
+    #                 batch_size=10,
+    #                 shuffle=False,
+    #                 num_workers=8,
+    #                 pin_memory=False
+    #     )
+    #     for i, _ in enumerate(dataset):
+    #         if i >= n - 1:
+    #             break
     for source in sources:
         source.image_interface.close()
 
@@ -170,7 +172,7 @@ def test_rsna_jpg_formats():
             "tests/RSNA_test_data_jpg/tgz_1",
             "tests/RSNA_test_data_jpg/tgz_2"
         ],
-        dicomcsvpath="tests/rsna_train.csv"
+        csvpath="tests/rsna_train.csv"
     )
 
 def test_rsna_dcm_formats():
@@ -185,7 +187,7 @@ def test_rsna_dcm_formats():
             "tests/RSNA_test_data_dcm/tgz_1",
             "tests/RSNA_test_data_dcm/tgz_2"
         ],
-        #dicomcsvpath="tests/rsna_train.csv",
+        csvpath="tests/rsna_train.csv",
         extension=".dcm"
     )
 
@@ -249,3 +251,4 @@ def test_mimic_formats():
         csvpath="tests/gen_mimic/mimic-cxr-2.0.0-negbio.csv",
         metacsvpath="tests/gen_mimic/mimic-cxr-2.0.0-metadata.csv"
     )
+
