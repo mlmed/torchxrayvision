@@ -30,18 +30,18 @@ create_standard_test_output(
 )
 
 #NLMTB Shenzen
-print("shenzen")
-create_standard_test_output(
-    xrv.datasets.NLMTB_Dataset(imgpath=os.path.expanduser("~/ChinaSet_AllFiles.zip")),
-    "shenzen.csv"
-)
+#print("shenzen")
+#create_standard_test_output(
+#    xrv.datasets.NLMTB_Dataset(imgpath=os.path.expanduser("~/ChinaSet_AllFiles.zip")),
+#    "shenzen.csv"
+#)
 
 #NLMTB Montgomery
-print("montgomery")
-create_standard_test_output(
-    xrv.datasets.NLMTB_Dataset(imgpath=os.path.expanduser("~/NLM-MontgomeryCXRSet.zip")),
-    "montgomery.csv"
-)
+#print("montgomery")
+#create_standard_test_output(
+#    xrv.datasets.NLMTB_Dataset(imgpath=os.path.expanduser("~/NLM-MontgomeryCXRSet.zip")),
+#    "montgomery.csv"
+#)
 
 #RSNA train
 print("rsna (just train data)")
