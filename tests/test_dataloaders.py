@@ -70,19 +70,19 @@ def _test_opening_formats(dataset_class, imgpaths, n=10, **kwargs):
             break
         assert all_equal([pickle.dumps(item) for item in one_item_from_each])
     #Try loading each in a parallel way
-    #for source in sources:
-    #     source.csv = source.csv.iloc[:10]
-    #     source.labels = source.labels[:10]
-    #     dataset = torch.utils.data.DataLoader(
-    #                 source,
-    #                 batch_size=10,
-    #                 shuffle=False,
-    #                 num_workers=8,
-    #                 pin_memory=False
-    #     )
-    #     for i, _ in enumerate(dataset):
-    #         if i >= n - 1:
-    #             break
+    for source in sources:
+        source.csv = source.csv.iloc[:10]
+        source.labels = source.labels[:10]
+        dataset = torch.utils.data.DataLoader(
+            source,
+            batch_size=10,
+            shuffle=False,
+            num_workers=8,
+            pin_memory=False
+        )
+        for i, _ in enumerate(dataset):
+            if i >= n - 1:
+                break
     for source in sources:
         source.image_interface.close()
 
