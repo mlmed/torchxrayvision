@@ -215,10 +215,20 @@ def last_n_in_filepath(filepath, n):
 
 #Initialize pickled cache dictionary to {} if it doesn't exist
 stored_mapping_filename = os.path.expanduser(os.path.join("~",".torchxrayvision","stored_mappings"))
-if not os.path.exists(stored_mapping_filename):
-    os.makedirs(os.path.dirname(stored_mapping_filename), exist_ok=True)
-    with open(stored_mapping_filename, "wb") as handle:
-        pickle.dump({}, handle)
+
+if os.path.exists(stored_mapping_filename):
+    try:
+        stored_mapping = pickle.load(handle)
+    except:
+        stored_mapping = {}
+else:
+    try:
+        os.makedirs(os.path.dirname(stored_mapping_filename), exist_ok=True)
+        with open(stored_mapping_filename, "wb") as handle:
+            pickle.dump({}, handle)
+        disk_unwriteable_out_of_date = False
+    except:
+        disk_unwriteable_out_of_date = True
 
 class Interface:
     """
@@ -228,11 +238,19 @@ class Interface:
     path_length = 0
     def load_dataset(self, filename, save_to_cache=True, load_from_cache=True):
         "Load the dataset's index from the cache if available, else create a new one."
+        global stored_mappings
+        global writeable
+
         filename = os.path.abspath(str(filename))
         timestamp = os.path.getmtime(filename)
         length = self.path_length
-        with open(stored_mapping_filename, "rb") as handle:
-            stored_mappings = pickle.load(handle)
+
+        if disk_unwriteable_out_of_date:
+            try:
+                with open(stored_mapping_filename, "rb") as handle:
+                    stored_mappings = pickle.load(handle)
+                except:
+                    pass
         if load_from_cache and (filename, timestamp, length) in stored_mappings:
             print("Loading cached file path index")
             mapping = stored_mappings[(filename, timestamp, length)]
@@ -241,9 +259,12 @@ class Interface:
             print("Indexing file paths (one-time). The next load will be faster")
             compressed, mapping = self.index(filename)
             if save_to_cache:
-                with open(stored_mapping_filename,"wb") as handle:
-                    stored_mappings[(filename, timestamp, length)] = mapping
-                    pickle.dump(stored_mappings, handle)
+                stored_mappings[(filename, timestamp, length)] = mapping
+                try: #In case .torchxrayvision is not writeable
+                    with open(stored_mapping_filename,"wb") as handle:
+                        pickle.dump(stored_mappings, handle)
+                except:
+                    disk_unwriteable_out_of_date = False
         print(mapping)
         return compressed, mapping
     def convert_to_image(self, filename, bytes):
