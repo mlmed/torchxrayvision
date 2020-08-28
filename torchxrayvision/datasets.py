@@ -267,7 +267,6 @@ class Interface:
                         pickle.dump(stored_mappings, handle)
                 except:
                     disk_unwriteable_out_of_date = False
-        print(mapping)
         return compressed, mapping
     def convert_to_image(self, filename, bytes):
         "Convert an image byte array to a numpy array. If the filename ends with .dcm, use pydicom."
@@ -310,7 +309,6 @@ class TarInterface(Interface):
         for tar_info in tar_infos:
             if tar_info.type != "DIRTYPE":
                 tar_path = tar_info.name
-                print(self.path_length, tar_path)
                 imgid = last_n_in_filepath(tar_path, self.path_length)
             filename_mapping[imgid] = tar_path
         return compressed, filename_mapping
@@ -352,7 +350,6 @@ class ZipInterface(Interface):
         for zip_info in zip_infos:
             if not zip_info.is_dir():
                 zip_path = zip_info.filename
-                print(self.path_length, zip_path)
                 imgid = last_n_in_filepath(zip_path, self.path_length)
                 filename_mapping[imgid] = zip_path
         return compressed, filename_mapping
