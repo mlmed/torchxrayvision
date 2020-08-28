@@ -216,6 +216,7 @@ def last_n_in_filepath(filepath, n):
 #Initialize pickled cache dictionary to {} if it doesn't exist
 stored_mapping_filename = os.path.expanduser(os.path.join("~",".torchxrayvision","stored_mappings"))
 if not os.path.exists(stored_mapping_filename):
+    os.mkdirs(os.path.dirname(stored_mapping_filename), exist_ok=True)
     with open(stored_mapping_filename, "wb") as handle:
         pickle.dump({}, handle)
 
