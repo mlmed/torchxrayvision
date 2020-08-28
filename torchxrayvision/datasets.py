@@ -216,12 +216,14 @@ def last_n_in_filepath(filepath, n):
 #Initialize pickled cache dictionary to {} if it doesn't exist
 stored_mapping_filename = os.path.expanduser(os.path.join("~",".torchxrayvision","stored_mappings"))
 
+disk_unwriteable_out_of_date = False
 if os.path.exists(stored_mapping_filename):
     try:
-        stored_mapping = pickle.load(handle)
+        stored_mappings = pickle.load(handle)
     except:
-        stored_mapping = {}
+        stored_mappings = {}
 else:
+    stored_mappings = {}
     try:
         os.makedirs(os.path.dirname(stored_mapping_filename), exist_ok=True)
         with open(stored_mapping_filename, "wb") as handle:
@@ -239,7 +241,7 @@ class Interface:
     def load_dataset(self, filename, save_to_cache=True, load_from_cache=True):
         "Load the dataset's index from the cache if available, else create a new one."
         global stored_mappings
-        global writeable
+        global disk_unwriteable_out_of_date
 
         filename = os.path.abspath(str(filename))
         timestamp = os.path.getmtime(filename)
@@ -249,8 +251,8 @@ class Interface:
             try:
                 with open(stored_mapping_filename, "rb") as handle:
                     stored_mappings = pickle.load(handle)
-                except:
-                    pass
+            except:
+                pass
         if load_from_cache and (filename, timestamp, length) in stored_mappings:
             print("Loading cached file path index")
             mapping = stored_mappings[(filename, timestamp, length)]
