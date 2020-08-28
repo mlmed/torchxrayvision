@@ -7,7 +7,7 @@ def create_standard_test_output(dataset, name, columns = None):
     minimal_dataset = dataset.csv[:n]
     if columns is not None:
         minimal_dataset = minimal_dataset[columns]
-    minimal_dataset.to_csv(name)
+    minimal_dataset.to_csv(name, index=False)
 
 print("nih")
 create_standard_test_output(
@@ -49,5 +49,5 @@ rsna = xrv.datasets.RSNA_Pneumonia_Dataset(imgpath=".")
 create_standard_test_output(
     xrv.datasets.RSNA_Pneumonia_Dataset(imgpath="."),
     "rsna_train.csv",
-    columns=list(rsna.raw_csv.columns) + ["]
+    columns=list(rsna.raw_csv.columns) + ["patientId"]
 )
