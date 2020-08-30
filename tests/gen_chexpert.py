@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 import random
 
+n = 10
+
 def probability(fraction):
     gran = 100
     return np.random.randint(0, gran) < gran * fraction
@@ -62,6 +64,5 @@ def gen_random_rows(nrows):
          rows.append(next(random_data_source))
     return pd.DataFrame(rows)
 
-
-
-gen_random_rows(10).to_csv("test_chexpert_data.csv")
+def gen_chexpert(n, filename):
+    gen_random_rows(n).to_csv(filename)

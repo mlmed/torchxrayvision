@@ -1,3 +1,3 @@
-bash gen_mimic.sh
+python gen_mimic.py
 python gen_chexpert.py
-bash generate_test_data.sh
+python3 generate_test_data.py

@@ -81,7 +81,7 @@ def generate_test_images(random_metadata, extracted, tarname, zipname, folder_of
         paths.append(Path("files")/img_fname)
     write_random_images(paths, extracted, tarname, zipname, folder_of_zip_name, folder_of_tar_gz_name, dimensions)
 
-def generate_test_data(n, directory, dimensions=(224, 224), tarname=None, zipname=None, folder_of_zip_name=None, folder_of_tar_gz_name = None, extracted=None):
+def generate_mimic_test_data(n, directory, dimensions=(224, 224), tarname=None, zipname=None, folder_of_zip_name=None, folder_of_tar_gz_name = None, extracted=None):
     directory = Path(directory)
     if tarname is None:
         tarname = directory/"images-224.tar"
@@ -119,19 +119,21 @@ def generate_test_data(n, directory, dimensions=(224, 224), tarname=None, zipnam
 
 #./images-224/files/p17/p17387118/s56770356/b983f94c-b77ad35d-8a4aa372-2faf6503-5ec94835.jpg
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("n")
-    parser.add_argument("directory")
-    parser.add_argument("x")
-    parser.add_argument("y")
-    parser.add_argument("tarfile", default=None, nargs="?")
-    parser.add_argument("extracted", default=None, nargs="?")
-    args = parser.parse_args()
-    generate_test_data(
-        n=int(args.n),
-        directory = args.directory,
-        dimensions = (int(args.x), int(args.y)),
-        tarname = args.tarfile,
-        extracted = args.extracted
-    )
+#if __name__ == "__main__":
+#    parser = argparse.ArgumentParser()
+#    parser.add_argument("n")
+#    parser.add_argument("directory")
+#    parser.add_argument("x")
+#    parser.add_argument("y")
+#    parser.add_argument("tarfile", default=None, nargs="?")
+#    parser.add_argument("extracted", default=None, nargs="?")
+#    args = parser.parse_args()
+#    generate_test_data(
+#        n=int(args.n),
+#        directory = args.directory,
+#        dimensions = (int(args.x), int(args.y)),
+#        tarname = args.tarfile,
+#        extracted = args.extracted
+#    )
+
+#python3 gen_mimic.py 10 gen_mimic 224 224
