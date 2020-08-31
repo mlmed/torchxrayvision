@@ -3,7 +3,10 @@ import pickle
 import torchxrayvision as xrv
 import os
 import torch
+from hashlib import blake2b
+import time
 from pathlib import Path
+import pdb
 
 dataset_classes = [xrv.datasets.NIH_Dataset,
                    xrv.datasets.Openi_Dataset,
@@ -27,6 +30,9 @@ def test_dataloader_merging():
         xrv.datasets.relabel_dataset(xrv.datasets.default_pathologies, dataset)
         
     dd = xrv.datasets.Merge_Dataset(datasets)
+
+    for dataset in datasets:
+        dataset.image_interface.close()
 
 # test that we catch incorrect pathology alignment
 def test_dataloader_merging_incorrect_alignment():
@@ -83,6 +89,9 @@ def _test_opening_formats(dataset_class, imgpaths, n=10, **kwargs):
         for i, _ in enumerate(dataset):
             if i >= n - 1:
                 break
+    #Ensure the second load is faster
+    for imgpath in imgpaths:
+        _test_second_load_faster(dataset_class, imgpath=imgpath, **kwargs)
     for source in sources:
         source.image_interface.close()
 
@@ -101,6 +110,7 @@ def test_mimic_formats():
         csvpath="tests/gen_mimic/mimic-cxr-2.0.0-negbio.csv",
         metacsvpath="tests/gen_mimic/mimic-cxr-2.0.0-metadata.csv"
     )
+
 
 def test_nih_formats():
     _test_opening_formats(
@@ -252,14 +262,44 @@ def test_mimic_formats():
         metacsvpath="tests/gen_mimic/mimic-cxr-2.0.0-metadata.csv"
     )
 
-def test_unwriteable():
-    #simulate an unwriteable by deleting stored_mappings.
+def delete_cache_entry(imgpath, path_length):
+    timestamp = os.path.getmtime(imgpath)
+    imgpath = os.path.abspath(imgpath)
+    key = (imgpath, timestamp, path_length)
+    hash_value = blake2b(pickle.dumps(key)).hexdigest()
+    filename = str(hash_value) + ".pkl"
+    delete_path = os.path.expanduser(os.path.join("~",".torchxrayvision","filename-mapping-cache",filename))
+    assert os.path.exists(delete_path)
+    if os.path.exists(delete_path):
+        os.remove(delete_path)
+    assert not os.path.exists(delete_path)
 
-    #The code only knows how to handle this when xrv.datasets is imported
-    #so it will rely on the code for an unwriteable disk.
+def _test_second_load_faster(dataset, imgpath, *args, **kwargs):
+        delete_cache_entry(
+            imgpath,
+            dataset.path_length
+        )
 
-    os.remove(os.path.expanduser("~/.torchxrayvision/stored_mappings"))
-    #Test one of the datasets.
-    test_chex_formats()
+        #slow_times = []
+        #fast_times = []
 
-test_unwriteable()
+    #for dataset, kwargs in zip(datasets, kwargs_sets):
+        slow_start = time.time()
+        dataset(*args, imgpath=imgpath, **kwargs)
+        slow_stop = time.time()
+        slow_time = slow_stop - slow_start
+        #slow_times.append(slow_time)
+
+    #time.sleep(10)
+
+    #for dataset, kwargs in zip(datasets, kwargs_sets):
+
+        fast_start = time.time()
+        b = dataset(*args, imgpath=imgpath, **kwargs)
+        fast_stop = time.time()
+        fast_time = fast_stop - fast_start
+        #fast_times.append(fast_times)
+
+    #for slow_time, fast_time in zip(slow_times, fast_times):
+        print(round(slow_time, 2), round(fast_time, 2))
+        assert slow_time > fast_time
