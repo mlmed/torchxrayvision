@@ -90,8 +90,6 @@ def _test_opening_formats(dataset_class, imgpaths, n=10, **kwargs):
             if i >= n - 1:
                 break
     #Ensure the second load is faster
-    for imgpath in imgpaths:
-        _test_second_load_faster(dataset_class, imgpath=imgpath, **kwargs)
     for source in sources:
         source.image_interface.close()
 
