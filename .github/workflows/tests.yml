@@ -46,7 +46,7 @@ jobs:
     - name: Run tests
       run: |
         cd tests
-        bash bootstrap.sh
+        python bootstrap.py
         cd ..
         pytest
       
