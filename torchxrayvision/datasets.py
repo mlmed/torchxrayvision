@@ -22,6 +22,7 @@ import torch
 import torch.nn.functional as F
 import torchvision
 import torchvision.transforms.functional as TF
+from hashlib import blake2b
 import skimage.transform
 import warnings
 import tarfile
@@ -225,16 +226,18 @@ class Interface:
         filename = os.path.abspath(str(filename))
         timestamp = os.path.getmtime(filename)
         length = self.path_length
-
         key = (filename, timestamp, length)
+        print(key)
 
-        key_filename = str(hash(key)) + ".pkl"
+        key_filename = str(blake2b(pickle.dumps(key)).hexdigest()) + ".pkl"
 
         filename_mapping_folder = os.path.expanduser(os.path.join(
             "~", ".torchxrayvision", "filename-mapping-cache"
         ))
 
         mapping_filename = os.path.join(filename_mapping_folder, key_filename)
+
+        print(mapping_filename)
 
         if os.path.exists(mapping_filename):
             print("Loading indexed file paths from cache")
@@ -270,17 +273,17 @@ class TarInterface(Interface):
         self.path_length = path_length
         self.imgpath = imgpath
         compressed, self.filename_mapping = self.load_dataset(imgpath, save_to_cache, load_from_cache)
-        self.compressed = {multiprocessing.current_process():compressed}
+        self.all_compressed = {multiprocessing.current_process():compressed}
     def get_image(self, imgid):
         "Return the image object for the partial path provided."
         archive_path = self.filename_mapping[imgid]
-        if not multiprocessing.current_process().name in self.compressed:
+        if not multiprocessing.current_process().name in self.all_compressed:
             #print("Opening tar file on thread:",pid)
             # check and reset number of open files if too many
-            if len(self.compressed.keys()) > 64:
-                self.compressed = {}
-            self.compressed[multiprocessing.current_process().name] = self.get_archive(self.imgpath)
-        bytes = self.compressed[multiprocessing.current_process().name].extractfile(archive_path).read()
+            if len(self.all_compressed.keys()) > 64:
+                self.all_compressed = {}
+            self.all_compressed[multiprocessing.current_process().name] = self.get_archive(self.imgpath)
+        bytes = self.all_compressed[multiprocessing.current_process().name].extractfile(archive_path).read()
         return self.convert_to_image(archive_path, bytes)
     def get_archive(self, imgpath):
         return tarfile.open(imgpath)
@@ -297,7 +300,7 @@ class TarInterface(Interface):
         return compressed, filename_mapping
     def close(self):
         "Close all open tarfiles."
-        for compressed in self.compressed.values():
+        for compressed in self.all_compressed.values():
             compressed.close()
 
 class ZipInterface(Interface):
@@ -311,17 +314,17 @@ class ZipInterface(Interface):
         self.path_length = path_length
         self.imgpath = imgpath
         compressed, self.filename_mapping = self.load_dataset(imgpath, save_to_cache, load_from_cache)
-        self.compressed = {multiprocessing.current_process().name:compressed}
+        self.all_compressed = {multiprocessing.current_process().name:compressed}
     def get_image(self, imgid):
         "Return the image object for the partial path provided."
         archive_path = self.filename_mapping[imgid]
-        if not multiprocessing.current_process().name in self.compressed:
+        if not multiprocessing.current_process().name in self.all_compressed:
             #print("Opening zip file on thread:",multiprocessing.current_process())
             # check and reset number of open files if too many
-            if len(self.compressed.keys()) > 64:
-                self.compressed = {}
-            self.compressed[multiprocessing.current_process().name] = zipfile.ZipFile(self.imgpath)
-        bytes = self.compressed[multiprocessing.current_process().name].open(archive_path).read()
+            if len(self.all_compressed.keys()) > 64:
+                self.all_compressed = {}
+            self.all_compressed[multiprocessing.current_process().name] = zipfile.ZipFile(self.imgpath)
+        bytes = self.all_compressed[multiprocessing.current_process().name].open(archive_path).read()
         return self.convert_to_image(archive_path, bytes)
     def get_archive(self, imgpath):
         return zipfile.ZipFile(imgpath)
@@ -338,7 +341,7 @@ class ZipInterface(Interface):
         return compressed, filename_mapping
     def close(self):
         "Close all open zipfiles."
-        for compressed in self.compressed.values():
+        for compressed in self.all_compressed.values():
             compressed.close()
 
 class FolderInterface(Interface):
