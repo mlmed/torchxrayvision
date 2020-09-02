@@ -161,16 +161,17 @@ Joseph Paul Cohen, Joseph Viviano, Mohammad Hashir, and Hadrien Bertrand.
 TorchXrayVision: A library of chest X-ray datasets and models. 
 https://github.com/mlmed/torchxrayvision, 2020
 ```
-and
+and this paper [https://arxiv.org/abs/2002.02497](https://arxiv.org/abs/2002.02497)
 ```
 Cohen, J. P., Hashir, M., Brooks, R., & Bertrand, H. 
 On the limits of cross-domain generalization in automated X-ray prediction. 
-Medical Imaging with Deep Learning 2020 (Online: [https://arxiv.org/abs/2002.02497](https://arxiv.org/abs/2002.02497))
+Medical Imaging with Deep Learning 2020 (Online: https://arxiv.org/abs/2002.02497)
 
 @inproceedings{cohen2020limits,
   title={On the limits of cross-domain generalization in automated X-ray prediction},
   author={Cohen, Joseph Paul and Hashir, Mohammad and Brooks, Rupert and Bertrand, Hadrien},
   booktitle={Medical Imaging with Deep Learning}
-  year={2020}
+  year={2020},
+  url={https://arxiv.org/abs/2002.02497}
 }
 ```
