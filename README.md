@@ -55,7 +55,7 @@ model = xrv.models.DenseNet(weights="minix_ch") # MIMIC-CXR (MIT)
 ```
 
 
-## datasets ([demo notebook](https://github.com/mlmed/torchxrayvision/blob/master/scripts/xray_datasets.ipynb)
+## datasets ([demo notebook](https://github.com/mlmed/torchxrayvision/blob/master/scripts/xray_datasets.ipynb))
 Only stats for PA/AP views are shown. Datasets may include more.
 
 ```python3
