@@ -206,6 +206,11 @@ class SubsetDataset(Dataset):
         return self.dataset[self.idxs[idx]]
 
 def last_n_in_filepath(filepath, n):
+    """
+    Return the last n pieces of a path (takes a string, not a Path object).
+    For example:
+    last_n_in_filepath("a/b/c",2) -> "b/c"
+    """
     if n < 1:
         return ""
     start_part, end_part = os.path.split(filepath)
@@ -214,53 +219,66 @@ def last_n_in_filepath(filepath, n):
         end_part = os.path.join(middle_part, end_part)
     return end_part
 
-class Interface:
+def get_filename_mapping_path(imgpath, path_length):
     """
-    This class has abstract methods for extracting files from an archive based on a partial path.
-    See child classes TarInterface, ZipInterface, FolderInterface, and ArchiveFolder.
+    Create a hash of (imgpath, last_modification, path_length_for_mapping_key)
+    and use it to return the filepath for a cached index.
     """
-    path_length = 0
-    def load_dataset(self, filename, save_to_cache=True, load_from_cache=True):
-        "Load the dataset's index from the cache if available, else create a new one."
+    imgpath = os.path.abspath(str(imgpath))
+    timestamp = os.path.getmtime(imgpath)
+    length = path_length
+    key = (imgpath, timestamp, length)
 
-        filename = os.path.abspath(str(filename))
-        timestamp = os.path.getmtime(filename)
-        length = self.path_length
-        key = (filename, timestamp, length)
-        print(key)
+    cache_filename = str(blake2b(pickle.dumps(key)).hexdigest()) + ".pkl"
 
-        key_filename = str(blake2b(pickle.dumps(key)).hexdigest()) + ".pkl"
+    file_mapping_cache_folder = os.path.expanduser(os.path.join(
+        "~", ".torchxrayvision", "filename-mapping-cache"
+    ))
 
-        filename_mapping_folder = os.path.expanduser(os.path.join(
-            "~", ".torchxrayvision", "filename-mapping-cache"
-        ))
+    filename_mapping_path = os.path.join(file_mapping_cache_folder, cache_filename)
 
-        mapping_filename = os.path.join(filename_mapping_folder, key_filename)
+    return filename_mapping_path
 
-        print(mapping_filename)
+def load_filename_mapping(imgpath, path_length):
+    "If a cached filename mapping exists, return it. Otherwise, return None"
 
-        if os.path.exists(mapping_filename):
-            print("Loading indexed file paths from cache")
-            with open(mapping_filename, "rb") as handle:
-                mapping = pickle.load(handle)
-            compressed = self.get_archive(filename)
-        else:
-            print("Indexing file paths (one-time). The next load will be faster")
-            compressed, mapping = self.index(filename)
-            try:
-                os.makedirs(filename_mapping_folder, exist_ok=True)
-                with open(mapping_filename, "wb") as handle:
-                    pickle.dump(mapping, handle)
-            except:
-                pass
-        return compressed, mapping
-    def convert_to_image(self, filename, bytes):
-        "Convert an image byte array to a numpy array. If the filename ends with .dcm, use pydicom."
-        if str(filename).endswith(".dcm"):
-            return pydicom.filereader.dcmread(BytesIO(bytes), force=True).pixel_array
-        else:
-            out = np.array(Image.open(BytesIO(bytes)))
-            return out
+    filename_mapping_path = get_filename_mapping_path(imgpath, path_length)
+
+    if os.path.exists(filename_mapping_path):
+        print("Loading indexed file paths from cache")
+        with open(filename_mapping_path, "rb") as handle:
+            filename_mapping = pickle.load(handle)
+    else:
+        filename_mapping = None
+
+    return filename_mapping
+
+def save_filename_mapping(imgpath, path_length, filename_mapping):
+    "Load the dataset's index from the cache if available, else create a new one."
+
+    filename_mapping_path = get_filename_mapping_path(imgpath, path_length)
+
+    try:
+        #Pickle filename_mapping.
+        os.makedirs(os.path.dirname(filename_mapping_path), exist_ok=True)
+        with open(filename_mapping_path, "wb") as handle:
+            pickle.dump(filename_mapping, handle)
+        return True
+
+    except:
+        raise
+        return False
+    #return compressed, mapping
+
+def convert_to_image(filename, bytes):
+    "Convert an image byte array to a numpy array. If the filename ends with .dcm, use pydicom."
+    if str(filename).endswith(".dcm"):
+        return pydicom.filereader.dcmread(BytesIO(bytes), force=True).pixel_array
+    else:
+        return np.array(Image.open(BytesIO(bytes)))
+
+class Interface(object):
+    pass
 
 class TarInterface(Interface):
     "This class supports extracting files from a tar archive based on a partial path."
@@ -268,12 +286,23 @@ class TarInterface(Interface):
     def matches(cls, filename):
         "Return whether the given path is a tar archive."
         return not os.path.isdir(filename) and tarfile.is_tarfile(filename)
-    def __init__(self, imgpath, path_length, save_to_cache=True, load_from_cache=True):
+    def __init__(self, imgpath, path_length):
         "Store the archive path, and the length of the partial paths within the archive"
         self.path_length = path_length
         self.imgpath = imgpath
-        compressed, self.filename_mapping = self.load_dataset(imgpath, save_to_cache, load_from_cache)
-        self.all_compressed = {multiprocessing.current_process():compressed}
+
+        #Load archive and filename mapping
+        compressed = None
+        self.filename_mapping = load_filename_mapping(imgpath, path_length)
+        #If the filename mapping could not be loaded, create it and save it
+        if self.filename_mapping is None:
+             compressed, self.filename_mapping = self.index(imgpath)
+             save_filename_mapping(imgpath, path_length, self.filename_mapping)
+        #If the compressed file has still not been loaded, load it.
+        if compressed is None:
+             compressed = self.get_archive(imgpath)
+        self.all_compressed = {multiprocessing.current_process().name:compressed}
+
     def get_image(self, imgid):
         "Return the image object for the partial path provided."
         archive_path = self.filename_mapping[imgid]
@@ -282,13 +311,14 @@ class TarInterface(Interface):
             # check and reset number of open files if too many
             if len(self.all_compressed.keys()) > 64:
                 self.all_compressed = {}
-            self.all_compressed[multiprocessing.current_process().name] = self.get_archive(self.imgpath)
+            self.all_compressed[multiprocessing.current_process().name] = tarfile.open(self.imgpath)
         bytes = self.all_compressed[multiprocessing.current_process().name].extractfile(archive_path).read()
-        return self.convert_to_image(archive_path, bytes)
+        return convert_to_image(archive_path, bytes)
     def get_archive(self, imgpath):
         return tarfile.open(imgpath)
     def index(self, imgpath):
         "Create a dictionary mapping imgpath -> path within archive"
+        print("Indexing file paths (one-time). The next load will be faster")
         compressed = tarfile.open(imgpath)
         tar_infos = compressed.getmembers()
         filename_mapping = {}
@@ -309,12 +339,23 @@ class ZipInterface(Interface):
     def matches(cls, filename):
         "Return whether the given path is a zip archive."
         return not os.path.isdir(filename) and zipfile.is_zipfile(filename)
-    def __init__(self, imgpath, path_length, save_to_cache=True, load_from_cache=True):
+    def __init__(self, imgpath, path_length):
         "Store the archive path, and the length of the partial paths within the archive"
         self.path_length = path_length
         self.imgpath = imgpath
-        compressed, self.filename_mapping = self.load_dataset(imgpath, save_to_cache, load_from_cache)
+
+        #Load archive and filename mapping
+        compressed = None
+        self.filename_mapping = load_filename_mapping(imgpath, path_length)
+        #If the filename mapping could not be loaded, create it and save it
+        if self.filename_mapping is None:
+             compressed, self.filename_mapping = self.index(imgpath)
+             save_filename_mapping(imgpath, path_length, self.filename_mapping)
+        #If the compressed file has still not been loaded, load it.
+        if compressed is None:
+             compressed = zipfile.ZipFile(imgpath)
         self.all_compressed = {multiprocessing.current_process().name:compressed}
+
     def get_image(self, imgid):
         "Return the image object for the partial path provided."
         archive_path = self.filename_mapping[imgid]
@@ -325,11 +366,12 @@ class ZipInterface(Interface):
                 self.all_compressed = {}
             self.all_compressed[multiprocessing.current_process().name] = zipfile.ZipFile(self.imgpath)
         bytes = self.all_compressed[multiprocessing.current_process().name].open(archive_path).read()
-        return self.convert_to_image(archive_path, bytes)
+        return convert_to_image(archive_path, bytes)
     def get_archive(self, imgpath):
         return zipfile.ZipFile(imgpath)
     def index(self, imgpath):
         "Create a dictionary mapping imgpath -> path within archive"
+        print("Indexing file paths (one-time). The next load will be faster")
         compressed = zipfile.ZipFile(imgpath)
         zip_infos = compressed.infolist()
         filename_mapping = {}
@@ -346,24 +388,33 @@ class ZipInterface(Interface):
 
 class FolderInterface(Interface):
     "This class supports drawing files from a folder based on a partial path."
+
     @classmethod
     def matches(cls, filename):
         "Return whether the given path is a zip archive."
         return os.path.isdir(filename)
-    def __init__(self, imgpath, path_length, save_to_cache=True, load_from_cache=True):
+
+    def __init__(self, imgpath, path_length):
         "Store the archive path, and the length of the partial paths within the archive"
         self.path_length = path_length
-        self.path, self.filename_mapping = self.load_dataset(imgpath, save_to_cache, load_from_cache)
+
+        self.filename_mapping = load_filename_mapping(imgpath, path_length)
+        #If the filename mapping could not be loaded, create it and save it
+        if self.filename_mapping is None:
+             _, self.filename_mapping = self.index(imgpath)
+             save_filename_mapping(imgpath, path_length, self.filename_mapping)
+
     def get_archive(self, imgid):
         pass
     def get_image(self, imgid):
         "Return the image object for the partial path provided."
         archive_path = self.filename_mapping[imgid]
         with open(archive_path,"rb") as handle:
-            image = self.convert_to_image(archive_path, handle.read())
+            image = convert_to_image(archive_path, handle.read())
         return image
     def index(self, imgpath):
         "Create a dictionary mapping imgpath -> path within archive"
+        print("Indexing file paths (one-time). The next load will be faster")
         filename_mapping = {}
         for path in Path(imgpath).rglob("*"):
             if not os.path.isdir(path):
@@ -384,8 +435,10 @@ def is_archive(filename):
     "Return whether the given filename is a tarfile or zipfile."
     return any(interface.matches(filename) for interface in archive_interfaces)
 
+
 class ArchiveFolder(Interface):
     "This class supports extracting files from multiple tar or zip archives under the same root directory."
+
     @classmethod
     def matches(cls, filename):
         for item in Path(filename).rglob("*"):
@@ -394,20 +447,34 @@ class ArchiveFolder(Interface):
             if is_archive(item):
                 return True
         return False
-    def __init__(self, imgpath, path_length, save_to_cache=True, load_from_cache=True):
+
+    def __init__(self, imgpath, path_length):
         "Store the archive path, and the length of the partial paths within the archive"
         self.path_length = path_length
-        self.archives, self.filename_mapping = self.load_dataset(imgpath, save_to_cache, load_from_cache)
+        self.archives = None
+        self.filename_mapping = load_filename_mapping(imgpath, path_length)
+        #If the filename mapping could not be loaded, create it and save it
+        if self.filename_mapping is None:
+             self.archives, self.filename_mapping = self.index(imgpath)
+             save_filename_mapping(imgpath, path_length, self.filename_mapping)
+        #If the compressed file has still not been loaded, load it.
+        if self.archives is None:
+             self.archives = self.get_archive(imgpath)
+
     def get_archive(self, imgpath):
         return get_interface(imgpath)
+
     def get_image(self, imgid):
         "Return the image object for the partial path provided."
         path_to_archive = self.filename_mapping[imgid]
         return self.archives[path_to_archive].get_image(imgid)
+
     def index(self, filename):
         """
-        Create a dictionary mapping imgid -> path to the sub-archive
-        containing the corresponding file.
+        Create a dictionary mapping imgid -> containing sub-archive.
+        The archives are identified by their filenames. The sub-archive
+        will then be queried itself.
+
         This is different from the index method of ZipInterface and
         TarInterface, where the dictionary values are the actual file
         paths.
@@ -418,6 +485,7 @@ class ArchiveFolder(Interface):
             for path_in_csv, path_in_archive in archive.filename_mapping.items():
                 filename_mapping[path_in_csv] = path_to_archive
         return archives, filename_mapping
+
     def get_archive(self, filename):
         archives = {}
         for path_to_archive in Path(filename).rglob("*"):
@@ -425,6 +493,7 @@ class ArchiveFolder(Interface):
                 archive = create_interface(path_to_archive, self.path_length)
                 archives[path_to_archive] = archive
         return archives
+
     def close(self):
         "Recursively close all open archives."
         for archive_path, archive in self.archives.items():
