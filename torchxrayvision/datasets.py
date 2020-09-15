@@ -1110,19 +1110,7 @@ class COVID19_Dataset(Dataset):
         self.transform = transform
         self.data_aug = data_aug
         self.views = views
-        
-        # defined here to make the code easier to read
-        pneumonias = ["COVID-19", "SARS", "MERS", "ARDS", "Streptococcus", "Pneumocystis", "Klebsiella", "Chlamydophila", "Legionella", "Influenza", "Mycoplasma", "Varicella", "Viral", "Bacterial", "Fungal", "Lipoid","E.Coli"]
-        
-        self.pathologies = ["Pneumonia","No Finding"] + pneumonias
-        self.pathologies = sorted(self.pathologies)
-
-        mapping = dict()
-        mapping["Pneumonia"] = pneumonias
-        mapping["Viral"] = ["COVID-19", "SARS", "MERS", "Influenza", "Varicella"]
-        mapping["Bacterial"] = ["Streptococcus", "Klebsiella", "Chlamydophila", "Legionella", "Mycoplasma","E.Coli"]
-        mapping["Fungal"] = ["Pneumocystis"]
-        
+                
         # Load data
         self.csvpath = csvpath
         self.csv = pd.read_csv(self.csvpath, nrows=nrows)
@@ -1133,16 +1121,23 @@ class COVID19_Dataset(Dataset):
         idx_pa = self.csv["view"].isin(self.views)
         self.csv = self.csv[idx_pa]
         
+        #filter out in progress samples
+        self.csv = self.csv[~(self.csv.finding == "todo")]
+        self.csv = self.csv[~(self.csv.finding == "Unknown")]
+        
+        self.pathologies = self.csv.finding.str.split("/", expand=True).values.ravel()
+        self.pathologies = self.pathologies[~pd.isnull(self.pathologies)]
+        self.pathologies = sorted(np.unique(self.pathologies))
+        
+        
         self.labels = []
         for pathology in self.pathologies:
             mask = self.csv["finding"].str.contains(pathology)
-            if pathology in mapping:
-                for syn in mapping[pathology]:
-                    #print("mapping", syn)
-                    mask |= self.csv["finding"].str.contains(syn)
             self.labels.append(mask.values)
         self.labels = np.asarray(self.labels).T
         self.labels = self.labels.astype(np.float32)
+        
+        self.csv = self.csv.reset_index()
 
     def __repr__(self):
         pprint.pprint(self.totals())
