@@ -6,6 +6,8 @@ A library for chest X-ray datasets and models. Including pre-trainined models.
 
 This code is still under development
 
+Twitter: [@torchxrayvision](https://twitter.com/torchxrayvision)
+
 ## Getting started
 
 ```
