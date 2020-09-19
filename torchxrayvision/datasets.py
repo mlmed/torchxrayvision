@@ -1,15 +1,10 @@
-from PIL import Image
 from os.path import join
-from skimage.io import imread, imsave
 from torch import nn
-from copy import copy
 from torch.nn.modules.linear import Linear
 from torch.utils.data import Dataset
 from torchvision import transforms
 from tqdm import tqdm
 import numpy as np
-import multiprocessing
-from io import BytesIO
 import os,sys,os.path
 import pandas as pd
 import pickle
@@ -22,15 +17,12 @@ import torch
 import torch.nn.functional as F
 import torchvision
 import torchvision.transforms.functional as TF
-from hashlib import blake2b
 import skimage.transform
 import warnings
 import tarfile
 import zipfile
 import random
-from pathlib import Path
-
-Image.init()
+from torchxrayvision.storage_interface import create_interface
 
 default_pathologies = [  'Atelectasis',
                  'Consolidation',
@@ -53,8 +45,6 @@ default_pathologies = [  'Atelectasis',
                 ]
 	
 thispath = os.path.dirname(os.path.realpath(__file__))
-
-tarfile_contents = {}
 
 def normalize(sample, maxval):
     """Scales images to be roughly [-1024 1024]."""
@@ -205,307 +195,6 @@ class SubsetDataset(Dataset):
     def __getitem__(self, idx):
         return self.dataset[self.idxs[idx]]
 
-def last_n_in_filepath(filepath, n):
-    """
-    Return the last n pieces of a path (takes a string, not a Path object).
-    For example:
-    last_n_in_filepath("a/b/c",2) -> "b/c"
-    """
-    if n < 1:
-        return ""
-    start_part, end_part = os.path.split(filepath)
-    for i in range(n - 1):
-        start_part, middle_part = os.path.split(start_part)
-        end_part = os.path.join(middle_part, end_part)
-    return end_part
-
-def get_filename_mapping_path(imgpath, path_length):
-    """
-    Create a hash of (imgpath, last_modification, path_length_for_mapping_key)
-    and use it to return the filepath for a cached index.
-    """
-    imgpath = os.path.abspath(str(imgpath))
-    timestamp = os.path.getmtime(imgpath)
-    length = path_length
-    key = (imgpath, timestamp, length)
-
-    cache_filename = str(blake2b(pickle.dumps(key)).hexdigest()) + ".pkl"
-
-    file_mapping_cache_folder = os.path.expanduser(os.path.join(
-        "~", ".torchxrayvision", "filename-mapping-cache"
-    ))
-
-    filename_mapping_path = os.path.join(file_mapping_cache_folder, cache_filename)
-
-    return filename_mapping_path
-
-def load_filename_mapping(imgpath, path_length):
-    "If a cached filename mapping exists, return it. Otherwise, return None"
-
-    filename_mapping_path = get_filename_mapping_path(imgpath, path_length)
-
-    if os.path.exists(filename_mapping_path):
-        print("Loading indexed file paths from cache")
-        with open(filename_mapping_path, "rb") as handle:
-            filename_mapping = pickle.load(handle)
-    else:
-        filename_mapping = None
-
-    return filename_mapping
-
-def save_filename_mapping(imgpath, path_length, filename_mapping):
-    "Load the dataset's index from the cache if available, else create a new one."
-
-    filename_mapping_path = get_filename_mapping_path(imgpath, path_length)
-
-    try:
-        #Pickle filename_mapping.
-        os.makedirs(os.path.dirname(filename_mapping_path), exist_ok=True)
-        with open(filename_mapping_path, "wb") as handle:
-            pickle.dump(filename_mapping, handle)
-        return True
-
-    except:
-        raise
-        return False
-    #return compressed, mapping
-
-def convert_to_image(filename, bytes):
-    "Convert an image byte array to a numpy array. If the filename ends with .dcm, use pydicom."
-    if str(filename).endswith(".dcm"):
-        return pydicom.filereader.dcmread(BytesIO(bytes), force=True).pixel_array
-    else:
-        return np.array(Image.open(BytesIO(bytes)))
-
-class Interface(object):
-    pass
-
-class TarInterface(Interface):
-    "This class supports extracting files from a tar archive based on a partial path."
-    @classmethod
-    def matches(cls, filename):
-        "Return whether the given path is a tar archive."
-        return not os.path.isdir(filename) and tarfile.is_tarfile(filename)
-    def __init__(self, imgpath, path_length):
-        "Store the archive path, and the length of the partial paths within the archive"
-        self.path_length = path_length
-        self.imgpath = imgpath
-
-        #Load archive and filename mapping
-        compressed = None
-        self.filename_mapping = load_filename_mapping(imgpath, path_length)
-        #If the filename mapping could not be loaded, create it and save it
-        if self.filename_mapping is None:
-             compressed, self.filename_mapping = self.index(imgpath)
-             save_filename_mapping(imgpath, path_length, self.filename_mapping)
-        #If the compressed file has still not been loaded, load it.
-        if compressed is None:
-             compressed = self.get_archive(imgpath)
-        self.all_compressed = {multiprocessing.current_process().name:compressed}
-
-    def get_image(self, imgid):
-        "Return the image object for the partial path provided."
-        archive_path = self.filename_mapping[imgid]
-        if not multiprocessing.current_process().name in self.all_compressed:
-            #print("Opening tar file on thread:",pid)
-            # check and reset number of open files if too many
-            if len(self.all_compressed.keys()) > 64:
-                self.all_compressed = {}
-            self.all_compressed[multiprocessing.current_process().name] = tarfile.open(self.imgpath)
-        bytes = self.all_compressed[multiprocessing.current_process().name].extractfile(archive_path).read()
-        return convert_to_image(archive_path, bytes)
-    def get_archive(self, imgpath):
-        return tarfile.open(imgpath)
-    def index(self, imgpath):
-        "Create a dictionary mapping imgpath -> path within archive"
-        print("Indexing file paths (one-time). The next load will be faster")
-        compressed = tarfile.open(imgpath)
-        tar_infos = compressed.getmembers()
-        filename_mapping = {}
-        for tar_info in tar_infos:
-            if tar_info.type != "DIRTYPE":
-                tar_path = tar_info.name
-                imgid = last_n_in_filepath(tar_path, self.path_length)
-            filename_mapping[imgid] = tar_path
-        return compressed, filename_mapping
-    def close(self):
-        "Close all open tarfiles."
-        for compressed in self.all_compressed.values():
-            compressed.close()
-
-class ZipInterface(Interface):
-    "This class supports extracting files from a zip archive based on a partial path."
-    @classmethod
-    def matches(cls, filename):
-        "Return whether the given path is a zip archive."
-        return not os.path.isdir(filename) and zipfile.is_zipfile(filename)
-    def __init__(self, imgpath, path_length):
-        "Store the archive path, and the length of the partial paths within the archive"
-        self.path_length = path_length
-        self.imgpath = imgpath
-
-        #Load archive and filename mapping
-        compressed = None
-        self.filename_mapping = load_filename_mapping(imgpath, path_length)
-        #If the filename mapping could not be loaded, create it and save it
-        if self.filename_mapping is None:
-             compressed, self.filename_mapping = self.index(imgpath)
-             save_filename_mapping(imgpath, path_length, self.filename_mapping)
-        #If the compressed file has still not been loaded, load it.
-        if compressed is None:
-             compressed = zipfile.ZipFile(imgpath)
-        self.all_compressed = {multiprocessing.current_process().name:compressed}
-
-    def get_image(self, imgid):
-        "Return the image object for the partial path provided."
-        archive_path = self.filename_mapping[imgid]
-        if not multiprocessing.current_process().name in self.all_compressed:
-            #print("Opening zip file on thread:",multiprocessing.current_process())
-            # check and reset number of open files if too many
-            if len(self.all_compressed.keys()) > 64:
-                self.all_compressed = {}
-            self.all_compressed[multiprocessing.current_process().name] = zipfile.ZipFile(self.imgpath)
-        bytes = self.all_compressed[multiprocessing.current_process().name].open(archive_path).read()
-        return convert_to_image(archive_path, bytes)
-    def get_archive(self, imgpath):
-        return zipfile.ZipFile(imgpath)
-    def index(self, imgpath):
-        "Create a dictionary mapping imgpath -> path within archive"
-        print("Indexing file paths (one-time). The next load will be faster")
-        compressed = zipfile.ZipFile(imgpath)
-        zip_infos = compressed.infolist()
-        filename_mapping = {}
-        for zip_info in zip_infos:
-            if not zip_info.is_dir():
-                zip_path = zip_info.filename
-                imgid = last_n_in_filepath(zip_path, self.path_length)
-                filename_mapping[imgid] = zip_path
-        return compressed, filename_mapping
-    def close(self):
-        "Close all open zipfiles."
-        for compressed in self.all_compressed.values():
-            compressed.close()
-
-class FolderInterface(Interface):
-    "This class supports drawing files from a folder based on a partial path."
-
-    @classmethod
-    def matches(cls, filename):
-        "Return whether the given path is a zip archive."
-        return os.path.isdir(filename)
-
-    def __init__(self, imgpath, path_length):
-        "Store the archive path, and the length of the partial paths within the archive"
-        self.path_length = path_length
-
-        self.filename_mapping = load_filename_mapping(imgpath, path_length)
-        #If the filename mapping could not be loaded, create it and save it
-        if self.filename_mapping is None:
-             _, self.filename_mapping = self.index(imgpath)
-             save_filename_mapping(imgpath, path_length, self.filename_mapping)
-
-    def get_archive(self, imgid):
-        pass
-    def get_image(self, imgid):
-        "Return the image object for the partial path provided."
-        archive_path = self.filename_mapping[imgid]
-        with open(archive_path,"rb") as handle:
-            image = convert_to_image(archive_path, handle.read())
-        return image
-    def index(self, imgpath):
-        "Create a dictionary mapping imgpath -> path within archive"
-        print("Indexing file paths (one-time). The next load will be faster")
-        filename_mapping = {}
-        for path in Path(imgpath).rglob("*"):
-            if not os.path.isdir(path):
-                imgid = last_n_in_filepath(path, self.path_length)
-                filename_mapping[imgid] = path
-        return imgpath, filename_mapping
-    def close(self):
-        pass
-
-def is_image(filename):
-    "Return whether the given filename has an image extension."
-    _, extension = os.path.splitext(filename)
-    return extension in Image.EXTENSION
-
-archive_interfaces = [ZipInterface, TarInterface]
-
-def is_archive(filename):
-    "Return whether the given filename is a tarfile or zipfile."
-    return any(interface.matches(filename) for interface in archive_interfaces)
-
-
-class ArchiveFolder(Interface):
-    "This class supports extracting files from multiple tar or zip archives under the same root directory."
-
-    @classmethod
-    def matches(cls, filename):
-        for item in Path(filename).rglob("*"):
-            if is_image(item):
-                return False
-            if is_archive(item):
-                return True
-        return False
-
-    def __init__(self, imgpath, path_length):
-        "Store the archive path, and the length of the partial paths within the archive"
-        self.path_length = path_length
-        self.archives = None
-        self.filename_mapping = load_filename_mapping(imgpath, path_length)
-        #If the filename mapping could not be loaded, create it and save it
-        if self.filename_mapping is None:
-             self.archives, self.filename_mapping = self.index(imgpath)
-             save_filename_mapping(imgpath, path_length, self.filename_mapping)
-        #If the compressed file has still not been loaded, load it.
-        if self.archives is None:
-             self.archives = self.get_archive(imgpath)
-
-    def get_archive(self, imgpath):
-        return get_interface(imgpath)
-
-    def get_image(self, imgid):
-        "Return the image object for the partial path provided."
-        path_to_archive = self.filename_mapping[imgid]
-        return self.archives[path_to_archive].get_image(imgid)
-
-    def index(self, filename):
-        """
-        Create a dictionary mapping imgid -> containing sub-archive.
-        The archives are identified by their filenames. The sub-archive
-        will then be queried itself.
-
-        This is different from the index method of ZipInterface and
-        TarInterface, where the dictionary values are the actual file
-        paths.
-        """
-        archives = self.get_archive(filename)
-        filename_mapping = {}
-        for path_to_archive, archive in archives.items():
-            for path_in_csv, path_in_archive in archive.filename_mapping.items():
-                filename_mapping[path_in_csv] = path_to_archive
-        return archives, filename_mapping
-
-    def get_archive(self, filename):
-        archives = {}
-        for path_to_archive in Path(filename).rglob("*"):
-            if is_archive(path_to_archive):
-                archive = create_interface(path_to_archive, self.path_length)
-                archives[path_to_archive] = archive
-        return archives
-
-    def close(self):
-        "Recursively close all open archives."
-        for archive_path, archive in self.archives.items():
-            archive.close()
-
-def create_interface(filename, path_length):
-    "Choose the right interface type for the given path, and return an initialized interface."
-    interfaces = [ArchiveFolder, FolderInterface, TarInterface, ZipInterface]
-    for interface in interfaces:
-        if interface.matches(filename):
-            return interface(filename, path_length)
-
 class NIH_Dataset(Dataset):
     path_length = 1
     """
@@ -603,7 +292,6 @@ class NIH_Dataset(Dataset):
         
         
         imgid = self.csv['Image Index'].iloc[idx]
-        #img_path = os.path.join(self.imgpath, imgid)
         img = self.image_interface.get_image(imgid)
         if self.normalize:
             img = normalize(img, self.MAXVAL)  
@@ -760,13 +448,7 @@ class RSNA_Pneumonia_Dataset(Dataset):
         sample["lab"] = self.labels[idx]
         
         imgid = self.csv['patientId'].iloc[idx] + self.extension
-        #img_path = os.path.join(self.imgpath, imgid + self.extension)
-        #print(img_path)
         
-        #if self.use_pydicom:
-        #    img=pydicom.filereader.dcmread(img_path).pixel_array
-        #else:
-        #    img = imread(img_path)
         img = self.image_interface.get_image(imgid)
         if self.normalize:
             img = normalize(img, self.MAXVAL)  
@@ -910,9 +592,6 @@ class NIH_Google_Dataset(Dataset):
 
     def __getitem__(self, idx):
         imgid = self.csv['Image Index'].iloc[idx]
-        #img_path = os.path.join(self.imgpath, imgid)
-        #print(img_path)
-        #img = imread(img_path)
         img = self.image_interface.get(imgid)
         if self.normalize:
             img = normalize(img, self.MAXVAL)  
@@ -1035,8 +714,7 @@ class PC_Dataset(Dataset):
     def __getitem__(self, idx):
 
         imgid = self.csv['ImageID'].iloc[idx]
-        #img_path = os.path.join(self.imgpath,imgid)
-        img = self.image_interface.get_image(imgid)#imread(img_path)
+        img = self.image_interface.get_image(imgid)
         img = normalize(img, self.MAXVAL)   
         
         # Check that images are 2D arrays
@@ -1057,7 +735,7 @@ class PC_Dataset(Dataset):
         return {"img":img, "lab":self.labels[idx], "idx":idx}
 
 class CheX_Dataset(Dataset):
-    path_length = 3 #due to removing CheXpert-... and train in __getitem__
+    path_length = 3
     """
     CheXpert: A Large Chest Radiograph Dataset with Uncertainty Labels and Expert Comparison.
 Jeremy Irvin *, Pranav Rajpurkar *, Michael Ko, Yifan Yu, Silviana Ciurea-Ilcus, Chris Chute, Henrik Marklund, Behzad Haghgoo, Robyn Ball, Katie Shpanskaya, Jayne Seekins, David A. Mong, Safwan S. Halabi, Jesse K. Sandberg, Ricky Jones, David B. Larson, Curtis P. Langlotz, Bhavik N. Patel, Matthew P. Lungren, Andrew Y. Ng
@@ -1136,11 +814,8 @@ Jeremy Irvin *, Pranav Rajpurkar *, Michael Ko, Yifan Yu, Silviana Ciurea-Ilcus,
     def __getitem__(self, idx):
         
         imgid = self.csv['Path'].iloc[idx]
-        imgid = last_n_in_filepath(imgid, self.path_length)
-        #imgid = imgid.replace("CheXpert-v1.0-small/","")
-        #img_path = os.path.join(self.imgpath, imgid)
+        imgid = imgid.replace("CheXpert-v1.0-small/","")
         img = self.image_interface.get_image(imgid)
-        #img = imread(img_path)
         img = normalize(img, self.MAXVAL)      
         
         # Check that images are 2D arrays
@@ -1244,15 +919,11 @@ class MIMIC_Dataset(Dataset):
     def __len__(self):
         return len(self.labels)
 
-    def get_imgid(self, idx):
+    def __getitem__(self, idx):
         subjectid = str(self.csv.iloc[idx]["subject_id"])
         studyid = str(self.csv.iloc[idx]["study_id"])
         dicom_id = str(self.csv.iloc[idx]["dicom_id"])
         img_fname = os.path.join("p" + subjectid[:2], "p" + subjectid, "s" + studyid, dicom_id + ".jpg")
-        return img_fname
-
-    def __getitem__(self, idx):
-        img_fname = self.get_imgid(idx)
 
         img = self.image_interface.get_image(img_fname)
         img = normalize(img, self.MAXVAL)
@@ -1392,8 +1063,6 @@ class Openi_Dataset(Dataset):
 
     def __getitem__(self, idx):
         imageid = self.csv.iloc[idx].imageid + ".png"
-        #img_path = os.path.join(self.imgpath,imageid + ".png")
-        #print(img_path)
         img = self.image_interface.get_image(imageid)
         img = normalize(img, self.MAXVAL)  
 
@@ -1486,9 +1155,6 @@ class COVID19_Dataset(Dataset):
 
     def __getitem__(self, idx):
         imgid = self.csv['filename'].iloc[idx]
-        #img_path = os.path.join(self.imgpath, imgid)
-        #print(img_path)
-        #img = imread(img_path)
         img = self.image_interface.get_image(imgid)
         img = normalize(img, self.MAXVAL)  
 
@@ -1577,9 +1243,7 @@ class NLMTB_Dataset(Dataset):
     def __getitem__(self, idx):
         item = self.csv.iloc[idx]
         imgid = item["fname"] #os.path.join("CXR_png", item["fname"])
-        #print(img_path)
         img = self.image_interface.get_image(imgid)
-        #img = imread(img_path)
         img = normalize(img, self.MAXVAL)  
 
         # Check that images are 2D arrays
