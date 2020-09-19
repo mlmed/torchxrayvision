@@ -368,7 +368,7 @@ class RSNA_Pneumonia_Dataset(Dataset):
     """
     def __init__(self, 
                  imgpath, 
-                 csvpath=os.path.join(thispath, "kaggle_stage_2_train_labels.csv.zip"),
+	                 csvpath=os.path.join(thispath, "kaggle_stage_2_train_labels.csv.zip"),
                  dicomcsvpath=os.path.join(thispath, "kaggle_stage_2_train_images_dicom_headers.csv.gz"),
                  views=["PA"],
                  transform=None, 
@@ -735,7 +735,7 @@ class PC_Dataset(Dataset):
         return {"img":img, "lab":self.labels[idx], "idx":idx}
 
 class CheX_Dataset(Dataset):
-    path_length = 3
+    path_length = 4
     """
     CheXpert: A Large Chest Radiograph Dataset with Uncertainty Labels and Expert Comparison.
 Jeremy Irvin *, Pranav Rajpurkar *, Michael Ko, Yifan Yu, Silviana Ciurea-Ilcus, Chris Chute, Henrik Marklund, Behzad Haghgoo, Robyn Ball, Katie Shpanskaya, Jayne Seekins, David A. Mong, Safwan S. Halabi, Jesse K. Sandberg, Ricky Jones, David B. Larson, Curtis P. Langlotz, Bhavik N. Patel, Matthew P. Lungren, Andrew Y. Ng
