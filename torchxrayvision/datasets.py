@@ -1096,13 +1096,15 @@ class COVID19_Dataset(Dataset):
     def __init__(self, 
                  imgpath=os.path.join(thispath, "covid-chestxray-dataset", "images"), 
                  csvpath=os.path.join(thispath, "covid-chestxray-dataset", "metadata.csv"), 
+                 semantic_masks_v7labs_lungs_path=os.path.join(thispath, "data" , "semantic_masks_v7labs_lungs.zip"),
                  views=["PA", "AP"],
                  transform=None, 
                  data_aug=None, 
                  nrows=None, 
                  seed=0,
                  pure_labels=False, 
-                 unique_patients=True):
+                 unique_patients=True,
+                 semantic_masks=False):
 
         super(COVID19_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
@@ -1110,6 +1112,8 @@ class COVID19_Dataset(Dataset):
         self.transform = transform
         self.data_aug = data_aug
         self.views = views
+        self.semantic_masks = semantic_masks
+        self.semantic_masks_v7labs_lungs_path = semantic_masks_v7labs_lungs_path
                 
         # Load data
         self.csvpath = csvpath
@@ -1138,6 +1142,10 @@ class COVID19_Dataset(Dataset):
         self.labels = self.labels.astype(np.float32)
         
         self.csv = self.csv.reset_index()
+        
+        if self.semantic_masks:
+            temp = zipfile.ZipFile(self.semantic_masks_v7labs_lungs_path)
+            self.semantic_masks_v7labs_lungs_namelist = temp.namelist()
 
     def __repr__(self):
         pprint.pprint(self.totals())
@@ -1147,6 +1155,11 @@ class COVID19_Dataset(Dataset):
         return len(self.labels)
 
     def __getitem__(self, idx):
+        
+        sample = {}
+        sample["idx"] = idx
+        sample["lab"] = self.labels[idx]
+        
         imgid = self.csv['filename'].iloc[idx]
         img_path = os.path.join(self.imgpath, imgid)
         #print(img_path)
@@ -1160,15 +1173,46 @@ class COVID19_Dataset(Dataset):
             print("error, dimension lower than 2 for image")
 
         # Add color channel
-        img = img[None, :, :]                    
+        sample["img"] = img[None, :, :]                    
                                
-        if self.transform is not None:
-            img = self.transform(img)
-
-        if self.data_aug is not None:
-            img = self.data_aug(img)
+        transform_seed = np.random.randint(2147483647)
+        
+        if self.semantic_masks:
+            sample["semantic_masks"] = self.get_semantic_mask_dict(imgid, sample["img"].shape)
             
-        return {"img":img, "lab":self.labels[idx], "idx":idx}
+        if self.transform is not None:
+            random.seed(transform_seed)
+            sample["img"] = self.transform(sample["img"])
+            if self.semantic_masks:
+                for i in sample["semantic_masks"].keys():
+                    random.seed(transform_seed)
+                    sample["semantic_masks"][i] = self.transform(sample["semantic_masks"][i])
+  
+        if self.data_aug is not None:
+            random.seed(transform_seed)
+            sample["img"] = self.data_aug(sample["img"])
+            if self.semantic_masks:
+                for i in sample["semantic_masks"].keys():
+                    random.seed(transform_seed)
+                    sample["semantic_masks"][i] = self.data_aug(sample["semantic_masks"][i])
+            
+        return sample
+    
+    def get_semantic_mask_dict(self, image_name, this_shape):
+                
+        archive_path = "semantic_masks_v7labs_lungs/" + image_name
+        semantic_masks = {}
+        if archive_path in self.semantic_masks_v7labs_lungs_namelist:
+            with zipfile.ZipFile(self.semantic_masks_v7labs_lungs_path).open(archive_path) as file:
+                mask = imread(file)
+                
+                mask = (mask == 255).astype(np.float)
+                # resize so image resizing works
+                mask = mask[None, :, :] 
+
+                semantic_masks["Lungs"] = mask
+
+        return semantic_masks
     
 class NLMTB_Dataset(Dataset):
     """
