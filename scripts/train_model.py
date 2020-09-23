@@ -24,7 +24,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-f', type=str, default="", help='')
 parser.add_argument('-name', type=str)
 parser.add_argument('--output_dir', type=str, default="./output/")
-parser.add_argument('--dataset', type=str, default="chex")
+parser.add_argument('--dataset', type=str, default="pcchex")
 parser.add_argument('--dataset_dir', type=str, default="not used yet")
 parser.add_argument('--model', type=str, default="densenet121")
 parser.add_argument('--seed', type=int, default=0, help='')
@@ -33,24 +33,32 @@ parser.add_argument('--num_epochs', type=int, default=160, help='')
 parser.add_argument('--batch_size', type=int, default=64, help='')
 parser.add_argument('--shuffle', type=bool, default=True, help='')
 parser.add_argument('--lr', type=float, default=0.001, help='')
-parser.add_argument('--threads', type=int, default=8, help='')
+parser.add_argument('--threads', type=int, default=4, help='')
 parser.add_argument('--taskweights', type=bool, default=True, help='')
 parser.add_argument('--featurereg', type=bool, default=False, help='')
 parser.add_argument('--weightreg', type=bool, default=False, help='')
 parser.add_argument('--data_aug', type=bool, default=True, help='')
+parser.add_argument('--data_aug_rot', type=int, default=45, help='')
+parser.add_argument('--data_aug_trans', type=float, default=0.15, help='')
+parser.add_argument('--data_aug_scale', type=float, default=0.15, help='')
 parser.add_argument('--label_concat', type=bool, default=False, help='')
 parser.add_argument('--label_concat_reg', type=bool, default=False, help='')
+parser.add_argument('--graphmask', type=bool, default=False, help='')
+parser.add_argument('--addpurelabels', type=int, default=0, help='')
 
 cfg = parser.parse_args()
-
+print(cfg)
 
 data_aug = None
 if cfg.data_aug:
     data_aug = torchvision.transforms.Compose([
         xrv.datasets.ToPILImage(),
-        torchvision.transforms.RandomAffine(45, translate=(0.15, 0.15), scale=(0.85, 1.15)),
+        torchvision.transforms.RandomAffine(cfg.data_aug_rot, 
+                                            translate=(cfg.data_aug_trans, cfg.data_aug_trans), 
+                                            scale=(1.0-cfg.data_aug_scale, 1.0+cfg.data_aug_scale)),
         torchvision.transforms.ToTensor()
     ])
+    print(data_aug)
 
 transforms = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),xrv.datasets.XRayResizer(224)])
 
@@ -64,20 +72,20 @@ if "nih" in cfg.dataset:
     datas_names.append("nih")
 if "pc" in cfg.dataset:
     dataset = xrv.datasets.PC_Dataset(
-        imgpath="/lustre04/scratch/cohenjos/PC/images-224",
+        imgpath="/home/mila/c/cohenjos/data/images-224-PC",
         transform=transforms, data_aug=data_aug)
     datas.append(dataset)
     datas_names.append("pc")
 if "chex" in cfg.dataset:
     dataset = xrv.datasets.CheX_Dataset(
-        imgpath="/lustre03/project/6008064/jpcohen/chexpert/CheXpert-v1.0-small",
-        csvpath="/lustre03/project/6008064/jpcohen/chexpert/CheXpert-v1.0-small/train.csv",
+        imgpath="/home/mila/c/cohenjos/data/CheXpert-v1.0-small",
+        csvpath="/home/mila/c/cohenjos/data/CheXpert-v1.0-small/train.csv",
         transform=transforms, data_aug=data_aug)
     datas.append(dataset)
     datas_names.append("chex")
 if "google" in cfg.dataset:
     dataset = xrv.datasets.NIH_Google_Dataset(
-        imgpath="/lustre04/scratch/cohenjos/NIH/images-224",
+        imgpath="/home/mila/c/cohenjos/data/images-224-NIH",
         transform=transforms, data_aug=data_aug)
     datas.append(dataset)
     datas_names.append("google")
@@ -103,12 +111,12 @@ if "openi" in cfg.dataset:
         transform=transforms, data_aug=data_aug)
     datas.append(dataset)
     datas_names.append("openi")
-if "kaggle" in cfg.dataset:
-    dataset = xrv.datasets.Kaggle_Dataset(
+if "rsna" in cfg.dataset:
+    dataset = xrv.datasets.RSNA_Pneumonia_Dataset(
         imgpath="/lustre03/project/6008064/jpcohen/kaggle-pneumonia/stage_2_train_images_jpg",
         transform=transforms, data_aug=data_aug)
     datas.append(dataset)
-    datas_names.append("kaggle")
+    datas_names.append("rsna")
 
 
 print("datas_names", datas_names)
@@ -122,7 +130,7 @@ test_datas = []
 for i, dataset in enumerate(datas):
     train_size = int(0.5 * len(dataset))
     test_size = len(dataset) - train_size
-    torch.manual_seed(0)
+    torch.manual_seed(cfg.seed)
     train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
     
     #disable data aug
