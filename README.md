@@ -159,13 +159,23 @@ it also works with data_augmentation if you pass in `data_aug=data_transforms` t
 ## Citation
 
 ```
-Joseph Paul Cohen, Joseph Viviano, Mohammad Hashir, and Hadrien Bertrand. 
+Joseph Paul Cohen and Joseph Viviano and Mohammad Hashir and Hadrien Bertrand. 
 TorchXrayVision: A library of chest X-ray datasets and models. 
 https://github.com/mlmed/torchxrayvision, 2020
+
+@article{Cohen2020xrv,
+author = {Cohen, Joseph Paul and Viviano, Joseph and Hashir, Mohammad and Bertrand, Hadrien},
+journal = {https://github.com/mlmed/torchxrayvision},
+title = {{TorchXRayVision: A library of chest X-ray datasets and models}},
+url = {https://github.com/mlmed/torchxrayvision},
+year = {2020}
+}
+
+
 ```
 and this paper [https://arxiv.org/abs/2002.02497](https://arxiv.org/abs/2002.02497)
 ```
-Cohen, J. P., Hashir, M., Brooks, R., & Bertrand, H. 
+Joseph Paul Cohen and Mohammad Hashir and Rupert Brooks and Hadrien Bertrand
 On the limits of cross-domain generalization in automated X-ray prediction. 
 Medical Imaging with Deep Learning 2020 (Online: https://arxiv.org/abs/2002.02497)
 
