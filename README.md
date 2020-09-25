@@ -182,7 +182,7 @@ Medical Imaging with Deep Learning 2020 (Online: https://arxiv.org/abs/2002.0249
 @inproceedings{cohen2020limits,
   title={On the limits of cross-domain generalization in automated X-ray prediction},
   author={Cohen, Joseph Paul and Hashir, Mohammad and Brooks, Rupert and Bertrand, Hadrien},
-  booktitle={Medical Imaging with Deep Learning}
+  booktitle={Medical Imaging with Deep Learning},
   year={2020},
   url={https://arxiv.org/abs/2002.02497}
 }
