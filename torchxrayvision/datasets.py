@@ -1340,3 +1340,155 @@ class XRayCenterCrop(object):
     
     def __call__(self, img):
         return self.crop_center(img)
+
+class CovariateDataset(Dataset):
+    def __init__(self, 
+                 d1, d1_target,
+                 d2, d2_target,
+                 ratio=0.5, mode="train",
+                 seed=0, nsamples=None,
+                 splits=[0.5, 0.25, 0.25],
+                 verbose=False):
+        
+        super(CovariateDataset, self).__init__()
+        
+        self.splits = np.array(splits)
+        self.d1 = d1
+        self.d1_target = d1_target
+        self.d2 = d2
+        self.d2_target = d2_target
+        
+        assert mode in ['train', 'valid', 'test']
+        assert np.sum(self.splits) == 1.0
+
+        np.random.seed(seed)  # Reset the seed so all runs are the same.
+        
+        all_imageids = np.concatenate([np.arange(len(self.d1)),
+                                       np.arange(len(self.d2))]).astype(int)
+        all_idx = np.arange(len(all_imageids)).astype(int)
+        
+        all_labels = np.concatenate([d1_target, 
+                                     d2_target]).astype(int)
+        
+        all_site = np.concatenate([np.zeros(len(self.d1)),
+                                   np.ones(len(self.d2))]).astype(int)
+
+        idx_sick = all_labels==1
+        n_per_category = np.min([sum(idx_sick[all_site==0]),
+                                 sum(idx_sick[all_site==1]),
+                                 sum(~idx_sick[all_site==0]),
+                                 sum(~idx_sick[all_site==1])])
+
+        if verbose:
+            print("n_per_category={}".format(n_per_category))
+
+        all_0_neg = all_idx[np.where((all_site==0) & (all_labels==0))]
+        all_0_neg = np.random.choice(all_0_neg, n_per_category, replace=False)
+        all_0_pos = all_idx[np.where((all_site==0) & (all_labels==1))]
+        all_0_pos = np.random.choice(all_0_pos, n_per_category, replace=False)
+        all_1_neg = all_idx[np.where((all_site==1) & (all_labels==0))]
+        all_1_neg = np.random.choice(all_1_neg, n_per_category, replace=False)
+        all_1_pos = all_idx[np.where((all_site==1) & (all_labels==1))]
+        all_1_pos = np.random.choice(all_1_pos, n_per_category, replace=False)
+
+        # TRAIN
+        train_0_neg = np.random.choice(
+            all_0_neg, int(n_per_category*ratio*splits[0]*2), replace=False)
+        train_0_pos = np.random.choice(
+            all_0_pos, int(n_per_category*(1-ratio)*splits[0]*2), replace=False)
+        train_1_neg = np.random.choice(
+            all_1_neg, int(n_per_category*(1-ratio)*splits[0]*2), replace=False)
+        train_1_pos = np.random.choice(
+            all_1_pos, int(n_per_category*ratio*splits[0]*2), replace=False)
+
+        # REDUCE POST-TRAIN
+        all_0_neg = np.setdiff1d(all_0_neg, train_0_neg)
+        all_0_pos = np.setdiff1d(all_0_pos, train_0_pos)
+        all_1_neg = np.setdiff1d(all_1_neg, train_1_neg)
+        all_1_pos = np.setdiff1d(all_1_pos, train_1_pos)
+
+        if verbose:
+            print("TRAIN: neg={}, pos={}".format(len(train_0_neg)+len(train_1_neg),
+                                                 len(train_0_pos)+len(train_1_pos)))
+
+        # VALID
+        valid_0_neg = np.random.choice(
+            all_0_neg, int(n_per_category*(1-ratio)*splits[1]*2), replace=False)
+        valid_0_pos = np.random.choice(
+            all_0_pos, int(n_per_category*ratio*splits[1]*2), replace=False)
+        valid_1_neg = np.random.choice(
+            all_1_neg, int(n_per_category*ratio*splits[1]*2), replace=False)
+        valid_1_pos = np.random.choice(
+            all_1_pos, int(n_per_category*(1-ratio)*splits[1]*2), replace=False)
+
+        # REDUCE POST-VALID
+        all_0_neg = np.setdiff1d(all_0_neg, valid_0_neg)
+        all_0_pos = np.setdiff1d(all_0_pos, valid_0_pos)
+        all_1_neg = np.setdiff1d(all_1_neg, valid_1_neg)
+        all_1_pos = np.setdiff1d(all_1_pos, valid_1_pos)
+
+        if verbose:
+            print("VALID: neg={}, pos={}".format(len(valid_0_neg)+len(valid_1_neg),
+                                                 len(valid_0_pos)+len(valid_1_pos)))
+
+        # TEST
+        test_0_neg = all_0_neg
+        test_0_pos = all_0_pos
+        test_1_neg = all_1_neg
+        test_1_pos = all_1_pos
+
+        if verbose:
+            print("TEST: neg={}, pos={}".format(len(test_0_neg)+len(test_1_neg),
+                                                len(test_0_pos)+len(test_1_pos)))
+
+        def _reduce_nsamples(nsamples, a, b, c, d):
+            if nsamples:
+                a = a[:int(np.floor(nsamples/4))]
+                b = b[:int(np.ceil(nsamples/4))]
+                c = c[:int(np.ceil(nsamples/4))]
+                d = d[:int(np.floor(nsamples/4))]
+
+            return (a, b, c, d)
+
+        if mode == "train":
+            (a, b, c, d) = _reduce_nsamples(
+                nsamples, train_0_neg, train_0_pos, train_1_neg, train_1_pos)
+        elif mode == "valid":
+            (a, b, c, d) = _reduce_nsamples(
+                nsamples, valid_0_neg, valid_0_pos, valid_1_neg, valid_1_pos)
+        elif mode == "test":
+            (a, b, c, d) = _reduce_nsamples(
+                nsamples, test_0_neg, test_0_pos, test_1_neg, test_1_pos)
+        else:
+            raise Exception("unknown mode")
+
+        self.select_idx = np.concatenate([a, b, c, d])
+        self.imageids = all_imageids[self.select_idx]
+        self.pathologies = ["Custom"]
+        self.labels = all_labels[self.select_idx].reshape(-1,1)
+        self.site = all_site[self.select_idx]
+        
+    def __repr__(self):
+        pprint.pprint(self.totals())
+        return self.__class__.__name__ + " num_samples={}".format(len(self))
+    
+    def __len__(self):
+        return len(self.imageids)
+
+    def __getitem__(self, idx):
+
+        if self.site[idx] == 0:
+            dataset = self.d1
+        else:
+            dataset = self.d2
+
+        sample = dataset[self.imageids[idx]]
+        img = sample["img"]
+        
+        # replace the labels with the specific label we focus on
+        sample["lab-old"] = sample["lab"]
+        sample["lab"] = self.labels[idx]
+        
+        sample["site"] = self.site[idx]
+
+        return sample
