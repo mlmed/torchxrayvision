@@ -1342,6 +1342,12 @@ class XRayCenterCrop(object):
         return self.crop_center(img)
 
 class CovariateDataset(Dataset):
+    """
+    Dataset which will correlate the dataset with a specific label.
+    
+    Viviano et al. Saliency is a Possible Red Herring When Diagnosing Poor Generalization
+    https://arxiv.org/abs/1910.00199
+    """
     def __init__(self, 
                  d1, d1_target,
                  d2, d2_target,
