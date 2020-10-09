@@ -155,6 +155,30 @@ it also works with data_augmentation if you pass in `data_aug=data_transforms` t
 
 ![](docs/pathology-mask-rsna614-da.png)
 
+## Distribution shift tools ([demo notebook](https://github.com/mlmed/torchxrayvision/blob/master/scripts/xray_datasets-CovariateShift.ipynb))
+
+The class `xrv.datasets.CovariateDataset` takes two datasets and two 
+arrays representing the labels. The samples will be returned with the 
+desired ratio of images from each site. The goal here is to simulate 
+a covariate shift to make a model focus on an incorrect feature. Then 
+the shift can be reversed in the validation data causing a catastrophic
+failure in generalization performance.
+
+ratio=0.0 means images from d1 will have a positive label
+ratio=0.5 means images from d1 will have half of the positive labels
+ratio=1.0 means images from d1 will have no positive label
+
+With any ratio the number of samples returned will be the same.
+
+```
+d = xrv.datasets.CovariateDataset(d1 = # dataset1 with a specific condition
+                                  d1_target = #target label to predict,
+                                  d2 = # dataset2 with a specific condition
+                                  d2_target = #target label to predict,
+                                  mode="train", # train, valid, and test
+                                  ratio=0.9)
+
+```
 
 ## Citation
 
