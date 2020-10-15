@@ -51,8 +51,8 @@ model = xrv.models.DenseNet(weights="kaggle") # RSNA Pneumonia Challenge
 model = xrv.models.DenseNet(weights="nih") # NIH chest X-ray8
 model = xrv.models.DenseNet(weights="pc") # PadChest (University of Alicante)
 model = xrv.models.DenseNet(weights="chex") # CheXpert (Stanford)
-model = xrv.models.DenseNet(weights="minix_nb") # MIMIC-CXR (MIT)
-model = xrv.models.DenseNet(weights="minix_ch") # MIMIC-CXR (MIT)
+model = xrv.models.DenseNet(weights="mimic_nb") # MIMIC-CXR (MIT)
+model = xrv.models.DenseNet(weights="mimic_ch") # MIMIC-CXR (MIT)
 
 ```
 
