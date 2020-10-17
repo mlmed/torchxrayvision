@@ -360,6 +360,14 @@ class RSNA_Pneumonia_Dataset(Dataset):
     """
     RSNA Pneumonia Detection Challenge
     
+    Augmenting the National Institutes of Health Chest Radiograph Dataset with Expert 
+    Annotations of Possible Pneumonia.
+    Shih, George, Wu, Carol C., Halabi, Safwan S., Kohli, Marc D., Prevedello, Luciano M., 
+    Cook, Tessa S., Sharma, Arjun, Amorosa, Judith K., Arteaga, Veronica, Galperin-Aizenberg, 
+    Maya, Gill, Ritu R., Godoy, Myrna C.B., Hobbs, Stephen, Jeudy, Jean, Laroia, Archana, 
+    Shah, Palmi N., Vummidi, Dharshan, Yaddanapudi, Kavitha, and Stein, Anouk.  
+    Radiology: Artificial Intelligence, 1 2019. doi: 10.1148/ryai.2019180041.
+    
     More info: https://www.rsna.org/en/education/ai-resources-and-training/ai-image-challenge/RSNA-Pneumonia-Detection-Challenge-2018
     
     Challenge site:
@@ -621,7 +629,11 @@ class NIH_Google_Dataset(Dataset):
 class PC_Dataset(Dataset):
     """
     PadChest dataset
-    Hospital San Juan de Alicante – University of Alicante
+    Hospital San Juan de Alicante - University of Alicante
+    
+    PadChest: A large chest x-ray image dataset with multi-label annotated reports.
+    Aurelia Bustos, Antonio Pertusa, Jose-Maria Salinas, and Maria de la Iglesia-Vayá. 
+    arXiv preprint, 2019. https://arxiv.org/abs/1901.07441
     
     Dataset website:
     http://bimcv.cipf.es/bimcv-projects/padchest/
@@ -690,7 +702,9 @@ class PC_Dataset(Dataset):
         
         # remove missing files
         missing = ["216840111366964012819207061112010307142602253_04-014-084.png",
-                   "216840111366964012989926673512011074122523403_00-163-058.png"]
+                   "216840111366964012989926673512011074122523403_00-163-058.png",
+                   "216840111366964012959786098432011033083840143_00-176-115.png",
+                   "216840111366964012558082906712009327122220177_00-102-064.png"]
         self.csv = self.csv[~self.csv["ImageID"].isin(missing)]
         
         if unique_patients:
@@ -742,7 +756,10 @@ class PC_Dataset(Dataset):
 class CheX_Dataset(Dataset):
     """
     CheXpert: A Large Chest Radiograph Dataset with Uncertainty Labels and Expert Comparison.
-Jeremy Irvin *, Pranav Rajpurkar *, Michael Ko, Yifan Yu, Silviana Ciurea-Ilcus, Chris Chute, Henrik Marklund, Behzad Haghgoo, Robyn Ball, Katie Shpanskaya, Jayne Seekins, David A. Mong, Safwan S. Halabi, Jesse K. Sandberg, Ricky Jones, David B. Larson, Curtis P. Langlotz, Bhavik N. Patel, Matthew P. Lungren, Andrew Y. Ng
+    Jeremy Irvin *, Pranav Rajpurkar *, Michael Ko, Yifan Yu, Silviana Ciurea-Ilcus, Chris Chute, 
+    Henrik Marklund, Behzad Haghgoo, Robyn Ball, Katie Shpanskaya, Jayne Seekins, David A. Mong, 
+    Safwan S. Halabi, Jesse K. Sandberg, Ricky Jones, David B. Larson, Curtis P. Langlotz, 
+    Bhavik N. Patel, Matthew P. Lungren, Andrew Y. Ng. https://arxiv.org/abs/1901.07031
     
     Dataset website here:
     https://stanfordmlgroup.github.io/competitions/chexpert/
@@ -840,7 +857,9 @@ Jeremy Irvin *, Pranav Rajpurkar *, Michael Ko, Yifan Yu, Silviana Ciurea-Ilcus,
     
 class MIMIC_Dataset(Dataset):
     """
-    Johnson AE, Pollard TJ, Berkowitz S, Greenbaum NR, Lungren MP, Deng CY, Mark RG, Horng S. MIMIC-CXR: A large publicly available database of labeled chest radiographs. arXiv preprint arXiv:1901.07042. 2019 Jan 21.
+    Johnson AE, Pollard TJ, Berkowitz S, Greenbaum NR, Lungren MP, Deng CY, Mark RG, Horng S. 
+    MIMIC-CXR: A large publicly available database of labeled chest radiographs. 
+    arXiv preprint arXiv:1901.07042. 2019 Jan 21.
     
     https://arxiv.org/abs/1901.07042
     
@@ -950,6 +969,10 @@ class MIMIC_Dataset(Dataset):
 class Openi_Dataset(Dataset):
     """
     OpenI 
+    Dina Demner-Fushman, Marc D. Kohli, Marc B. Rosenman, Sonya E. Shooshan, Laritza
+    Rodriguez, Sameer Antani, George R. Thoma, and Clement J. McDonald. Preparing a
+    collection of radiology examinations for distribution and retrieval. Journal of the American
+    Medical Informatics Association, 2016. doi: 10.1093/jamia/ocv080.
     
     Dataset website:
     https://openi.nlm.nih.gov/faq
@@ -1086,7 +1109,13 @@ class Openi_Dataset(Dataset):
 
 class COVID19_Dataset(Dataset):
     """
-    COVID-19 image data collection
+    COVID-19 Image Data Collection: Prospective Predictions Are the Future
+    Joseph Paul Cohen and Paul Morrison and Lan Dao and Karsten Roth and Tim Q Duong and Marzyeh Ghassemi
+    arXiv:2006.11988, 2020
+    
+    COVID-19 image data collection, 
+    Joseph Paul Cohen and Paul Morrison and Lan Dao
+    arXiv:2003.11597, 2020
 
     Dataset: https://github.com/ieee8023/covid-chestxray-dataset
     
@@ -1220,7 +1249,10 @@ class NLMTB_Dataset(Dataset):
     https://lhncbc.nlm.nih.gov/publication/pub9931
     https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4256233/
     
-    Jaeger S, Candemir S, Antani S, Wáng YX, Lu PX, Thoma G. Two public chest X-ray datasets for computer-aided screening of pulmonary diseases. Quant Imaging Med Surg. 2014 Dec;4(6):475-7. doi: 10.3978/j.issn.2223-4292.2014.11.20. PMID: 25525580; PMCID: PMC4256233.
+    Jaeger S, Candemir S, Antani S, Wang YX, Lu PX, Thoma G. Two public chest X-ray 
+    datasets for computer-aided screening of pulmonary diseases. Quant Imaging Med 
+    Surg. 2014 Dec;4(6):475-7. doi: 10.3978/j.issn.2223-4292.2014.11.20. 
+    PMID: 25525580; PMCID: PMC4256233.
 
     Download Links:
     Montgomery County
