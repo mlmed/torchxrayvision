@@ -184,7 +184,7 @@ d = xrv.datasets.CovariateDataset(d1 = # dataset1 with a specific condition
 
 ```
 Joseph Paul Cohen and Joseph Viviano and Mohammad Hashir and Hadrien Bertrand. 
-TorchXrayVision: A library of chest X-ray datasets and models. 
+TorchXRayVision: A library of chest X-ray datasets and models. 
 https://github.com/mlmed/torchxrayvision, 2020
 
 @article{Cohen2020xrv,
