@@ -1,6 +1,4 @@
-from PIL import Image
 from os.path import join
-from skimage.io import imread, imsave
 from torch import nn
 from torch.nn.modules.linear import Linear
 from torch.utils.data import Dataset
@@ -24,6 +22,7 @@ import warnings
 import tarfile
 import zipfile
 import random
+from torchxrayvision.storage_interface import create_interface
 
 default_pathologies = [  'Atelectasis',
                  'Consolidation',
@@ -44,7 +43,7 @@ default_pathologies = [  'Atelectasis',
                  'Lung Opacity',
                  'Enlarged Cardiomediastinum'
                 ]
-
+	
 thispath = os.path.dirname(os.path.realpath(__file__))
 
 def normalize(sample, maxval):
@@ -94,7 +93,6 @@ class Dataset():
     
 class Merge_Dataset(Dataset):
     def __init__(self, datasets, seed=0, label_concat=False):
-        super(Merge_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.datasets = datasets
         self.length = 0
@@ -128,6 +126,8 @@ class Merge_Dataset(Dataset):
             self.csv = pd.concat([d.csv for d in datasets])
         except:
             print("Could not merge dataframes (.csv not available):", sys.exc_info()[0])
+
+        super(Merge_Dataset, self).__init__()
             
             
     def __repr__(self):
@@ -195,8 +195,8 @@ class SubsetDataset(Dataset):
     def __getitem__(self, idx):
         return self.dataset[self.idxs[idx]]
 
-    
 class NIH_Dataset(Dataset):
+    path_length = 1
     """
     NIH ChestX-ray8 dataset
 
@@ -224,7 +224,7 @@ class NIH_Dataset(Dataset):
         super(NIH_Dataset, self).__init__()
 
         np.random.seed(seed)  # Reset the seed so all runs are the same.
-        self.imgpath = imgpath
+        self.image_interface = create_interface(imgpath, self.path_length)
         self.csvpath = csvpath
         self.transform = transform
         self.data_aug = data_aug
@@ -239,7 +239,6 @@ class NIH_Dataset(Dataset):
         
         self.normalize = normalize
         # Load data
-        self.check_paths_exist()
         self.csv = pd.read_csv(self.csvpath, nrows=nrows)
         self.MAXVAL = 255  # Range [0 255]
         
@@ -293,9 +292,7 @@ class NIH_Dataset(Dataset):
         
         
         imgid = self.csv['Image Index'].iloc[idx]
-        img_path = os.path.join(self.imgpath, imgid)
-        #print(img_path)
-        img = imread(img_path)
+        img = self.image_interface.get_image(imgid)
         if self.normalize:
             img = normalize(img, self.MAXVAL)  
 
@@ -357,6 +354,7 @@ class NIH_Dataset(Dataset):
         return path_mask
     
 class RSNA_Pneumonia_Dataset(Dataset):
+    path_length = 1
     """
     RSNA Pneumonia Detection Challenge
     
@@ -378,7 +376,7 @@ class RSNA_Pneumonia_Dataset(Dataset):
     """
     def __init__(self, 
                  imgpath, 
-                 csvpath=os.path.join(thispath, "kaggle_stage_2_train_labels.csv.zip"),
+	                 csvpath=os.path.join(thispath, "kaggle_stage_2_train_labels.csv.zip"),
                  dicomcsvpath=os.path.join(thispath, "kaggle_stage_2_train_images_dicom_headers.csv.gz"),
                  views=["PA"],
                  transform=None, 
@@ -442,6 +440,8 @@ class RSNA_Pneumonia_Dataset(Dataset):
         self.labels = np.asarray(self.labels).T
         self.labels = self.labels.astype(np.float32)
 
+        self.image_interface = create_interface(imgpath, self.path_length)
+
     def __repr__(self):
         pprint.pprint(self.totals())
         return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
@@ -455,13 +455,9 @@ class RSNA_Pneumonia_Dataset(Dataset):
         sample["idx"] = idx
         sample["lab"] = self.labels[idx]
         
-        imgid = self.csv['patientId'].iloc[idx]
-        img_path = os.path.join(self.imgpath, imgid + self.extension)
-        #print(img_path)
-        if self.use_pydicom:
-            img=pydicom.filereader.dcmread(img_path).pixel_array
-        else:
-            img = imread(img_path)
+        imgid = self.csv['patientId'].iloc[idx] + self.extension
+        
+        img = self.image_interface.get_image(imgid)
         if self.normalize:
             img = normalize(img, self.MAXVAL)  
 
@@ -528,7 +524,7 @@ class RSNA_Pneumonia_Dataset(Dataset):
         return path_mask
 
 class NIH_Google_Dataset(Dataset):
-
+    path_length = 1
     """
     Chest Radiograph Interpretation with Deep Learning Models: Assessment with 
     Radiologist-adjudicated Reference Standards and Population-adjusted Evaluation
@@ -593,6 +589,8 @@ class NIH_Google_Dataset(Dataset):
         # rename pathologies
         self.pathologies = np.char.replace(self.pathologies, "Airspace opacity", "Lung Opacity")
 
+        self.image_interface = create_interface(imgpath, self.path_length)
+
     def __repr__(self):
         pprint.pprint(self.totals())
         return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
@@ -602,9 +600,7 @@ class NIH_Google_Dataset(Dataset):
 
     def __getitem__(self, idx):
         imgid = self.csv['Image Index'].iloc[idx]
-        img_path = os.path.join(self.imgpath, imgid)
-        #print(img_path)
-        img = imread(img_path)
+        img = self.image_interface.get(imgid)
         if self.normalize:
             img = normalize(img, self.MAXVAL)  
 
@@ -627,6 +623,7 @@ class NIH_Google_Dataset(Dataset):
     
     
 class PC_Dataset(Dataset):
+    path_length = 1
     """
     PadChest dataset
     Hospital San Juan de Alicante - University of Alicante
@@ -677,13 +674,12 @@ class PC_Dataset(Dataset):
         mapping["Pleural_Thickening"] = ["pleural thickening"]
         mapping["Consolidation"] = ["air bronchogram"]
         
-        self.imgpath = imgpath
+        self.image_interface = create_interface(imgpath, self.path_length)
         self.transform = transform
         self.data_aug = data_aug
         self.flat_dir = flat_dir
         self.csvpath = csvpath
         
-        self.check_paths_exist()
         self.csv = pd.read_csv(self.csvpath, low_memory=False)
         self.MAXVAL = 65535
 
@@ -738,8 +734,7 @@ class PC_Dataset(Dataset):
     def __getitem__(self, idx):
 
         imgid = self.csv['ImageID'].iloc[idx]
-        img_path = os.path.join(self.imgpath,imgid)
-        img = imread(img_path)
+        img = self.image_interface.get_image(imgid)
         img = normalize(img, self.MAXVAL)   
         
         # Check that images are 2D arrays
@@ -760,6 +755,7 @@ class PC_Dataset(Dataset):
         return {"img":img, "lab":self.labels[idx], "idx":idx}
 
 class CheX_Dataset(Dataset):
+    path_length = 4
     """
     CheXpert: A Large Chest Radiograph Dataset with Uncertainty Labels and Expert Comparison.
     Jeremy Irvin *, Pranav Rajpurkar *, Michael Ko, Yifan Yu, Silviana Ciurea-Ilcus, Chris Chute, 
@@ -829,6 +825,8 @@ class CheX_Dataset(Dataset):
         self.pathologies = list(np.char.replace(self.pathologies, "Pleural Effusion", "Effusion"))
         
         
+        self.image_interface = create_interface(imgpath, self.path_length)
+
     def __repr__(self):
         pprint.pprint(self.totals())
         return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
@@ -840,8 +838,7 @@ class CheX_Dataset(Dataset):
         
         imgid = self.csv['Path'].iloc[idx]
         imgid = imgid.replace("CheXpert-v1.0-small/","")
-        img_path = os.path.join(self.imgpath, imgid)
-        img = imread(img_path)
+        img = self.image_interface.get_image(imgid)
         img = normalize(img, self.MAXVAL)      
         
         # Check that images are 2D arrays
@@ -862,6 +859,7 @@ class CheX_Dataset(Dataset):
         return {"img":img, "lab":self.labels[idx], "idx":idx}
     
 class MIMIC_Dataset(Dataset):
+    path_length = 4
     """
     Johnson AE, Pollard TJ, Berkowitz S, Greenbaum NR, Lungren MP, Deng CY, Mark RG, Horng S. 
     MIMIC-CXR: A large publicly available database of labeled chest radiographs. 
@@ -874,8 +872,6 @@ class MIMIC_Dataset(Dataset):
     """
     def __init__(self, imgpath, csvpath,metacsvpath, views=["PA"], transform=None, data_aug=None,
                  flat_dir=True, seed=0, unique_patients=True):
-
-        super(MIMIC_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.MAXVAL = 255
         
@@ -895,15 +891,16 @@ class MIMIC_Dataset(Dataset):
         
         self.pathologies = sorted(self.pathologies)
         
-        self.imgpath = imgpath
+        self.image_interface = create_interface(imgpath, self.path_length)
         self.transform = transform
         self.data_aug = data_aug
         self.csvpath = csvpath
         self.csv = pd.read_csv(self.csvpath)
         self.metacsvpath = metacsvpath
         self.metacsv = pd.read_csv(self.metacsvpath)
-        
+
         self.csv = self.csv.set_index(['subject_id', 'study_id'])
+
         self.metacsv = self.metacsv.set_index(['subject_id', 'study_id'])
         
         self.csv = self.csv.join(self.metacsv).reset_index()
@@ -936,6 +933,8 @@ class MIMIC_Dataset(Dataset):
         
         # rename pathologies
         self.pathologies = np.char.replace(self.pathologies, "Pleural Effusion", "Effusion")
+
+        super(MIMIC_Dataset, self).__init__()
         
         
     def __repr__(self):
@@ -946,14 +945,13 @@ class MIMIC_Dataset(Dataset):
         return len(self.labels)
 
     def __getitem__(self, idx):
-        
         subjectid = str(self.csv.iloc[idx]["subject_id"])
         studyid = str(self.csv.iloc[idx]["study_id"])
         dicom_id = str(self.csv.iloc[idx]["dicom_id"])
-        
-        img_path = os.path.join(self.imgpath, "p" + subjectid[:2], "p" + subjectid, "s" + studyid, dicom_id + ".jpg")
-        img = imread(img_path)
-        img = normalize(img, self.MAXVAL)      
+        img_fname = os.path.join("p" + subjectid[:2], "p" + subjectid, "s" + studyid, dicom_id + ".jpg")
+
+        img = self.image_interface.get_image(img_fname)
+        img = normalize(img, self.MAXVAL)
         
         # Check that images are 2D arrays
         if len(img.shape) > 2:
@@ -973,6 +971,7 @@ class MIMIC_Dataset(Dataset):
         return {"img":img, "lab":self.labels[idx], "idx":idx}
     
 class Openi_Dataset(Dataset):
+    path_length = 1
     """
     OpenI 
     Dina Demner-Fushman, Marc D. Kohli, Marc B. Rosenman, Sonya E. Shooshan, Laritza
@@ -1082,6 +1081,8 @@ class Openi_Dataset(Dataset):
         self.pathologies = np.char.replace(self.pathologies, "Opacity", "Lung Opacity")
         self.pathologies = np.char.replace(self.pathologies, "Lesion", "Lung Lesion")
 
+        self.image_interface = create_interface(imgpath, self.path_length)
+
     def __repr__(self):
         pprint.pprint(self.totals())
         return self.__class__.__name__ + " num_samples={}".format(len(self))
@@ -1090,10 +1091,8 @@ class Openi_Dataset(Dataset):
         return len(self.labels)
 
     def __getitem__(self, idx):
-        imageid = self.csv.iloc[idx].imageid
-        img_path = os.path.join(self.imgpath,imageid + ".png")
-        #print(img_path)
-        img = imread(img_path)
+        imageid = self.csv.iloc[idx].imageid + ".png"
+        img = self.image_interface.get_image(imageid)
         img = normalize(img, self.MAXVAL)  
 
         # Check that images are 2D arrays
@@ -1114,6 +1113,7 @@ class Openi_Dataset(Dataset):
         return {"img":img, "lab":self.labels[idx], "idx":idx}
 
 class COVID19_Dataset(Dataset):
+    path_length = 1
     """
     COVID-19 Image Data Collection: Prospective Predictions Are the Future
     Joseph Paul Cohen and Paul Morrison and Lan Dao and Karsten Roth and Tim Q Duong and Marzyeh Ghassemi
@@ -1182,6 +1182,8 @@ class COVID19_Dataset(Dataset):
             temp = zipfile.ZipFile(self.semantic_masks_v7labs_lungs_path)
             self.semantic_masks_v7labs_lungs_namelist = temp.namelist()
 
+        self.image_interface = create_interface(imgpath, self.path_length)
+
     def __repr__(self):
         pprint.pprint(self.totals())
         return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
@@ -1196,9 +1198,7 @@ class COVID19_Dataset(Dataset):
         sample["lab"] = self.labels[idx]
         
         imgid = self.csv['filename'].iloc[idx]
-        img_path = os.path.join(self.imgpath, imgid)
-        #print(img_path)
-        img = imread(img_path)
+        img = self.image_interface.get_image(imgid)
         img = normalize(img, self.MAXVAL)  
 
         # Check that images are 2D arrays
@@ -1250,6 +1250,7 @@ class COVID19_Dataset(Dataset):
         return semantic_masks
     
 class NLMTB_Dataset(Dataset):
+    path_length = 2
     """
     National Library of Medicine Tuberculosis Datasets
     https://lhncbc.nlm.nih.gov/publication/pub9931
@@ -1290,7 +1291,10 @@ class NLMTB_Dataset(Dataset):
         
         file_list = []
         source_list = []
-        for fname in sorted(os.listdir(os.path.join(self.imgpath, "CXR_png"))):
+
+        self.image_interface = create_interface(imgpath, self.path_length)
+
+        for fname in sorted(self.image_interface.filename_mapping):
             if fname.endswith(".png"):
                 file_list.append(fname)
 
@@ -1298,7 +1302,7 @@ class NLMTB_Dataset(Dataset):
 
         #Label is the last digit on the simage filename
         self.csv["label"] = self.csv["fname"].apply(lambda x: int(x.split(".")[-2][-1]))
-
+	
         self.labels = self.csv["label"].values.reshape(-1,1)
         self.pathologies = ["Tuberculosis"]
         self.views = views
@@ -1315,9 +1319,8 @@ class NLMTB_Dataset(Dataset):
 
     def __getitem__(self, idx):
         item = self.csv.iloc[idx]
-        img_path = os.path.join(self.imgpath, "CXR_png", item["fname"])
-        #print(img_path)
-        img = imread(img_path)
+        imgid = item["fname"] #os.path.join("CXR_png", item["fname"])
+        img = self.image_interface.get_image(imgid)
         img = normalize(img, self.MAXVAL)  
 
         # Check that images are 2D arrays
