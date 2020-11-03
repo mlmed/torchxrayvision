@@ -728,6 +728,15 @@ class PC_Dataset(Dataset):
         self.labels = np.asarray(self.labels).T
         self.labels = self.labels.astype(np.float32)
         
+        ########## add consistent csv values
+        
+        # offset_day_int
+        dt = pd.to_datetime(dataset.csv["StudyDate_DICOM"], format="%Y%m%d")
+        dataset.csv["offset_day_int"] = dt.astype(np.int)// 10**9 // 86400
+        
+        # patientid
+        self.csv["patientid"] = self.csv["PatientID"]
+        
     def __repr__(self):
         pprint.pprint(self.totals())
         return self.__class__.__name__ + " num_samples={}".format(len(self))
@@ -937,6 +946,13 @@ class MIMIC_Dataset(Dataset):
         # rename pathologies
         self.pathologies = np.char.replace(self.pathologies, "Pleural Effusion", "Effusion")
         
+        ########## add consistent csv values
+        
+        # offset_day_int
+        self.csv["offset_day_int"] = self.csv["StudyDate"]
+        
+        # patientid
+        self.csv["patientid"] = self.csv["subject_id"]
         
     def __repr__(self):
         pprint.pprint(self.totals())
@@ -1181,6 +1197,11 @@ class COVID19_Dataset(Dataset):
         if self.semantic_masks:
             temp = zipfile.ZipFile(self.semantic_masks_v7labs_lungs_path)
             self.semantic_masks_v7labs_lungs_namelist = temp.namelist()
+            
+        ########## add consistent csv values
+        
+        # offset_day_int
+        self.csv["offset_day_int"] = self.csv["offset"]
 
     def __repr__(self):
         pprint.pprint(self.totals())
