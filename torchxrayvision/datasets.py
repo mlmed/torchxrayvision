@@ -128,7 +128,8 @@ class Merge_Dataset(Dataset):
             self.csv = pd.concat([d.csv for d in datasets])
         except:
             print("Could not merge dataframes (.csv not available):", sys.exc_info()[0])
-            
+        
+        self.csv = self.csv.reset_index()
             
     def __repr__(self):
         pprint.pprint(self.totals())
@@ -183,7 +184,10 @@ class SubsetDataset(Dataset):
         self.idxs = idxs
         
         self.labels = self.dataset.labels[self.idxs]
-        self.csv = self.dataset.csv.iloc[self.idxs]
+        self.csv = self.dataset.csv.iloc[self.idxs].reset_index()
+        
+        if hasattr(self.dataset, 'which_dataset'):
+            self.which_dataset = self.dataset.which_dataset[self.idxs]
                 
     def __repr__(self):
         pprint.pprint(self.totals())
@@ -731,8 +735,8 @@ class PC_Dataset(Dataset):
         ########## add consistent csv values
         
         # offset_day_int
-        dt = pd.to_datetime(dataset.csv["StudyDate_DICOM"], format="%Y%m%d")
-        dataset.csv["offset_day_int"] = dt.astype(np.int)// 10**9 // 86400
+        dt = pd.to_datetime(self.csv["StudyDate_DICOM"], format="%Y%m%d")
+        self.csv["offset_day_int"] = dt.astype(np.int)// 10**9 // 86400
         
         # patientid
         self.csv["patientid"] = self.csv["PatientID"]
