@@ -4,6 +4,8 @@
 
 A library for chest X-ray datasets and models. Including pre-trainined models.
 
+([🎬 promo video about the project](https://www.youtube.com/watch?v=Rl7xz0uULGQ))
+
 This code is still under development
 
 Twitter: [@torchxrayvision](https://twitter.com/torchxrayvision)
@@ -188,7 +190,7 @@ TorchXRayVision: A library of chest X-ray datasets and models.
 https://github.com/mlmed/torchxrayvision, 2020
 
 @article{Cohen2020xrv,
-author = {Cohen, Joseph Paul and Viviano, Joseph and Hashir, Mohammad and Bertrand, Hadrien},
+author = {Cohen, Joseph Paul and Viviano, Joseph and Morrison, Paul and Brooks, Rupert and Hashir, Mohammad and Bertrand, Hadrien},
 journal = {https://github.com/mlmed/torchxrayvision},
 title = {{TorchXRayVision: A library of chest X-ray datasets and models}},
 url = {https://github.com/mlmed/torchxrayvision},
