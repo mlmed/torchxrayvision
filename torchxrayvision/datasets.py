@@ -133,7 +133,7 @@ class Merge_Dataset(Dataset):
             
     def __repr__(self):
         pprint.pprint(self.totals())
-        return self.__class__.__name__ + " num_samples={}".format(len(self))
+        return self.__class__.__name__ + str([d.__class__.__name__ for d in self.datasets]) + " num_samples={}".format(len(self))
     
     def __len__(self):
         return self.length
@@ -167,7 +167,7 @@ class FilterDataset(Dataset):
                 
     def __repr__(self):
         pprint.pprint(self.totals())
-        return self.__class__.__name__ + " num_samples={}".format(len(self))
+        return self.__class__.__name__ + " (of " + self.dataset.__class__.__name__ + ") num_samples={}".format(len(self))
     
     def __len__(self):
         return len(self.idxs)
@@ -184,14 +184,16 @@ class SubsetDataset(Dataset):
         self.idxs = idxs
         
         self.labels = self.dataset.labels[self.idxs]
-        self.csv = self.dataset.csv.iloc[self.idxs].reset_index()
+        self.csv = self.dataset.csv.iloc[self.idxs]
+        
+        self.csv = self.csv.reset_index(drop=True)
         
         if hasattr(self.dataset, 'which_dataset'):
             self.which_dataset = self.dataset.which_dataset[self.idxs]
                 
     def __repr__(self):
         pprint.pprint(self.totals())
-        return self.__class__.__name__ + " num_samples={}".format(len(self))
+        return self.__class__.__name__ + " (of " + self.dataset.__class__.__name__ + ") num_samples={}".format(len(self))
     
     def __len__(self):
         return len(self.idxs)
@@ -251,7 +253,8 @@ class NIH_Dataset(Dataset):
             views = [views]
         self.views = views
         # Remove images with view position other than specified
-        self.csv = self.csv[self.csv['View Position'].isin(self.views)]
+        self.csv["view"] = self.csv['View Position']
+        self.csv = self.csv[self.csv["view"].isin(self.views)]
         
         # Remove multi-finding images.
         if pure_labels:
@@ -431,7 +434,8 @@ class RSNA_Pneumonia_Dataset(Dataset):
             views = [views]
         self.views = views
         # Remove images with view position other than specified
-        self.csv = self.csv[self.csv['ViewPosition'].isin(self.views)]
+        self.csv["view"] = self.csv['ViewPosition']
+        self.csv = self.csv[self.csv["view"].isin(self.views)]
         
         self.csv = self.csv.reset_index()
 
@@ -445,10 +449,18 @@ class RSNA_Pneumonia_Dataset(Dataset):
         
         self.labels = np.asarray(self.labels).T
         self.labels = self.labels.astype(np.float32)
+        
+        ########## add consistent csv values
+        
+        # offset_day_int
+        #TODO: merge with NIH metadata to get dates for images
+        
+        # patientid
+        self.csv["patientid"] = self.csv["patientId"].astype(str)
 
     def __repr__(self):
         pprint.pprint(self.totals())
-        return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
+        return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
     
     def __len__(self):
         return len(self.labels)
@@ -577,7 +589,8 @@ class NIH_Google_Dataset(Dataset):
             views = [views]
         self.views = views
         # Remove images with view position other than specified
-        self.csv = self.csv[self.csv['View Position'].isin(self.views)]
+        self.csv["view"] = self.csv['View Position']
+        self.csv = self.csv[self.csv["view"].isin(self.views)]
 
         if unique_patients:
             self.csv = self.csv.groupby("Patient ID").first().reset_index()
@@ -698,8 +711,9 @@ class PC_Dataset(Dataset):
         if type(views) is not list:
             views = [views]
         self.views = views
-        idx_pa = self.csv['Projection'].isin(self.views)
-        self.csv = self.csv[idx_pa]
+        
+        self.csv["view"] = self.csv['Projection']
+        self.csv = self.csv[self.csv["view"].isin(self.views)]
 
         # remove null stuff
         self.csv = self.csv[~self.csv["Labels"].isnull()]
@@ -739,7 +753,7 @@ class PC_Dataset(Dataset):
         self.csv["offset_day_int"] = dt.astype(np.int)// 10**9 // 86400
         
         # patientid
-        self.csv["patientid"] = self.csv["PatientID"]
+        self.csv["patientid"] = self.csv["PatientID"].astype(str)
         
     def __repr__(self):
         pprint.pprint(self.totals())
@@ -816,8 +830,9 @@ class CheX_Dataset(Dataset):
         if type(views) is not list:
             views = [views]
         self.views = views
-        idx_pa = self.csv["AP/PA"].isin(self.views)
-        self.csv = self.csv[idx_pa]
+        
+        self.csv["view"] = self.csv["AP/PA"]
+        self.csv = self.csv[self.csv["view"].isin(self.views)]
 
         if unique_patients:
             self.csv["PatientID"] = self.csv["Path"].str.extract(pat = '(patient\d+)')
@@ -926,8 +941,8 @@ class MIMIC_Dataset(Dataset):
             views = [views]
         self.views = views
         
-        idx_pa = self.csv["ViewPosition"].isin(views)
-        self.csv = self.csv[idx_pa]
+        self.csv["view"] = self.csv["ViewPosition"]
+        self.csv = self.csv[self.csv["view"].isin(self.views)]
 
         if unique_patients:
             self.csv = self.csv.groupby("subject_id").first().reset_index()
@@ -956,7 +971,7 @@ class MIMIC_Dataset(Dataset):
         self.csv["offset_day_int"] = self.csv["StudyDate"]
         
         # patientid
-        self.csv["patientid"] = self.csv["subject_id"]
+        self.csv["patientid"] = self.csv["subject_id"].astype(str)
         
     def __repr__(self):
         pprint.pprint(self.totals())
