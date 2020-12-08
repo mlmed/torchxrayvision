@@ -284,6 +284,14 @@ class NIH_Dataset(Dataset):
         self.labels = np.asarray(self.labels).T
         self.labels = self.labels.astype(np.float32)
         
+        ########## add consistent csv values
+        
+        # offset_day_int
+        #self.csv["offset_day_int"] = 
+        
+        # patientid
+        self.csv["patientid"] = self.csv["Patient ID"].astype(str)
+        
 
     def __repr__(self):
         pprint.pprint(self.totals())
@@ -677,7 +685,12 @@ class PC_Dataset(Dataset):
                             "Pneumothorax", "Edema", "Emphysema", "Fibrosis",
                             "Effusion", "Pneumonia", "Pleural_Thickening",
                             "Cardiomegaly", "Nodule", "Mass", "Hernia","Fracture", 
-                            "Granuloma", "Flattened Diaphragm", "Bronchiectasis"]
+                            "Granuloma", "Flattened Diaphragm", "Bronchiectasis",
+                            "COPD signs", "Aortic Elongation", "Scoliosis", 
+                            "Hilar Enlargement", "Support Devices" , "Tuberculosis",
+                            "Air Trapping", "Bronchiectasis",
+                            "Costophrenic Angle Blunting", "Aortic Atheromatosis",
+                            "Hemidiaphragm Elevation"]
         
         self.pathologies = sorted(self.pathologies)
         
@@ -693,6 +706,10 @@ class PC_Dataset(Dataset):
                                    "air bronchogram"]
         mapping["Pleural_Thickening"] = ["pleural thickening"]
         mapping["Consolidation"] = ["air bronchogram"]
+        mapping["Hilar Enlargement"] = ["adenopathy",
+                                        "pulmonary artery enlargement"]
+        mapping["Support Devices"] = ["device",
+                                      "pacemaker"]
         
         self.imgpath = imgpath
         self.transform = transform
@@ -856,6 +873,15 @@ class CheX_Dataset(Dataset):
         # rename pathologies
         self.pathologies = list(np.char.replace(self.pathologies, "Pleural Effusion", "Effusion"))
         
+        ########## add consistent csv values
+        
+        # offset_day_int
+        
+        # patientid
+        patientid = self.csv.Path.str.split("train/", expand=True)[1]
+        patientid = patientid.str.split("/study", expand=True)[0]
+        patientid = patientid.str.replace("patient","")
+        self.csv["patientid"] = patientid
         
     def __repr__(self):
         pprint.pprint(self.totals())
@@ -1116,6 +1142,14 @@ class Openi_Dataset(Dataset):
         # rename pathologies
         self.pathologies = np.char.replace(self.pathologies, "Opacity", "Lung Opacity")
         self.pathologies = np.char.replace(self.pathologies, "Lesion", "Lung Lesion")
+        
+        ########## add consistent csv values
+        
+        # offset_day_int
+        #self.csv["offset_day_int"] = 
+        
+        # patientid
+        self.csv["patientid"] = self.csv["uid"].astype(str)
 
     def __repr__(self):
         pprint.pprint(self.totals())
