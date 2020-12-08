@@ -9,6 +9,7 @@ import numpy as np
 import torch
 import sklearn.metrics
 from sklearn.metrics import roc_auc_score, accuracy_score
+import sklearn, sklearn.model_selection
 import torchxrayvision as xrv
 
 from tqdm import tqdm as tqdm_base
@@ -50,18 +51,11 @@ def train(model, dataset, cfg):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
-    # Dataset
-    train_size = int(0.8 * len(dataset))
-    valid_size = len(dataset) - train_size
-    torch.manual_seed(cfg.seed)
-    train_dataset, valid_dataset = torch.utils.data.random_split(dataset, [train_size, valid_size])
-    
-    #disable data aug
-    valid_dataset.data_aug = None
-    
-    # fix labels
-    train_dataset.labels = dataset.labels[train_dataset.indices]
-    valid_dataset.labels = dataset.labels[valid_dataset.indices]
+    # Dataset    
+    gss = sklearn.model_selection.GroupShuffleSplit(train_size=0.8,test_size=0.2, random_state=cfg.seed)
+    train_inds, test_inds = next(gss.split(X=range(len(dataset)), groups=dataset.csv.patientid))
+    train_dataset = xrv.datasets.SubsetDataset(dataset, train_inds)
+    valid_dataset = xrv.datasets.SubsetDataset(dataset, test_inds)
 
     # Dataloader
     train_loader = torch.utils.data.DataLoader(train_dataset,
