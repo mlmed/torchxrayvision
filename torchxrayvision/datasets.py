@@ -83,6 +83,9 @@ class Dataset():
     def totals(self):
         counts = [dict(collections.Counter(items[~np.isnan(items)]).most_common()) for items in self.labels.T]
         return dict(zip(self.pathologies,counts))
+    def __repr__(self):
+        pprint.pprint(self.totals())
+        return self.string()
     def check_paths_exist(self):
         #if self.imagezipfile is not None:
             
@@ -130,10 +133,12 @@ class Merge_Dataset(Dataset):
             print("Could not merge dataframes (.csv not available):", sys.exc_info()[0])
         
         self.csv = self.csv.reset_index()
-            
-    def __repr__(self):
-        pprint.pprint(self.totals())
-        return self.__class__.__name__ + str([d.__class__.__name__ for d in self.datasets]) + " num_samples={}".format(len(self))
+
+    def string(self):
+        s = self.__class__.__name__ + " num_samples={}\n".format(len(self))
+        for d in self.datasets:
+            s += "└ " + d.string().replace("\n","\n  ") + "\n"
+        return s
     
     def __len__(self):
         return self.length
@@ -164,10 +169,9 @@ class FilterDataset(Dataset):
         
         self.labels = self.dataset.labels[self.idxs]
         self.csv = self.dataset.csv.iloc[self.idxs]
-                
-    def __repr__(self):
-        pprint.pprint(self.totals())
-        return self.__class__.__name__ + " (of " + self.dataset.__class__.__name__ + ") num_samples={}".format(len(self))
+        
+    def string(self):
+        return self.__class__.__name__ + " num_samples={}\n".format(len(self)) + "└ of " + self.dataset.string().replace("\n","\n  ")
     
     def __len__(self):
         return len(self.idxs)
@@ -190,10 +194,9 @@ class SubsetDataset(Dataset):
         
         if hasattr(self.dataset, 'which_dataset'):
             self.which_dataset = self.dataset.which_dataset[self.idxs]
-                
-    def __repr__(self):
-        pprint.pprint(self.totals())
-        return self.__class__.__name__ + " (of " + self.dataset.__class__.__name__ + ") num_samples={}".format(len(self))
+    
+    def string(self):
+        return self.__class__.__name__ + " num_samples={}\n".format(len(self)) + "└ of " + self.dataset.string().replace("\n","\n  ")
     
     def __len__(self):
         return len(self.idxs)
@@ -293,8 +296,7 @@ class NIH_Dataset(Dataset):
         self.csv["patientid"] = self.csv["Patient ID"].astype(str)
         
 
-    def __repr__(self):
-        pprint.pprint(self.totals())
+    def string(self):
         return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
     
     def __len__(self):
@@ -466,8 +468,7 @@ class RSNA_Pneumonia_Dataset(Dataset):
         # patientid
         self.csv["patientid"] = self.csv["patientId"].astype(str)
 
-    def __repr__(self):
-        pprint.pprint(self.totals())
+    def string(self):
         return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
     
     def __len__(self):
@@ -618,8 +619,7 @@ class NIH_Google_Dataset(Dataset):
         # rename pathologies
         self.pathologies = np.char.replace(self.pathologies, "Airspace opacity", "Lung Opacity")
 
-    def __repr__(self):
-        pprint.pprint(self.totals())
+    def string(self):
         return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
     
     def __len__(self):
@@ -772,8 +772,7 @@ class PC_Dataset(Dataset):
         # patientid
         self.csv["patientid"] = self.csv["PatientID"].astype(str)
         
-    def __repr__(self):
-        pprint.pprint(self.totals())
+    def string(self):
         return self.__class__.__name__ + " num_samples={}".format(len(self))
     
     def __len__(self):
@@ -883,8 +882,7 @@ class CheX_Dataset(Dataset):
         patientid = patientid.str.replace("patient","")
         self.csv["patientid"] = patientid
         
-    def __repr__(self):
-        pprint.pprint(self.totals())
+    def string(self):
         return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
     
     def __len__(self):
@@ -999,8 +997,7 @@ class MIMIC_Dataset(Dataset):
         # patientid
         self.csv["patientid"] = self.csv["subject_id"].astype(str)
         
-    def __repr__(self):
-        pprint.pprint(self.totals())
+    def string(self):
         return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
     
     def __len__(self):
@@ -1151,8 +1148,7 @@ class Openi_Dataset(Dataset):
         # patientid
         self.csv["patientid"] = self.csv["uid"].astype(str)
 
-    def __repr__(self):
-        pprint.pprint(self.totals())
+    def string(self):
         return self.__class__.__name__ + " num_samples={}".format(len(self))
     
     def __len__(self):
@@ -1256,8 +1252,7 @@ class COVID19_Dataset(Dataset):
         # offset_day_int
         self.csv["offset_day_int"] = self.csv["offset"]
 
-    def __repr__(self):
-        pprint.pprint(self.totals())
+    def string(self):
         return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
     
     def __len__(self):
@@ -1380,8 +1375,7 @@ class NLMTB_Dataset(Dataset):
         
         self.MAXVAL = 255
 
-    def __repr__(self):
-        pprint.pprint(self.totals())
+    def string(self):
         return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
     
     def __len__(self):
