@@ -13,6 +13,7 @@ import argparse
 import torch
 import torchvision, torchvision.transforms
 import skimage.transform
+import sklearn, sklearn.model_selection
 
 import pickle
 import random
@@ -27,11 +28,12 @@ parser.add_argument('dataset', type=str)
 parser.add_argument('weights_filename', type=str,)
 parser.add_argument('-seed', type=int, default=0, help='')
 parser.add_argument('-cuda', type=bool, default=True, help='')
-parser.add_argument('-batch_size', type=int, default=256, help='')
+parser.add_argument('-batch_size', type=int, default=64, help='')
 parser.add_argument('-threads', type=int, default=12, help='')
+parser.add_argument('--dataset_dir', type=str, default="/home/groups/akshaysc/joecohen/")
+parser.add_argument('--labelunion', type=bool, default=True, help='')
 
 cfg = parser.parse_args()
-
 
 data_aug = None
 
@@ -41,82 +43,88 @@ datas = []
 datas_names = []
 if "nih" in cfg.dataset:
     dataset = xrv.datasets.NIH_Dataset(
-        imgpath="/lustre04/scratch/cohenjos/NIH/images-224", 
-        transform=transforms, data_aug=data_aug)
+        imgpath=cfg.dataset_dir + "/NIH/images-224", 
+        transform=transforms, data_aug=data_aug, unique_patients=False)
     datas.append(dataset)
     datas_names.append("nih")
 if "pc" in cfg.dataset:
     dataset = xrv.datasets.PC_Dataset(
-        imgpath="/lustre04/scratch/cohenjos/PC/images-224",
-        transform=transforms, data_aug=data_aug)
+        imgpath=cfg.dataset_dir + "/PC/images-224",
+        transform=transforms, data_aug=data_aug, unique_patients=False)
     datas.append(dataset)
     datas_names.append("pc")
 if "chex" in cfg.dataset:
     dataset = xrv.datasets.CheX_Dataset(
-        imgpath="/lustre03/project/6008064/jpcohen/chexpert/CheXpert-v1.0-small",
-        csvpath="/lustre03/project/6008064/jpcohen/chexpert/CheXpert-v1.0-small/train.csv",
-        transform=transforms, data_aug=data_aug)
+        imgpath=cfg.dataset_dir + "/CheXpert-v1.0-small",
+        csvpath=cfg.dataset_dir + "/CheXpert-v1.0-small/train.csv",
+        transform=transforms, data_aug=data_aug, unique_patients=False)
     datas.append(dataset)
     datas_names.append("chex")
 if "google" in cfg.dataset:
     dataset = xrv.datasets.NIH_Google_Dataset(
-        imgpath="/lustre04/scratch/cohenjos/NIH/images-224",
+        imgpath=cfg.dataset_dir + "/NIH/images-224",
         transform=transforms, data_aug=data_aug)
     datas.append(dataset)
     datas_names.append("google")
 if "mimic_ch" in cfg.dataset:
     dataset = xrv.datasets.MIMIC_Dataset(
-        imgpath="/lustre04/scratch/cohenjos/MIMIC/images-224/files",
-        csvpath="/lustre03/project/6008064/jpcohen/MIMICCXR-2.0/mimic-cxr-2.0.0-chexpert.csv.gz",
-        metacsvpath="/lustre03/project/6008064/jpcohen/MIMICCXR-2.0/mimic-cxr-2.0.0-metadata.csv.gz",
-        transform=transforms, data_aug=data_aug)
+        imgpath=cfg.dataset_dir + "/images-224-MIMIC/files",
+        csvpath=cfg.dataset_dir + "/MIMICCXR-2.0/mimic-cxr-2.0.0-chexpert.csv.gz",
+        metacsvpath=cfg.dataset_dir + "/MIMICCXR-2.0/mimic-cxr-2.0.0-metadata.csv.gz",
+        transform=transforms, data_aug=data_aug, unique_patients=False)
     datas.append(dataset)
     datas_names.append("mimic_ch")
 if "mimic_nb" in cfg.dataset:
     dataset = xrv.datasets.MIMIC_Dataset(
-        imgpath="/lustre04/scratch/cohenjos/MIMIC/images-224/files",
-        csvpath="/lustre03/project/6008064/jpcohen/MIMICCXR-2.0/mimic-cxr-2.0.0-negbio.csv.gz",
-        metacsvpath="/lustre03/project/6008064/jpcohen/MIMICCXR-2.0/mimic-cxr-2.0.0-metadata.csv.gz",
+        imgpath=cfg.dataset_dir + "/MIMIC/images-224/files",
+        csvpath=cfg.dataset_dir + "/MIMICCXR-2.0/mimic-cxr-2.0.0-negbio.csv.gz",
+        metacsvpath=cfg.dataset_dir + "/MIMICCXR-2.0/mimic-cxr-2.0.0-metadata.csv.gz",
         transform=transforms, data_aug=data_aug)
     datas.append(dataset)
     datas_names.append("mimic_nb")
 if "openi" in cfg.dataset:
     dataset = xrv.datasets.Openi_Dataset(
-        imgpath="/lustre03/project/6008064/jpcohen/OpenI/images/",
+        imgpath=cfg.dataset_dir + "/OpenI/images/",
         transform=transforms, data_aug=data_aug)
     datas.append(dataset)
     datas_names.append("openi")
-if "kaggle" in cfg.dataset:
-    dataset = xrv.datasets.Kaggle_Dataset(
-        imgpath="/lustre03/project/6008064/jpcohen/kaggle-pneumonia/stage_2_train_images_jpg",
-        transform=transforms, data_aug=data_aug)
+if "rsna" in cfg.dataset:
+    dataset = xrv.datasets.RSNA_Pneumonia_Dataset(
+        imgpath=cfg.dataset_dir + "/kaggle-pneumonia-jpg/stage_2_train_images_jpg",
+        transform=transforms, data_aug=data_aug, unique_patients=False)
     datas.append(dataset)
-    datas_names.append("kaggle")
+    datas_names.append("rsna")
+
 
 
 print("datas_names", datas_names)
 
-for d in datas:
-    xrv.datasets.relabel_dataset(xrv.datasets.default_pathologies, d)
+if cfg.labelunion:
+    newlabels = set()
+    for d in datas:
+        newlabels = newlabels.union(d.pathologies)
+    
+    newlabels = sorted(newlabels)
+    #newlabels.remove("Support Devices")
+    print("labels",list(newlabels))
+    for d in datas:
+        xrv.datasets.relabel_dataset(list(newlabels), d)
+else:
+    for d in datas:
+        xrv.datasets.relabel_dataset(xrv.datasets.default_pathologies, d)
 
 #cut out training sets
 train_datas = []
 test_datas = []
 for i, dataset in enumerate(datas):
-    train_size = int(0.5 * len(dataset))
-    test_size = len(dataset) - train_size
-    torch.manual_seed(0)
-    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
+
+    gss = sklearn.model_selection.GroupShuffleSplit(train_size=0.8,test_size=0.2, random_state=cfg.seed)
+    train_inds, test_inds = next(gss.split(X=range(len(dataset)), groups=dataset.csv.patientid))
+    train_dataset = xrv.datasets.SubsetDataset(dataset, train_inds)
+    test_dataset = xrv.datasets.SubsetDataset(dataset, test_inds)
     
-    #disable data aug
+    #disable data augs
     test_dataset.data_aug = None
-    
-    #fix labels
-    train_dataset.labels = dataset.labels[train_dataset.indices]
-    test_dataset.labels = dataset.labels[test_dataset.indices]
-    
-    train_dataset.pathologies = dataset.pathologies
-    test_dataset.pathologies = dataset.pathologies
     
     train_datas.append(train_dataset)
     test_datas.append(test_dataset)
@@ -143,6 +151,9 @@ if cfg.cuda:
 
 print("train_dataset.labels.shape", train_dataset.labels.shape)
 print("test_dataset.labels.shape", test_dataset.labels.shape)
+print("train_dataset",train_dataset)
+print("test_dataset",test_dataset)
+    
     
 # load model
 model = torch.load(cfg.weights_filename, map_location='cpu')
@@ -158,17 +169,56 @@ test_loader = torch.utils.data.DataLoader(test_dataset,
                                            num_workers=cfg.threads, pin_memory=cfg.cuda)
 
 
-
-
-results = train_utils.valid_test_epoch("test", 0, model, "cuda", test_loader, torch.nn.BCEWithLogitsLoss(), limit=99999999)
-
-
-
 filename = "results_" + os.path.basename(cfg.weights_filename).split(".")[0] + "_" + "-".join(datas_names) + ".pkl"
 print(filename)
+if os.path.exists(filename):
+    print("Results already computed")
+    results = pickle.load(filename, "br")
+else:
+    print("Results are being computed")
+    results = train_utils.valid_test_epoch("test", 0, model, "cuda", test_loader, torch.nn.BCEWithLogitsLoss(), limit=99999999)
+    pickle.dump(results, open(filename, "bw"))
 
-pickle.dump(results, open(filename, "bw"))
+    
 
+all_threshs = []
+all_min = []
+all_max = []
+all_ppv80 = []
+for i, patho in enumerate(xrv.datasets.default_pathologies):
+    opt_thres = np.nan
+    opt_max = np.nan
+    if len(results[3][i]) > 0:
+        
+        #sigmoid
+        all_outputs = 1.0/(1.0 + np.exp(-results[2][i]))
+        
+        fpr, tpr, thres = sklearn.metrics.roc_curve(results[3][i], all_outputs)
+        pente = tpr - fpr
+        opt_thres = thres[np.argmax(pente)]
+        opt_min = all_outputs.min()
+        opt_max = all_outputs.max()
+        
+        ppv, recall, thres = sklearn.metrics.precision_recall_curve(results[3][i], all_outputs)
+        ppv80_thres_idx = np.where(ppv > 0.8)[0][0]
+        ppv80_thres = thres[ppv80_thres_idx-1]
+        
+        
+    all_threshs.append(opt_thres)
+    all_min.append(opt_min)
+    all_max.append(opt_max)
+    all_ppv80.append(ppv80_thres)
+
+    
+print("op_threshs",str(all_threshs).replace("nan","np.nan"))
+    
+print("min",str(all_min).replace("nan","np.nan"))
+    
+print("max",str(all_max).replace("nan","np.nan"))
+
+print("ppv80",str(all_ppv80).replace("nan","np.nan"))
+    
+    
 print("Done")
 
 
