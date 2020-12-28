@@ -108,9 +108,12 @@ class DenseNet(nn.Module):
     """
 
     def __init__(self, growth_rate=32, block_config=(6, 12, 24, 16), num_init_features=64, bn_size=4,
-                 drop_rate=0, num_classes=18, in_channels=1, weights=None, op_threshs=None, progress=True):
+                 drop_rate=0, num_classes=18, in_channels=1, weights=None, op_threshs=None, progress=True,
+                 apply_sigmoid=False):
 
         super(DenseNet, self).__init__()            
+        
+        self.apply_sigmoid = apply_sigmoid
         
         # First convolution
         self.features = nn.Sequential(OrderedDict([
@@ -183,11 +186,18 @@ class DenseNet(nn.Module):
             if "op_threshs" in model_urls[weights]:
                 self.op_threshs = torch.tensor(model_urls[weights]["op_threshs"])
 
-    def forward(self, x):
+    def features2(self, x):
         features = self.features(x)
         out = F.relu(features, inplace=True)
         out = F.adaptive_avg_pool2d(out, (1, 1)).view(features.size(0), -1)
-        out = self.classifier(out)
+        return out
+    
+    def forward(self, x):
+        features = self.features2(x)
+        out = self.classifier(features)
+        
+        if self.apply_sigmoid:
+            out = torch.sigmoid(out)
         
         if hasattr(self,"op_threshs") and (self.op_threshs != None):
             out = torch.sigmoid(out)
