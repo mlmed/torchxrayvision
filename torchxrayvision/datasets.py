@@ -686,10 +686,9 @@ class PC_Dataset(Dataset):
                             "Effusion", "Pneumonia", "Pleural_Thickening",
                             "Cardiomegaly", "Nodule", "Mass", "Hernia","Fracture", 
                             "Granuloma", "Flattened Diaphragm", "Bronchiectasis",
-                            "COPD signs", "Aortic Elongation", "Scoliosis", 
+                            "Aortic Elongation", "Scoliosis", 
                             "Hilar Enlargement", "Support Devices" , "Tuberculosis",
-                            "Air Trapping", "Bronchiectasis",
-                            "Costophrenic Angle Blunting", "Aortic Atheromatosis",
+                            "Air Trapping", "Costophrenic Angle Blunting", "Aortic Atheromatosis",
                             "Hemidiaphragm Elevation"]
         
         self.pathologies = sorted(self.pathologies)
@@ -773,7 +772,7 @@ class PC_Dataset(Dataset):
         self.csv["patientid"] = self.csv["PatientID"].astype(str)
         
     def string(self):
-        return self.__class__.__name__ + " num_samples={}".format(len(self))
+        return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
     
     def __len__(self):
         return len(self.labels)
@@ -1404,7 +1403,150 @@ class NLMTB_Dataset(Dataset):
             img = self.data_aug(img)
             
         return {"img":img, "lab":self.labels[idx], "idx":idx}    
+
+class SIIM_Pneumothorax_Dataset(Dataset):
+    """
+    https://academictorrents.com/details/6ef7c6d039e85152c4d0f31d83fa70edc4aba088
+    https://www.kaggle.com/c/siim-acr-pneumothorax-segmentation
     
+    "The data is comprised of images in DICOM format and annotations in the form of image IDs and run-length-encoded (RLE) masks. Some of the images contain instances of pneumothorax (collapsed lung), which are indicated by encoded binary masks in the annotations. Some training images have multiple annotations.
+    Images without pneumothorax have a mask value of -1."
+    """
+    
+    def __init__(self, 
+                 imgpath, 
+                 csvpath, 
+                 transform=None, 
+                 data_aug=None, 
+                 seed=0,
+                 unique_patients=True,
+                 masks=False):
+
+        super(SIIM_Pneumothorax_Dataset, self).__init__()
+        np.random.seed(seed)  # Reset the seed so all runs are the same.
+        self.imgpath = imgpath
+        self.transform = transform
+        self.data_aug = data_aug
+        self.masks = masks
+                
+        # Load data
+        self.csvpath = csvpath
+        self.csv = pd.read_csv(self.csvpath)
+        self.MAXVAL = 255  # Range [0 255]
+        
+        self.pathologies = ["Pneumothorax"]
+        
+        self.labels = []
+        self.labels.append(self.csv[" EncodedPixels"] != "-1")
+        self.labels = np.asarray(self.labels).T
+        self.labels = self.labels.astype(np.float32)
+        
+        self.csv = self.csv.reset_index()
+        
+        self.csv["has_masks"] = self.csv[" EncodedPixels"] != "-1"
+        
+        #to figure out the paths
+        #TODO: make faster
+        self.file_map = {}
+        for root, directories, files in os.walk(self.imgpath, followlinks=False):
+            for filename in files:
+                filePath = os.path.join(root,filename)
+                self.file_map[filename] = filePath
+
+    def string(self):
+        return self.__class__.__name__ + " num_samples={}".format(len(self))
+    
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        
+        sample = {}
+        sample["idx"] = idx
+        sample["lab"] = self.labels[idx]
+        
+        imgid = self.csv['ImageId'].iloc[idx]
+        img_path = self.file_map[imgid + ".dcm"]
+        #print(img_path)
+        img = pydicom.filereader.dcmread(img_path).pixel_array
+        #img = imread(img_path)
+        img = normalize(img, self.MAXVAL)  
+
+        # Check that images are 2D arrays
+        if len(img.shape) > 2:
+            img = img[:, :, 0]
+        if len(img.shape) < 2:
+            print("error, dimension lower than 2 for image")
+
+        # Add color channel
+        sample["img"] = img[None, :, :]                    
+                               
+        transform_seed = np.random.randint(2147483647)
+        
+        if self.masks:
+            sample["pathology_masks"] = self.get_pathology_mask_dict(imgid, sample["img"].shape[2])
+            
+        if self.transform is not None:
+            random.seed(transform_seed)
+            sample["img"] = self.transform(sample["img"])
+            if self.masks:
+                for i in sample["pathology_masks"].keys():
+                    random.seed(transform_seed)
+                    sample["pathology_masks"][i] = self.transform(sample["pathology_masks"][i])
+  
+        if self.data_aug is not None:
+            random.seed(transform_seed)
+            sample["img"] = self.data_aug(sample["img"])
+            if self.masks:
+                for i in sample["pathology_masks"].keys():
+                    random.seed(transform_seed)
+                    sample["pathology_masks"][i] = self.data_aug(sample["pathology_masks"][i])
+            
+        return sample
+    
+    def get_pathology_mask_dict(self, image_name, this_size):
+
+        base_size = 1024
+        images_with_masks = self.csv[np.logical_and(self.csv["ImageId"] == image_name, 
+                                                    self.csv[" EncodedPixels"] != "-1")]
+        path_mask = {}
+
+        # from kaggle code
+        def rle2mask(rle, width, height):
+            mask= np.zeros(width* height)
+            array = np.asarray([int(x) for x in rle.split()])
+            starts = array[0::2]
+            lengths = array[1::2]
+
+            current_position = 0
+            for index, start in enumerate(starts):
+                current_position += start
+                mask[current_position:current_position+lengths[index]] = 1
+                current_position += lengths[index]
+
+            return mask.reshape(width, height)
+        
+        if len(images_with_masks) > 0:
+            # using a for loop so it is consistent with the other code
+            for patho in ["Pneumothorax"]:
+                mask = np.zeros([this_size,this_size])
+
+                # don't add masks for labels we don't have
+                if patho in self.pathologies:
+
+                    for i in range(len(images_with_masks)):
+                        row = images_with_masks.iloc[i]
+                        mask = rle2mask(row[" EncodedPixels"],base_size,base_size)
+                        mask = mask.T
+                        mask = skimage.transform.resize(mask, (this_size, this_size), mode='constant')
+                        mask = mask.round() #make 0,1
+
+                # reshape so image resizing works
+                mask = mask[None, :, :] 
+
+                path_mask[self.pathologies.index(patho)] = mask
+            
+        return path_mask
     
 class ToPILImage(object):
     def __init__(self):
