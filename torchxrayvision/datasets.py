@@ -53,14 +53,15 @@ def normalize(sample, maxval):
     #sample = sample / np.std(sample)
     return sample
 
-def relabel_dataset(pathologies, dataset):
+def relabel_dataset(pathologies, dataset, silent=False):
     """
     Reorder, remove, or add (nans) to a dataset's labels.
     Use this to align with the output of a network.
     """
     will_drop = set(dataset.pathologies).difference(pathologies)
     if will_drop != set():
-        print("{} will be dropped".format(will_drop))
+        if not silent:
+            print("{} will be dropped".format(will_drop))
     new_labels = []
     dataset.pathologies = list(dataset.pathologies)
     for pathology in pathologies:
@@ -68,7 +69,8 @@ def relabel_dataset(pathologies, dataset):
             pathology_idx = dataset.pathologies.index(pathology)
             new_labels.append(dataset.labels[:,pathology_idx])
         else:
-            print("{} doesn't exist. Adding nans instead.".format(pathology))
+            if not silent:
+                print("{} doesn't exist. Adding nans instead.".format(pathology))
             values = np.empty(dataset.labels.shape[0])
             values.fill(np.nan)
             new_labels.append(values)
@@ -297,7 +299,7 @@ class NIH_Dataset(Dataset):
         
 
     def string(self):
-        return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
+        return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
     
     def __len__(self):
         return len(self.labels)
@@ -620,7 +622,7 @@ class NIH_Google_Dataset(Dataset):
         self.pathologies = np.char.replace(self.pathologies, "Airspace opacity", "Lung Opacity")
 
     def string(self):
-        return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
+        return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
     
     def __len__(self):
         return len(self.labels)
@@ -772,7 +774,7 @@ class PC_Dataset(Dataset):
         self.csv["patientid"] = self.csv["PatientID"].astype(str)
         
     def string(self):
-        return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
+        return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
     
     def __len__(self):
         return len(self.labels)
@@ -882,7 +884,7 @@ class CheX_Dataset(Dataset):
         self.csv["patientid"] = patientid
         
     def string(self):
-        return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
+        return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
     
     def __len__(self):
         return len(self.labels)
@@ -997,7 +999,7 @@ class MIMIC_Dataset(Dataset):
         self.csv["patientid"] = self.csv["subject_id"].astype(str)
         
     def string(self):
-        return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
+        return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
     
     def __len__(self):
         return len(self.labels)
@@ -1252,7 +1254,7 @@ class COVID19_Dataset(Dataset):
         self.csv["offset_day_int"] = self.csv["offset"]
 
     def string(self):
-        return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
+        return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
     
     def __len__(self):
         return len(self.labels)
@@ -1375,7 +1377,7 @@ class NLMTB_Dataset(Dataset):
         self.MAXVAL = 255
 
     def string(self):
-        return self.__class__.__name__ + " num_samples={} views={}".format(len(self), self.views)
+        return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
     
     def __len__(self):
         return len(self.labels)
@@ -1454,7 +1456,7 @@ class SIIM_Pneumothorax_Dataset(Dataset):
                 self.file_map[filename] = filePath
 
     def string(self):
-        return self.__class__.__name__ + " num_samples={}".format(len(self))
+        return self.__class__.__name__ + " num_samples={} data_aug={}".format(len(self), self.data_aug)
     
     def __len__(self):
         return len(self.labels)
