@@ -6,6 +6,11 @@ A library for chest X-ray datasets and models. Including pre-trainined models.
 
 ([🎬 promo video about the project](https://www.youtube.com/watch?v=Rl7xz0uULGQ))
 
+Motivation: While there are many publications focusing on the prediction of radiological and clinical findings from chest X-ray images much of this work is inaccessible to other researchers.
+
+- In the case of researchers addressing clinical questions it is a waste of time for them to train models from scratch. To address this, TorchXRayVision provides pre-trained models which are trained on large cohorts of data and enables 1) rapid analysis of large datasets 2) feature reuse for few-shot learning.
+- In the case of researchers developing algorithms it is import to robustly evaluate models using multiple external datasets. Metadata associated with each dataset can vary greatly which makes it difficult to apply methods to multiple datasets. TorchXRayVision provides access to many datasets in a uniform way so that they can be swapped out with a single line of code. These datasets can also be merged and filtered to construct specific distributional shifts for studying generalization.
+
 This code is still under development
 
 Twitter: [@torchxrayvision](https://twitter.com/torchxrayvision)
