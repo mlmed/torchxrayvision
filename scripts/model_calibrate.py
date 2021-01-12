@@ -139,7 +139,6 @@ else:
     train_dataset = xrv.datasets.Merge_Dataset(train_datas)
     test_dataset = xrv.datasets.Merge_Dataset(test_datas)
 
-
 # Setting the seed
 np.random.seed(cfg.seed)
 random.seed(cfg.seed)
@@ -153,29 +152,26 @@ print("train_dataset.labels.shape", train_dataset.labels.shape)
 print("test_dataset.labels.shape", test_dataset.labels.shape)
 print("train_dataset",train_dataset)
 print("test_dataset",test_dataset)
-    
-    
+
 # load model
 model = torch.load(cfg.weights_filename, map_location='cpu')
 
-if cfg.cuda:
-    model = model.cuda()
-
-print(model)
+#print(model)
 
 test_loader = torch.utils.data.DataLoader(test_dataset,
                                            batch_size=cfg.batch_size,
                                            shuffle=False,
                                            num_workers=cfg.threads, pin_memory=cfg.cuda)
 
-
 filename = "results_" + os.path.basename(cfg.weights_filename).split(".")[0] + "_" + "-".join(datas_names) + ".pkl"
 print(filename)
 if os.path.exists(filename):
     print("Results already computed")
-    results = pickle.load(filename, "br")
+    results = pickle.load(open(filename, "br"))
 else:
     print("Results are being computed")
+    if cfg.cuda:
+        model = model.cuda()
     results = train_utils.valid_test_epoch("test", 0, model, "cuda", test_loader, torch.nn.BCEWithLogitsLoss(), limit=99999999)
     pickle.dump(results, open(filename, "bw"))
 
@@ -185,10 +181,10 @@ all_threshs = []
 all_min = []
 all_max = []
 all_ppv80 = []
-for i, patho in enumerate(xrv.datasets.default_pathologies):
+for i, patho in enumerate(test_dataset.pathologies):
     opt_thres = np.nan
     opt_max = np.nan
-    if len(results[3][i]) > 0:
+    if (len(results[3][i]) > 0) and (len(np.unique(results[3][i])) == 2):
         
         #sigmoid
         all_outputs = 1.0/(1.0 + np.exp(-results[2][i]))
@@ -203,12 +199,19 @@ for i, patho in enumerate(xrv.datasets.default_pathologies):
         ppv80_thres_idx = np.where(ppv > 0.8)[0][0]
         ppv80_thres = thres[ppv80_thres_idx-1]
         
+        auc = sklearn.metrics.roc_auc_score(results[3][i], all_outputs)
+        
+        print(patho, auc)
+        
+    
         
     all_threshs.append(opt_thres)
     all_min.append(opt_min)
     all_max.append(opt_max)
     all_ppv80.append(ppv80_thres)
 
+    
+print("pathologies",test_dataset.pathologies)
     
 print("op_threshs",str(all_threshs).replace("nan","np.nan"))
     
