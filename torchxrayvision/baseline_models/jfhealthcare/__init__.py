@@ -47,7 +47,7 @@ class DenseNet(nn.Module):
         model = classifier.Classifier(self.cfg)
         model = nn.DataParallel(model).eval()
         
-        url = "https://github.com/mlmed/torchxrayvision/releases/download/v2/baseline_models_jfhealthcare-DenseNet121_pre_train.pth"
+        url = "https://github.com/mlmed/torchxrayvision/releases/download/v1/baseline_models_jfhealthcare-DenseNet121_pre_train.pth"
         
         weights_filename = os.path.basename(url)
         weights_storage_folder = os.path.expanduser(os.path.join("~",".torchxrayvision","models_data"))
