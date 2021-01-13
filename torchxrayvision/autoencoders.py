@@ -12,7 +12,7 @@ model_urls = {}
 
 model_urls['101-elastic'] = {
     "description": 'This model was trained on the datasets: nih pc rsna mimic_ch chex datasets.',
-    "weights_url": 'https://github.com/mlmed/torchxrayvision/releases/download/v2/nihpcrsnamimic_ch-resnet101-2-ae-test2-elastic-e250.pt',
+    "weights_url": 'https://github.com/mlmed/torchxrayvision/releases/download/v1/nihpcrsnamimic_ch-resnet101-2-ae-test2-elastic-e250.pt',
     "image_range": [-1024,1024],
     "class":"ResNetAE101"
     }
@@ -136,9 +136,9 @@ class _ResNetAE(nn.Module):
         
     def __repr__(self):
         if self.weights != None:
-            return "XRV-ResNet-{}".format(self.weights)
+            return "XRV-ResNetAE-{}".format(self.weights)
         else:
-            return "XRV-ResNet"
+            return "XRV-ResNetAE"
         
     def _make_downlayer(self, block, init_channels, num_layer, stride=1):
         downsample = None

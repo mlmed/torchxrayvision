@@ -231,8 +231,8 @@ def op_norm(outputs, op_threshs):
     outputs_new = torch.zeros(outputs.shape, device = outputs.device)
     
     # only select non-nan elements otherwise the gradient breaks
-    mask_leq = (outputs<op_threshs)# & ~torch.isnan(op_threshs)
-    mask_gt = ~(outputs<op_threshs)# & ~torch.isnan(op_threshs)
+    mask_leq = (outputs<op_threshs) & ~torch.isnan(op_threshs)
+    mask_gt = ~(outputs<op_threshs) & ~torch.isnan(op_threshs)
     
     #scale outputs less than thresh
     outputs_new[mask_leq] = outputs[mask_leq]/(op_threshs[mask_leq]*2)
