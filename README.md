@@ -61,6 +61,16 @@ model = xrv.models.DenseNet(weights="chex") # CheXpert (Stanford)
 model = xrv.models.DenseNet(weights="mimic_nb") # MIMIC-CXR (MIT)
 model = xrv.models.DenseNet(weights="mimic_ch") # MIMIC-CXR (MIT)
 
+model = xrv.baselinemodels.jfhealthcare.DenseNet() # DenseNet121 from JF Healthcare for the CheXpert competition
+
+```
+
+## autoencoders 
+You can also load a pre-trained autoencoder that is trained on the PadChest, NIH, CheXpert, and MIMIC datasets.
+```python3
+ae = xrv.autoencoders.ResNetAE(weights="101-elastic")
+z = ae.encode(image)
+image2 = ae.decode(x)
 ```
 
 
