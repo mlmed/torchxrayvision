@@ -1,6 +1,8 @@
 
 jfhealthcare DenseNet121 model
 
+The interface code is in the `__init__.py` file
+
 ```python3
 model = xrv.baselinemodels.jfhealthcare.DenseNet()
 ```
