@@ -97,6 +97,9 @@ d_pc = xrv.datasets.PC_Dataset(imgpath="path to image folder")
 
 
 d_covid19 = xrv.datasets.COVID19_Dataset() # specify imgpath and csvpath for the dataset
+
+d_siim = xrv.datasets.SIIM_Pneumothorax_Dataset(imgpath="dicom-images-train/",
+                                                csvpath="train-rle.csv")
 ```
 
 National Library of Medicine Tuberculosis Datasets [paper](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4256233/)
@@ -156,15 +159,29 @@ CheX_Dataset num_samples=191010 views=['PA', 'AP']
 
 ## Pathology masks ([demo notebook](https://github.com/mlmed/torchxrayvision/blob/master/scripts/xray_masks.ipynb))
 
+Masks are available in the following datasets:
+```python3
+xrv.datasets.RSNA_Pneumonia_Dataset() # for Lung Opacity
+xrv.datasets.SIIM_Pneumothorax_Dataset() # for Pneumothorax
+xrv.datasets.NIH_Dataset() # for Cardiomegaly, Mass, Effusion, ...
+```
+
+Example usage:
+
 ```python3
 d_rsna = xrv.datasets.RSNA_Pneumonia_Dataset(imgpath="stage_2_train_images_jpg", 
                                             views=["PA","AP"],
                                             pathology_masks=True)
+                                            
+# The has_masks column will let you know if any masks exist for that sample
 d_rsna.csv.has_masks.value_counts()
 False    20672
 True      6012       
 
-sample["pathology_masks"]
+# Each sample will have a pathology_masks dictionary where the index 
+# of each pathology will correspond to a mask of that pathology (if it exists).
+# There may be more than one mask per sample. But only one per pathology.
+sample["pathology_masks"][d_rsna.pathologies.index("Lung Opacity")]
 ```
 ![](docs/pathology-mask-rsna2.png)
 ![](docs/pathology-mask-rsna3.png)
