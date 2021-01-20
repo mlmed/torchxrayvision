@@ -1,11 +1,12 @@
 import setuptools
+from setuptools import setup, find_packages
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="torchxrayvision",
-    version="0.0.19",
+    version="0.0.21",
     author="Joseph Paul Cohen",
     author_email="joseph@josephpcohen.com",
     description="TorchXRayVision: A library of chest X-ray datasets and models",
@@ -30,7 +31,7 @@ setuptools.setup(
         'pydicom>=1',
         'requests>=1'
     ],
-    packages=['torchxrayvision'],
+    packages=find_packages(),
     package_dir={'torchxrayvision': 'torchxrayvision'},
     package_data={'torchxrayvision': ['data/*.zip','*.gz','*.tgz','*.zip']},
 )
