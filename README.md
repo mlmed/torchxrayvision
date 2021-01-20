@@ -115,6 +115,22 @@ NLMTB_Dataset num_samples=662 views=['PA', 'AP']
 {'Tuberculosis': {0: 326, 1: 336}}
 
 ```
+### dataset fields
+
+Each dataset contains a number of fields. These fields are maintained when xrv.datasets.Subset_Dataset and xrv.datasets.Merge_Dataset are used.
+
+Each dataset has a `.pathologies` field which is a list of the pathologies contained in this dataset that will be contained in the `.labels` field ].
+
+Each dataset has a `.labels` field which contains a 1,0, or NaN for each label defined in `.pathologies`. 
+
+Each dataset has a `.csv` field which corresponds to pandas DataFrame of the metadata csv file that comes with the data. Each row aligns with the elements of the dataset so indexing using `.iloc` will work. 
+
+If possible, each dataset's `.csv` will have some common fields of the csv. These will be aligned when The list is as follows:
+
+`csv.patientid` A unique id that will uniqely identify samples in this dataset
+
+`csv.offset_day_int` An integer time offset for the image in the unit of days. This is expected to be for relative times and has no absolute meaning although for some datasets it is the epoch time.
+
 
 ## dataset tools
 
