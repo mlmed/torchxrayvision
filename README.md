@@ -47,7 +47,7 @@ xrv.datasets.default_pathologies
  'Enlarged Cardiomediastinum']
 ```
 
-## models ([demo notebook](https://github.com/mlmed/torchxrayvision/blob/master/scripts/xray_models.ipynb))
+## Models ([demo notebook](https://github.com/mlmed/torchxrayvision/blob/master/scripts/xray_models.ipynb))
 
 Specify weights for pretrained models (currently all DenseNet121)
 Note: Each pretrained model has 18 outputs. The `all` model has every output trained. However, for the other weights some targets are not trained and will predict randomly becuase they do not exist in the training dataset. The only valid outputs are listed in the field `{dataset}.pathologies` on the dataset that corresponds to the weights. 
@@ -66,7 +66,7 @@ model = xrv.baselinemodels.jfhealthcare.DenseNet()
 
 ```
 
-## autoencoders 
+## Autoencoders 
 You can also load a pre-trained autoencoder that is trained on the PadChest, NIH, CheXpert, and MIMIC datasets.
 ```python3
 ae = xrv.autoencoders.ResNetAE(weights="101-elastic")
@@ -75,7 +75,7 @@ image2 = ae.decode(x)
 ```
 
 
-## datasets ([demo notebook](https://github.com/mlmed/torchxrayvision/blob/master/scripts/xray_datasets.ipynb))
+## Datasets ([demo notebook](https://github.com/mlmed/torchxrayvision/blob/master/scripts/xray_datasets.ipynb))
 Only stats for PA/AP views are shown. Datasets may include more.
 
 ```python3
@@ -115,7 +115,7 @@ NLMTB_Dataset num_samples=662 views=['PA', 'AP']
 {'Tuberculosis': {0: 326, 1: 336}}
 
 ```
-### dataset fields
+## Dataset fields
 
 Each dataset contains a number of fields. These fields are maintained when xrv.datasets.Subset_Dataset and xrv.datasets.Merge_Dataset are used.
 
@@ -132,7 +132,7 @@ If possible, each dataset's `.csv` will have some common fields of the csv. Thes
 `csv.offset_day_int` An integer time offset for the image in the unit of days. This is expected to be for relative times and has no absolute meaning although for some datasets it is the epoch time.
 
 
-## dataset tools
+## Dataset tools
 
 relabel_dataset will align labels to have the same order as the pathologies argument.
 ```python3
