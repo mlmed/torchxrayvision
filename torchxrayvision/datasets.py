@@ -47,8 +47,15 @@ default_pathologies = [  'Atelectasis',
 
 thispath = os.path.dirname(os.path.realpath(__file__))
 
+# this is for caching small things for speed
+_cache_dict = {}
+
 def normalize(sample, maxval):
     """Scales images to be roughly [-1024 1024]."""
+    
+    if sample.max() > maxval:
+        raise Exception("max image value ({}) higher than expected bound ({}).".format(sample.max(), maxval))
+    
     sample = (2 * (sample.astype(np.float32) / maxval) - 1.) * 1024
     #sample = sample / np.std(sample)
     return sample
@@ -961,13 +968,15 @@ class MIMIC_Dataset(Dataset):
         
         self.csv = self.csv.join(self.metacsv).reset_index()
 
-        # Keep only the PA view.
-        if type(views) is not list:
-            views = [views]
+        # Keep only the desired view
         self.views = views
-        
-        self.csv["view"] = self.csv["ViewPosition"]
-        self.csv = self.csv[self.csv["view"].isin(self.views)]
+        if self.views:
+            if type(views) is not list:
+                views = [views]
+            self.views = views
+
+            self.csv["view"] = self.csv["ViewPosition"]
+            self.csv = self.csv[self.csv["view"].isin(self.views)]
 
         if unique_patients:
             self.csv = self.csv.groupby("subject_id").first().reset_index()
@@ -1449,11 +1458,14 @@ class SIIM_Pneumothorax_Dataset(Dataset):
         
         #to figure out the paths
         #TODO: make faster
-        self.file_map = {}
-        for root, directories, files in os.walk(self.imgpath, followlinks=False):
-            for filename in files:
-                filePath = os.path.join(root,filename)
-                self.file_map[filename] = filePath
+        if not ("siim_file_map" in _cache_dict):
+            file_map = {}
+            for root, directories, files in os.walk(self.imgpath, followlinks=False):
+                for filename in files:
+                    filePath = os.path.join(root,filename)
+                    file_map[filename] = filePath
+            _cache_dict["siim_file_map"] = file_map
+        self.file_map = _cache_dict["siim_file_map"]
 
     def string(self):
         return self.__class__.__name__ + " num_samples={} data_aug={}".format(len(self), self.data_aug)
@@ -1540,7 +1552,7 @@ class SIIM_Pneumothorax_Dataset(Dataset):
                         row = images_with_masks.iloc[i]
                         mask = rle2mask(row[" EncodedPixels"],base_size,base_size)
                         mask = mask.T
-                        mask = skimage.transform.resize(mask, (this_size, this_size), mode='constant')
+                        mask = skimage.transform.resize(mask, (this_size, this_size), mode='constant', order=0)
                         mask = mask.round() #make 0,1
 
                 # reshape so image resizing works
@@ -1549,6 +1561,162 @@ class SIIM_Pneumothorax_Dataset(Dataset):
                 path_mask[self.pathologies.index(patho)] = mask
             
         return path_mask
+    
+class VinBrain_Dataset(Dataset):
+    """
+    Nguyen et al., VinDr-CXR: An open dataset of chest X-rays with radiologist's annotations
+    https://arxiv.org/abs/2012.15029
+    
+    https://www.kaggle.com/c/vinbigdata-chest-xray-abnormalities-detection
+    """
+    def __init__(self, imgpath, 
+                 csvpath, 
+                 views=None,
+                 transform=None, 
+                 data_aug=None,
+                 seed=0,
+                 pathology_masks=False):
+        
+        super(VinBrain_Dataset, self).__init__()
+
+        np.random.seed(seed)  # Reset the seed so all runs are the same.
+        self.imgpath = imgpath
+        self.csvpath = csvpath
+        self.transform = transform
+        self.data_aug = data_aug
+        self.pathology_masks = pathology_masks
+        self.views = views
+        
+        self.pathologies = [ 'Aortic enlargement',
+                             'Atelectasis',
+                             'Calcification',
+                             'Cardiomegaly',
+                             'Consolidation',
+                             'ILD',
+                             'Infiltration',
+                             'Lung Opacity',
+                             'Nodule/Mass',
+                             'Lesion',
+                             'Effusion',
+                             'Pleural_Thickening',
+                             'Pneumothorax',
+                             'Pulmonary Fibrosis']
+        
+        self.pathologies = sorted(np.unique(self.pathologies))
+
+        self.mapping = dict()
+        self.mapping["Pleural_Thickening"] = ["Pleural thickening"]
+        self.mapping["Effusion"] = ["Pleural effusion"]
+        
+        self.normalize = normalize
+        # Load data
+        self.check_paths_exist()
+        self.rawcsv = pd.read_csv(self.csvpath)
+        self.csv = pd.DataFrame(self.rawcsv.groupby("image_id")["class_name"].apply(lambda x: "|".join(np.unique(x))))
+        
+        self.labels = []
+        for pathology in self.pathologies:
+            mask = self.csv["class_name"].str.lower().str.contains(pathology.lower())
+            if pathology in self.mapping:
+                for syn in self.mapping[pathology]:
+                    mask |= self.csv["class_name"].str.lower().str.contains(syn.lower())
+            self.labels.append(mask.values)
+        self.labels = np.asarray(self.labels).T
+        self.labels = self.labels.astype(np.float32)
+        
+        self.csv = self.csv.reset_index()
+
+    def string(self):
+        return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
+    
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        
+        sample = {}
+        sample["idx"] = idx
+        sample["lab"] = self.labels[idx]
+        
+        
+        imgid = self.csv['image_id'].iloc[idx]
+        img_path = os.path.join(self.imgpath, imgid + ".dicom")
+        #print(img_path)
+        from pydicom.pixel_data_handlers.util import apply_modality_lut
+        dicom_obj = pydicom.filereader.dcmread(img_path)
+        #print(dicom_obj)
+        img = apply_modality_lut(dicom_obj.pixel_array, dicom_obj)
+        img = pydicom.pixel_data_handlers.apply_windowing(img, dicom_obj)
+        
+        # Photometric Interpretation to see if the image needs to be inverted
+        mode = dicom_obj[0x28, 0x04].value
+        bitdepth = dicom_obj[0x28, 0x101].value
+        
+        # hack!
+        if img.max() < 256:
+            bitdepth = 8
+            
+        if mode == "MONOCHROME1":
+            img = -1*img + 2**float(bitdepth)
+        elif mode == "MONOCHROME2":
+            pass
+        else:
+            raise Exception("Unknown Photometric Interpretation mode")
+            
+        if self.normalize:
+            img = normalize(img, 2**float(bitdepth))
+
+        # Check that images are 2D arrays
+        if len(img.shape) > 2:
+            img = img[:, :, 0]
+        if len(img.shape) < 2:
+            print("error, dimension lower than 2 for image")
+
+        # Add color channel
+        sample["img"] = img[None, :, :]
+        
+        transform_seed = np.random.randint(2147483647)
+        
+        if self.pathology_masks:
+            sample["pathology_masks"] = self.get_mask_dict(imgid, sample["img"].shape)
+            
+        if self.transform is not None:
+            random.seed(transform_seed)
+            sample["img"] = self.transform(sample["img"])
+            if self.pathology_masks:
+                for i in sample["pathology_masks"].keys():
+                    random.seed(transform_seed)
+                    sample["pathology_masks"][i] = self.transform(sample["pathology_masks"][i])
+  
+        if self.data_aug is not None:
+            random.seed(transform_seed)
+            sample["img"] = self.data_aug(sample["img"])
+            if self.pathology_masks:
+                for i in sample["pathology_masks"].keys():
+                    random.seed(transform_seed)
+                    sample["pathology_masks"][i] = self.data_aug(sample["pathology_masks"][i])
+            
+        return sample
+    
+    def get_mask_dict(self, image_name, this_size):
+        
+        c, h, w = this_size
+        
+        path_mask = {}
+        rows = self.rawcsv[self.rawcsv.image_id.str.contains(image_name)]
+        
+        for i, pathology in enumerate(self.pathologies):
+            for group_name, df_group in rows.groupby("class_name"):
+                if (group_name == pathology) or ((pathology in self.mapping) and (group_name in self.mapping[pathology])):
+                    
+                    mask = np.zeros([h, w])
+                    for idx, row in df_group.iterrows():
+                        mask[int(row.y_min):int(row.y_max), int(row.x_min):int(row.x_max)] = 1
+
+                    path_mask[i] = mask[None, :, :] 
+            
+        return path_mask
+    
     
 class ToPILImage(object):
     def __init__(self):
@@ -1569,7 +1737,7 @@ class XRayResizer(object):
         if self.engine == "skimage":
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                return skimage.transform.resize(img, (1, self.size, self.size), mode='constant').astype(np.float32)
+                return skimage.transform.resize(img, (1, self.size, self.size), mode='constant', preserve_range=True).astype(np.float32)
         elif self.engine == "cv2":
             import cv2 # pip install opencv-python
             return cv2.resize(img[0,:,:], 
