@@ -262,3 +262,9 @@ Medical Imaging with Deep Learning 2020 (Online: https://arxiv.org/abs/2002.0249
   url={https://arxiv.org/abs/2002.02497}
 }
 ```
+
+## Supporters/Sponsors
+
+<a href="https://cifar.ca/"><img width="300px" src=docs/cifar-logo.png /></a>
+
+We thank CIFAR (Canadian Institute for Advanced Research) for supporting the development of this project.
