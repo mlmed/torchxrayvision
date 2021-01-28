@@ -179,13 +179,18 @@ class DenseNet(nn.Module):
                 print("If this fails you can run `wget {} -O {}`".format(url, self.weights_filename_local))
                 pathlib.Path(weights_storage_folder).mkdir(parents=True, exist_ok=True)
                 download(url, self.weights_filename_local)
+            
+            try:
+                savedmodel = torch.load(self.weights_filename_local, map_location='cpu')
+                # patch to load old models https://github.com/pytorch/pytorch/issues/42242
+                for mod in savedmodel.modules():
+                    if not hasattr(mod, "_non_persistent_buffers_set"):
+                        mod._non_persistent_buffers_set = set()
 
-            savedmodel = torch.load(self.weights_filename_local, map_location='cpu')
-            # patch to load old models https://github.com/pytorch/pytorch/issues/42242
-            for mod in savedmodel.modules():
-                if not hasattr(mod, "_non_persistent_buffers_set"):
-                    mod._non_persistent_buffers_set = set()
-            self.load_state_dict(savedmodel.state_dict())
+                self.load_state_dict(savedmodel.state_dict())
+            except Exception as e:
+                print("Loading failure. Check weights file:", weights_filename_local)
+                raise(e)
             
             self.eval()
             
