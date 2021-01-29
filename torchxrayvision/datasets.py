@@ -885,7 +885,13 @@ class CheX_Dataset(Dataset):
         # offset_day_int
         
         # patientid
-        patientid = self.csv.Path.str.split("train/", expand=True)[1]
+        if 'train' in csvpath:
+            patientid = self.csv.Path.str.split("train/", expand=True)[1]
+        elif 'valid' in csvpath:
+            patientid = self.csv.Path.str.split("valid/", expand=True)[1]
+        else:
+            raise NotImplemented
+
         patientid = patientid.str.split("/study", expand=True)[0]
         patientid = patientid.str.replace("patient","")
         self.csv["patientid"] = patientid
