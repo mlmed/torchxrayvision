@@ -228,7 +228,8 @@ class NIH_Dataset(Dataset):
     https://academictorrents.com/details/e615d3aebce373f1dc8bd9d11064da55bdadede0
     """
     def __init__(self, imgpath, 
-                 csvpath=os.path.join(thispath, "Data_Entry_2017_v2020.csv.gz"), 
+                 csvpath=os.path.join(thispath, "Data_Entry_2017_v2020.csv.gz"),
+                 bbox_list_path=os.path.join(thispath, "BBox_List_2017.csv.gz"),
                  views=["PA"],
                  transform=None, 
                  data_aug=None, 
@@ -279,7 +280,7 @@ class NIH_Dataset(Dataset):
         
         ####### pathology masks ########
         # load nih pathology masks
-        self.pathology_maskscsv = pd.read_csv(os.path.join(thispath, "BBox_List_2017.csv.gz"), 
+        self.pathology_maskscsv = pd.read_csv(bbox_list_path, 
                 names=["Image Index","Finding Label","x","y","w","h","_1","_2","_3"],
                skiprows=1)
         
