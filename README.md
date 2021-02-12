@@ -71,7 +71,7 @@ You can also load a pre-trained autoencoder that is trained on the PadChest, NIH
 ```python3
 ae = xrv.autoencoders.ResNetAE(weights="101-elastic")
 z = ae.encode(image)
-image2 = ae.decode(x)
+image2 = ae.decode(z)
 ```
 
 
