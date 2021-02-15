@@ -66,6 +66,10 @@ model = xrv.baselinemodels.jfhealthcare.DenseNet()
 
 ```
 
+The performance of these models can be seen here per task as computed in [arxiv.org/abs/2002.02497](https://arxiv.org/abs/2002.02497) in terms of AUC. All valid combinations of model and dataset are computed where a model was trained on the specific label and that label exists in the target dataset. A white cell means it cannot be computed due to missing labels in train or test dataset. The outputs of 3 models are averaged together to reduce noise. Each of the 3 models is trained on the same data with different weight initialization. The XRV pretrained models are only one of the seeds.
+
+<img src="docs/auc-all.jpg" width="100%"/>
+
 ## Autoencoders 
 You can also load a pre-trained autoencoder that is trained on the PadChest, NIH, CheXpert, and MIMIC datasets.
 ```python3
