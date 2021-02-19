@@ -852,20 +852,16 @@ class CheX_Dataset(Dataset):
         self.csvpath = csvpath
         self.csv = pd.read_csv(self.csvpath)
         
-        if views != ["LA"]:
-            # Keep only the PA view.
-            if type(views) is not list:
-                views = [views]
-            self.views = views
-
-            self.csv["view"] = self.csv["AP/PA"]
-            self.csv = self.csv[self.csv["view"].isin(self.views)]
-        else:
-            # Keep only lateral
-            self.csv["view"] = self.csv["Frontal/Lateral"] # Search for lateral images
-            self.csv = self.csv[self.csv["view"]=="Lateral"] # Select lateral
-            self.csv["view"] = self.csv["view"].map({'Lateral': "LA"}) # Rename Lateral with LA 
-        
+        # To list
+        if type(views) is not list:
+              views = [views]
+              self.views = views
+              
+        self.csv["view"] = self.csv["Frontal/Lateral"] # Assign view column 
+        self.csv.loc[(self.csv["view"] == "Frontal"), "view"] = self.csv["AP/PA"] # If Frontal change with the corresponding value in the AP/PA column otherwise remains Lateral
+        self.csv["view"] = self.csv["view"].replace({'Lateral': "L"}) # Rename Lateral with L  
+        self.csv = self.csv[self.csv["view"].isin(self.views)] # Select the view 
+         
         if unique_patients:
             self.csv["PatientID"] = self.csv["Path"].str.extract(pat = '(patient\d+)')
             self.csv = self.csv.groupby("PatientID").first().reset_index()
