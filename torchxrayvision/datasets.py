@@ -1,6 +1,7 @@
 from PIL import Image
 from os.path import join
 from skimage.io import imread, imsave
+import imageio
 from torch import nn
 from torch.nn.modules.linear import Linear
 from torch.utils.data import Dataset
@@ -228,7 +229,8 @@ class NIH_Dataset(Dataset):
     https://academictorrents.com/details/e615d3aebce373f1dc8bd9d11064da55bdadede0
     """
     def __init__(self, imgpath, 
-                 csvpath=os.path.join(thispath, "Data_Entry_2017_v2020.csv.gz"), 
+                 csvpath=os.path.join(thispath, "Data_Entry_2017_v2020.csv.gz"),
+                 bbox_list_path=os.path.join(thispath, "BBox_List_2017.csv.gz"),
                  views=["PA"],
                  transform=None, 
                  data_aug=None, 
@@ -279,7 +281,7 @@ class NIH_Dataset(Dataset):
         
         ####### pathology masks ########
         # load nih pathology masks
-        self.pathology_maskscsv = pd.read_csv(os.path.join(thispath, "BBox_List_2017.csv.gz"), 
+        self.pathology_maskscsv = pd.read_csv(bbox_list_path, 
                 names=["Image Index","Finding Label","x","y","w","h","_1","_2","_3"],
                skiprows=1)
         
@@ -1324,10 +1326,10 @@ class COVID19_Dataset(Dataset):
         semantic_masks = {}
         if archive_path in self.semantic_masks_v7labs_lungs_namelist:
             with zipfile.ZipFile(self.semantic_masks_v7labs_lungs_path).open(archive_path) as file:
-                mask = imread(file)
+                mask = imageio.imread(file.read())
                 
                 mask = (mask == 255).astype(np.float)
-                # resize so image resizing works
+                # reshape so image resizing works
                 mask = mask[None, :, :] 
 
                 semantic_masks["Lungs"] = mask
