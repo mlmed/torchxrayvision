@@ -1727,6 +1727,99 @@ class VinBrain_Dataset(Dataset):
             
         return path_mask
     
+class StonyBrookCOVID_Dataset(Dataset):
+    """
+    This dataset loads the Stonybrook 
+    Radiographic Assessment of Lung Opacity Score Dataset
+    
+    https://doi.org/10.5281/zenodo.4633999
+    
+    Citation will be set soon.
+
+    """
+    
+    def __init__(self, 
+                 imgpath, # path to CXR_images_scored
+                 csvpath, # path to ralo-dataset-metadata.csv
+                 transform=None, 
+                 data_aug=None, 
+                 seed=0):
+
+        super(StonyBrookCOVID_Dataset, self).__init__()
+        
+        np.random.seed(seed)  # Reset the seed so all runs are the same.
+        self.imgpath = imgpath
+        self.transform = transform
+        self.data_aug = data_aug
+                
+        # Load data
+        self.csvpath = csvpath
+        self.csv = pd.read_csv(self.csvpath, skiprows=1)
+        self.MAXVAL = 255  # Range [0 255]
+
+        self.pathologies = ["Geographic Extent","Lung Opacity"]
+        
+        self.csv["Geographic Extent"] = (self.csv["Total GEOGRAPHIC"] + self.csv["Total GEOGRAPHIC.1"])/2
+        self.csv["Lung Opacity"] = (self.csv["Total OPACITY"] + self.csv["Total OPACITY.1"])/2
+        
+        self.labels = []
+        self.labels.append(self.csv["Geographic Extent"])
+        self.labels.append(self.csv["Lung Opacity"])
+        
+        self.labels = np.asarray(self.labels).T
+        self.labels = self.labels.astype(np.float32)
+        
+        ########## add consistent csv values
+        
+        # offset_day_int
+        
+        date_col = self.csv["Exam_DateTime"].str.split("_",expand=True)[0]
+        dt = pd.to_datetime(date_col, format="%Y%m%d")
+        self.csv["offset_day_int"] = dt.astype(np.int)// 10**9 // 86400
+        
+        # patientid
+        self.csv["patientid"] = self.csv["Subject_ID"].astype(str)
+
+    def string(self):
+        return self.__class__.__name__ + " num_samples={}".format(len(self))
+    
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        
+        sample = {}
+        sample["idx"] = idx
+        sample["lab"] = self.labels[idx]
+        
+        img_path = os.path.join(self.imgpath, str(idx) + ".jpg")
+        #print(img_path)
+        img = imread(img_path)
+        img = normalize(img, self.MAXVAL)  
+
+        # Check that images are 2D arrays
+        if len(img.shape) > 2:
+            img = img[:, :, 0]
+        if len(img.shape) < 2:
+            print("error, dimension lower than 2 for image")
+
+        # Add color channel
+        sample["img"] = img[None, :, :]                    
+                               
+        transform_seed = np.random.randint(2147483647)
+            
+        if self.transform is not None:
+            random.seed(transform_seed)
+            sample["img"] = self.transform(sample["img"])
+  
+        if self.data_aug is not None:
+            random.seed(transform_seed)
+            sample["img"] = self.data_aug(sample["img"])
+            
+        return sample
+
+    
+    
     
 class ToPILImage(object):
     def __init__(self):
