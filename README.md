@@ -62,7 +62,7 @@ model = xrv.models.DenseNet(weights="mimic_nb") # MIMIC-CXR (MIT)
 model = xrv.models.DenseNet(weights="mimic_ch") # MIMIC-CXR (MIT)
 
 # DenseNet121 from JF Healthcare for the CheXpert competition
-model = xrv.baselinemodels.jfhealthcare.DenseNet() 
+model = xrv.baseline_models.jfhealthcare.DenseNet() 
 
 ```
 
