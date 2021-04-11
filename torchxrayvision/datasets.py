@@ -851,11 +851,12 @@ class CheX_Dataset(Dataset):
         self.data_aug = data_aug
         self.csvpath = csvpath
         self.csv = pd.read_csv(self.csvpath)
+        self.views = views
         
         # To list
-        if type(views) is not list:
-              views = [views]
-              self.views = views
+        if type(self.views) is not list:
+            views = [views]
+            self.views = views
               
         self.csv["view"] = self.csv["Frontal/Lateral"] # Assign view column 
         self.csv.loc[(self.csv["view"] == "Frontal"), "view"] = self.csv["AP/PA"] # If Frontal change with the corresponding value in the AP/PA column otherwise remains Lateral
