@@ -146,8 +146,11 @@ class Merge_Dataset(Dataset):
 
     def string(self):
         s = self.__class__.__name__ + " num_samples={}\n".format(len(self))
-        for d in self.datasets:
-            s += "└ " + d.string().replace("\n","\n  ") + "\n"
+        for i, d in enumerate(self.datasets):
+            if i < len(self.datasets)-1:
+                s += "├{} ".format(i) + d.string().replace("\n","\n|  ") + "\n"
+            else:
+                s += "└{} ".format(i) + d.string().replace("\n","\n   ") + "\n"
         return s
     
     def __len__(self):
