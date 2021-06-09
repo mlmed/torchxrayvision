@@ -275,7 +275,7 @@ CIFAR (Canadian Institute for Advanced Research)
 
 <a href="https://cifar.ca/"><img width="300px" src="docs/mila-logo.png" /></a>
 
-Mila, Quebec AI Institute
+Mila, Quebec AI Institute, University of Montreal
 
 <a href="https://cifar.ca/"><img width="300px" src="docs/AIMI-stanford.jpg" /></a>
 
