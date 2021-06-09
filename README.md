@@ -269,10 +269,14 @@ Medical Imaging with Deep Learning 2020 (Online: https://arxiv.org/abs/2002.0249
 
 ## Supporters/Sponsors
 
-<a href="https://cifar.ca/"><img width="300px" src=docs/cifar-logo.png /></a>
+<a href="https://cifar.ca/"><img width="300px" src="docs/cifar-logo.png" /></a>
 
 CIFAR (Canadian Institute for Advanced Research)
 
-<a href="https://cifar.ca/"><img width="300px" src=docs/AIMI-stanford.jpg /></a>
+<a href="https://cifar.ca/"><img width="300px" src="docs/mila-logo.png" /></a>
+
+Mila, Quebec AI Institute
+
+<a href="https://cifar.ca/"><img width="300px" src="docs/AIMI-stanford.jpg" /></a>
 
 Stanford University's Center for Artificial Intelligence in Medicine & Imaging
