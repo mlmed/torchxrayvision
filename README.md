@@ -273,10 +273,14 @@ Medical Imaging with Deep Learning 2020 (Online: https://arxiv.org/abs/2002.0249
 
 CIFAR (Canadian Institute for Advanced Research)
 
-<a href="https://cifar.ca/"><img width="300px" src="docs/mila-logo.png" /></a>
+<a href="https://mila.quebec/"><img width="300px" src="docs/mila-logo.png" /></a>
 
 Mila, Quebec AI Institute, University of Montreal
 
-<a href="https://cifar.ca/"><img width="300px" src="docs/AIMI-stanford.jpg" /></a>
+<a href="http://aimi.stanford.edu/"><img width="300px" src="docs/AIMI-stanford.jpg" /></a>
 
 Stanford University's Center for Artificial Intelligence in Medicine & Imaging
+
+<a href="http://www.carestream.com/"><img width="300px" src="docs/carestream-logo.png" /></a>
+
+Carestream Health
