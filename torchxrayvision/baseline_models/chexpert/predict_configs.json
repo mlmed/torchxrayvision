@@ -1,0 +1,615 @@
+{
+    "aggregation_method": "mean",
+    "task2models": {
+        "Atelectasis": [
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10/iter_336000.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10/iter_384000.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10/iter_254400.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10/iter_273600.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10/iter_465600.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10/iter_360000.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10/iter_638400.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10/iter_470400.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10/iter_566400.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10/iter_379200.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_2/iter_331200.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_2/iter_336000.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_2/iter_662400.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_2/iter_590400.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_2/iter_292800.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_2/iter_408000.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_2/iter_57600.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_2/iter_446400.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_2/iter_393600.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_2/iter_475200.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_3/iter_643200.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_3/iter_508800.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_3/iter_163200.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_3/iter_585600.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_3/iter_432000.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_3/iter_571200.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_3/iter_436800.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_3/iter_662400.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_3/iter_336000.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_3/iter_192000.pth.tar",
+                "is_3class": false
+            }
+        ],
+        "Cardiomegaly": [
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10/iter_652800.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10/iter_350400.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10/iter_403200.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10/iter_196800.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10/iter_379200.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10/iter_537600.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10/iter_81600.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10/iter_595200.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10/iter_513600.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10/iter_576000.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_2/iter_340800.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_2/iter_345600.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_2/iter_465600.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_2/iter_662400.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_2/iter_609600.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_2/iter_561600.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_2/iter_528000.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_2/iter_326400.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_2/iter_552000.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_2/iter_628800.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_3/iter_134400.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_3/iter_667200.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_3/iter_499200.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_3/iter_331200.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_3/iter_230400.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_3/iter_648000.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_3/iter_585600.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_3/iter_561600.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_3/iter_441600.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_3/iter_470400.pth.tar",
+                "is_3class": true
+            }
+        ],
+        "Consolidation": [
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10/iter_100800.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10/iter_316800.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10/iter_465600.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10/iter_384000.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10/iter_427200.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10/iter_537600.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10/iter_412800.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10/iter_110400.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10/iter_312000.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10/iter_523200.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10_2/iter_571200.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10_2/iter_292800.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10_2/iter_484800.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10_2/iter_556800.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10_2/iter_345600.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10_2/iter_369600.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10_2/iter_264000.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10_2/iter_470400.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10_2/iter_177600.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10_2/iter_408000.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10_3/iter_312000.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10_3/iter_657600.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10_3/iter_508800.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10_3/iter_412800.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10_3/iter_264000.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10_3/iter_345600.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10_3/iter_158400.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10_3/iter_595200.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10_3/iter_590400.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_self-train_top10_3/iter_667200.pth.tar",
+                "is_3class": false
+            }
+        ],
+        "Edema": [
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10/iter_336000.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10/iter_384000.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10/iter_254400.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10/iter_273600.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10/iter_465600.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10/iter_360000.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10/iter_638400.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10/iter_470400.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10/iter_566400.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10/iter_379200.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_2/iter_331200.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_2/iter_336000.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_2/iter_662400.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_2/iter_590400.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_2/iter_292800.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_2/iter_408000.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_2/iter_57600.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_2/iter_446400.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_2/iter_393600.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_2/iter_475200.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_3/iter_643200.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_3/iter_508800.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_3/iter_163200.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_3/iter_585600.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_3/iter_432000.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_3/iter_571200.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_3/iter_436800.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_3/iter_662400.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_3/iter_336000.pth.tar",
+                "is_3class": false
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_ones_top10_3/iter_192000.pth.tar",
+                "is_3class": false
+            }
+        ],
+        "Pleural Effusion": [
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10/iter_652800.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10/iter_350400.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10/iter_403200.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10/iter_196800.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10/iter_379200.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10/iter_537600.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10/iter_81600.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10/iter_595200.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10/iter_513600.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10/iter_576000.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_2/iter_340800.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_2/iter_345600.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_2/iter_465600.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_2/iter_662400.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_2/iter_609600.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_2/iter_561600.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_2/iter_528000.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_2/iter_326400.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_2/iter_552000.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_2/iter_628800.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_3/iter_134400.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_3/iter_667200.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_3/iter_499200.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_3/iter_331200.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_3/iter_230400.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_3/iter_648000.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_3/iter_585600.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_3/iter_561600.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_3/iter_441600.pth.tar",
+                "is_3class": true
+            },
+            {
+                "ckpt_path": "saved/DenseNet121_320_1e-04_uncertainty_3-class_top10_3/iter_470400.pth.tar",
+                "is_3class": true
+            }
+        ]
+    }
+}
