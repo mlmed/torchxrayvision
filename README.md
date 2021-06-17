@@ -107,6 +107,9 @@ d_covid19 = xrv.datasets.COVID19_Dataset() # specify imgpath and csvpath for the
 
 d_siim = xrv.datasets.SIIM_Pneumothorax_Dataset(imgpath="dicom-images-train/",
                                                 csvpath="train-rle.csv")
+
+d_vin = xrv.datasets.VinBrain_Dataset(imgpath=".../train",
+                                      csvpath=".../train.csv")
 ```
 
 National Library of Medicine Tuberculosis Datasets [paper](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4256233/)
