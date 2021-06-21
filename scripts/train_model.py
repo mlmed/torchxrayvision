@@ -25,12 +25,12 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-f', type=str, default="", help='')
 parser.add_argument('-name', type=str)
 parser.add_argument('--output_dir', type=str, default="/scratch/users/joecohen/output/")
-parser.add_argument('--dataset', type=str, default="pcrsna")
+parser.add_argument('--dataset', type=str, default="pc-nih-rsna-siim-vin")
 parser.add_argument('--dataset_dir', type=str, default="/home/groups/akshaysc/joecohen/")
-parser.add_argument('--model', type=str, default="densenet121")
+parser.add_argument('--model', type=str, default="resnet50")
 parser.add_argument('--seed', type=int, default=0, help='')
 parser.add_argument('--cuda', type=bool, default=True, help='')
-parser.add_argument('--num_epochs', type=int, default=160, help='')
+parser.add_argument('--num_epochs', type=int, default=400, help='')
 parser.add_argument('--batch_size', type=int, default=64, help='')
 parser.add_argument('--shuffle', type=bool, default=True, help='')
 parser.add_argument('--lr', type=float, default=0.001, help='')
@@ -60,20 +60,20 @@ if cfg.data_aug:
     ])
     print(data_aug)
 
-transforms = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),xrv.datasets.XRayResizer(224)])
+transforms = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),xrv.datasets.XRayResizer(512)])
 
 datas = []
 datas_names = []
 if "nih" in cfg.dataset:
     dataset = xrv.datasets.NIH_Dataset(
-        imgpath=cfg.dataset_dir + "/NIH/images-224", 
-        transform=transforms, data_aug=data_aug, unique_patients=False)
+        imgpath=cfg.dataset_dir + "/images-512-NIH", 
+        transform=transforms, data_aug=data_aug, unique_patients=False, views=["PA","AP"])
     datas.append(dataset)
     datas_names.append("nih")
 if "pc" in cfg.dataset:
     dataset = xrv.datasets.PC_Dataset(
-        imgpath=cfg.dataset_dir + "/PC/images-224",
-        transform=transforms, data_aug=data_aug, unique_patients=False)
+        imgpath=cfg.dataset_dir + "/images-512-PC", 
+        transform=transforms, data_aug=data_aug, unique_patients=False, views=["PA","AP"])
     datas.append(dataset)
     datas_names.append("pc")
 if "chex" in cfg.dataset:
@@ -85,26 +85,18 @@ if "chex" in cfg.dataset:
     datas_names.append("chex")
 if "google" in cfg.dataset:
     dataset = xrv.datasets.NIH_Google_Dataset(
-        imgpath=cfg.dataset_dir + "/NIH/images-224",
+        imgpath=cfg.dataset_dir + "/images-512-NIH",
         transform=transforms, data_aug=data_aug)
     datas.append(dataset)
     datas_names.append("google")
 if "mimic_ch" in cfg.dataset:
     dataset = xrv.datasets.MIMIC_Dataset(
-        imgpath=cfg.dataset_dir + "/images-224-MIMIC/files",
+        imgpath="/scratch/users/joecohen/data/MIMICCXR-2.0/files/",
         csvpath=cfg.dataset_dir + "/MIMICCXR-2.0/mimic-cxr-2.0.0-chexpert.csv.gz",
         metacsvpath=cfg.dataset_dir + "/MIMICCXR-2.0/mimic-cxr-2.0.0-metadata.csv.gz",
-        transform=transforms, data_aug=data_aug, unique_patients=False)
+        transform=transforms, data_aug=data_aug, unique_patients=False, views=["PA","AP"])
     datas.append(dataset)
     datas_names.append("mimic_ch")
-if "mimic_nb" in cfg.dataset:
-    dataset = xrv.datasets.MIMIC_Dataset(
-        imgpath=cfg.dataset_dir + "/MIMIC/images-224/files",
-        csvpath=cfg.dataset_dir + "/MIMICCXR-2.0/mimic-cxr-2.0.0-negbio.csv.gz",
-        metacsvpath=cfg.dataset_dir + "/MIMICCXR-2.0/mimic-cxr-2.0.0-metadata.csv.gz",
-        transform=transforms, data_aug=data_aug)
-    datas.append(dataset)
-    datas_names.append("mimic_nb")
 if "openi" in cfg.dataset:
     dataset = xrv.datasets.Openi_Dataset(
         imgpath=cfg.dataset_dir + "/OpenI/images/",
@@ -114,9 +106,23 @@ if "openi" in cfg.dataset:
 if "rsna" in cfg.dataset:
     dataset = xrv.datasets.RSNA_Pneumonia_Dataset(
         imgpath=cfg.dataset_dir + "/kaggle-pneumonia-jpg/stage_2_train_images_jpg",
-        transform=transforms, data_aug=data_aug, unique_patients=False)
+        transform=transforms, data_aug=data_aug, unique_patients=False, views=["PA","AP"])
     datas.append(dataset)
     datas_names.append("rsna")
+if "siim" in cfg.dataset:
+    dataset = xrv.datasets.SIIM_Pneumothorax_Dataset(
+        imgpath=cfg.dataset_dir + "/SIIM_TRAIN_TEST/dicom-images-train",
+        csvpath=cfg.dataset_dir + "/SIIM_TRAIN_TEST/train-rle.csv",
+        transform=transforms, data_aug=data_aug)
+    datas.append(dataset)
+    datas_names.append("siim")
+if "vin" in cfg.dataset:
+    dataset = xrv.datasets.VinBrain_Dataset(
+        imgpath=cfg.dataset_dir + "vinbigdata-chest-xray-abnormalities-detection/train",
+        csvpath=cfg.dataset_dir + "vinbigdata-chest-xray-abnormalities-detection/train.csv",
+        transform=transform, data_aug=data_aug)
+    datas.append(dataset)
+    datas_names.append("vin")
 
 
 print("datas_names", datas_names)
@@ -137,8 +143,13 @@ else:
 train_datas = []
 test_datas = []
 for i, dataset in enumerate(datas):
-
+    
+    # give patientid if not exist
+    if "patientid" not in dataset.csv:
+        dataset.csv["patientid"] = ["{}-{}".format(dataset.__class__.__name__, i) for i in range(len(dataset))]
+        
     gss = sklearn.model_selection.GroupShuffleSplit(train_size=0.8,test_size=0.2, random_state=cfg.seed)
+    
     train_inds, test_inds = next(gss.split(X=range(len(dataset)), groups=dataset.csv.patientid))
     train_dataset = xrv.datasets.SubsetDataset(dataset, train_inds)
     test_dataset = xrv.datasets.SubsetDataset(dataset, test_inds)
@@ -183,10 +194,19 @@ elif "resnet101" in cfg.model:
     #patch for single channel
     model.conv1 = torch.nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
     
+elif "resnet50" in cfg.model:
+    model = torchvision.models.resnet50(num_classes=train_dataset.labels.shape[1], pretrained=False)
+    #patch for single channel
+    model.conv1 = torch.nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+    
 elif "shufflenet_v2_x2_0" in cfg.model:
     model = torchvision.models.shufflenet_v2_x2_0(num_classes=train_dataset.labels.shape[1], pretrained=False)
     #patch for single channel
     model.conv1[0] = torch.nn.Conv2d(1, 24, kernel_size=3, stride=2, padding=1, bias=False)
+elif "squeezenet1_1" in cfg.model:
+    model = torchvision.models.squeezenet1_1(num_classes=train_dataset.labels.shape[1], pretrained=False)
+    #patch for single channel
+    model.features[0] = torch.nn.Conv2d(1, 64, kernel_size=3, stride=2, padding=1, bias=False)
 else:
     raise Exception("no model")
 
