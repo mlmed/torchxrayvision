@@ -308,8 +308,8 @@ def op_norm(outputs, op_threshs):
     #expand to batch size so we can do parallel comp
     op_threshs = op_threshs.expand(outputs.shape[0],-1)
     
-    #initial values will be 0
-    outputs_new = torch.zeros(outputs.shape, device = outputs.device)
+    #initial values will be 0.5
+    outputs_new = torch.zeros(outputs.shape, device = outputs.device)+0.5
     
     # only select non-nan elements otherwise the gradient breaks
     mask_leq = (outputs<op_threshs) & ~torch.isnan(op_threshs)
