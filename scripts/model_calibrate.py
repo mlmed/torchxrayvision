@@ -31,26 +31,25 @@ parser.add_argument('-cuda', type=bool, default=True, help='')
 parser.add_argument('-batch_size', type=int, default=64, help='')
 parser.add_argument('-threads', type=int, default=12, help='')
 parser.add_argument('--dataset_dir', type=str, default="/home/groups/akshaysc/joecohen/")
-parser.add_argument('--labelunion', type=bool, default=True, help='')
 
 cfg = parser.parse_args()
 
 data_aug = None
 
-transforms = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),xrv.datasets.XRayResizer(224)])
+transforms = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),xrv.datasets.XRayResizer(512)])
 
 datas = []
 datas_names = []
 if "nih" in cfg.dataset:
     dataset = xrv.datasets.NIH_Dataset(
-        imgpath=cfg.dataset_dir + "/NIH/images-224", 
-        transform=transforms, data_aug=data_aug, unique_patients=False)
+        imgpath=cfg.dataset_dir + "/images-512-NIH", 
+        transform=transforms, data_aug=data_aug, unique_patients=False, views=["PA","AP"])
     datas.append(dataset)
     datas_names.append("nih")
 if "pc" in cfg.dataset:
     dataset = xrv.datasets.PC_Dataset(
-        imgpath=cfg.dataset_dir + "/PC/images-224",
-        transform=transforms, data_aug=data_aug, unique_patients=False)
+        imgpath=cfg.dataset_dir + "/images-512-PC", 
+        transform=transforms, data_aug=data_aug, unique_patients=False, views=["PA","AP"])
     datas.append(dataset)
     datas_names.append("pc")
 if "chex" in cfg.dataset:
@@ -62,26 +61,18 @@ if "chex" in cfg.dataset:
     datas_names.append("chex")
 if "google" in cfg.dataset:
     dataset = xrv.datasets.NIH_Google_Dataset(
-        imgpath=cfg.dataset_dir + "/NIH/images-224",
+        imgpath=cfg.dataset_dir + "/images-512-NIH",
         transform=transforms, data_aug=data_aug)
     datas.append(dataset)
     datas_names.append("google")
 if "mimic_ch" in cfg.dataset:
     dataset = xrv.datasets.MIMIC_Dataset(
-        imgpath=cfg.dataset_dir + "/images-224-MIMIC/files",
+        imgpath="/scratch/users/joecohen/data/MIMICCXR-2.0/files/",
         csvpath=cfg.dataset_dir + "/MIMICCXR-2.0/mimic-cxr-2.0.0-chexpert.csv.gz",
         metacsvpath=cfg.dataset_dir + "/MIMICCXR-2.0/mimic-cxr-2.0.0-metadata.csv.gz",
-        transform=transforms, data_aug=data_aug, unique_patients=False)
+        transform=transforms, data_aug=data_aug, unique_patients=False, views=["PA","AP"])
     datas.append(dataset)
     datas_names.append("mimic_ch")
-if "mimic_nb" in cfg.dataset:
-    dataset = xrv.datasets.MIMIC_Dataset(
-        imgpath=cfg.dataset_dir + "/MIMIC/images-224/files",
-        csvpath=cfg.dataset_dir + "/MIMICCXR-2.0/mimic-cxr-2.0.0-negbio.csv.gz",
-        metacsvpath=cfg.dataset_dir + "/MIMICCXR-2.0/mimic-cxr-2.0.0-metadata.csv.gz",
-        transform=transforms, data_aug=data_aug)
-    datas.append(dataset)
-    datas_names.append("mimic_nb")
 if "openi" in cfg.dataset:
     dataset = xrv.datasets.Openi_Dataset(
         imgpath=cfg.dataset_dir + "/OpenI/images/",
@@ -91,34 +82,38 @@ if "openi" in cfg.dataset:
 if "rsna" in cfg.dataset:
     dataset = xrv.datasets.RSNA_Pneumonia_Dataset(
         imgpath=cfg.dataset_dir + "/kaggle-pneumonia-jpg/stage_2_train_images_jpg",
-        transform=transforms, data_aug=data_aug, unique_patients=False)
+        transform=transforms, data_aug=data_aug, unique_patients=False, views=["PA","AP"])
     datas.append(dataset)
     datas_names.append("rsna")
+if "siim" in cfg.dataset:
+    dataset = xrv.datasets.SIIM_Pneumothorax_Dataset(
+        imgpath=cfg.dataset_dir + "/SIIM_TRAIN_TEST/dicom-images-train",
+        csvpath=cfg.dataset_dir + "/SIIM_TRAIN_TEST/train-rle.csv",
+        transform=transforms, data_aug=data_aug)
+    datas.append(dataset)
+    datas_names.append("siim")
 
 
+# load model
+model = xrv.models.get_model(cfg.weights_filename, apply_sigmoid=True)
+model.op_threshs = None
 
 print("datas_names", datas_names)
 
-if cfg.labelunion:
-    newlabels = set()
-    for d in datas:
-        newlabels = newlabels.union(d.pathologies)
-    
-    newlabels = sorted(newlabels)
-    #newlabels.remove("Support Devices")
-    print("labels",list(newlabels))
-    for d in datas:
-        xrv.datasets.relabel_dataset(list(newlabels), d)
-else:
-    for d in datas:
-        xrv.datasets.relabel_dataset(xrv.datasets.default_pathologies, d)
+for d in datas:
+    xrv.datasets.relabel_dataset(model.pathologies, d)
 
 #cut out training sets
 train_datas = []
 test_datas = []
 for i, dataset in enumerate(datas):
-
+    
+    # give patientid if not exist
+    if "patientid" not in dataset.csv:
+        dataset.csv["patientid"] = ["{}-{}".format(dataset.__class__.__name__, i) for i in range(len(dataset))]
+        
     gss = sklearn.model_selection.GroupShuffleSplit(train_size=0.8,test_size=0.2, random_state=cfg.seed)
+    
     train_inds, test_inds = next(gss.split(X=range(len(dataset)), groups=dataset.csv.patientid))
     train_dataset = xrv.datasets.SubsetDataset(dataset, train_inds)
     test_dataset = xrv.datasets.SubsetDataset(dataset, test_inds)
@@ -152,9 +147,6 @@ print("train_dataset.labels.shape", train_dataset.labels.shape)
 print("test_dataset.labels.shape", test_dataset.labels.shape)
 print("train_dataset",train_dataset)
 print("test_dataset",test_dataset)
-
-# load model
-model = torch.load(cfg.weights_filename, map_location='cpu')
 
 #print(model)
 
