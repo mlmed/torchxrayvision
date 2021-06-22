@@ -10,13 +10,15 @@ def test_model_basic():
     model = xrv.models.DenseNet()
 
 def test_model_pretrained():
-    model = xrv.models.DenseNet(weights="all")
-    model = xrv.models.DenseNet(weights="mimic_ch")
+    model = xrv.models.DenseNet(weights="densenet121-res224-all")
+    model = xrv.models.DenseNet(weights="densenet121-res224-mimic_ch")
+    model = xrv.models.ResNet(weights="resnet50-res512-all")
     
 def test_model_function():
     
     models = [xrv.models.DenseNet(weights="all"),
-             xrv.models.DenseNet(weights="mimic_ch")]
+             xrv.models.DenseNet(weights="mimic_ch"),
+             xrv.models.ResNet(weights="resnet50-res512-all")]
     
     for model in models:
         img = torch.ones(1,1,224,224)

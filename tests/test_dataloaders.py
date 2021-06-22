@@ -1,4 +1,6 @@
 import pytest
+import sys, os
+sys.path.insert(0,"../torchxrayvision/")
 import torchxrayvision as xrv
  
 dataset_classes = [xrv.datasets.NIH_Dataset,
