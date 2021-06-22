@@ -1835,80 +1835,79 @@ class StonyBrookCOVID_Dataset(Dataset):
         return sample 
     
 class ObjectCXR_Dataset(Dataset):
-    """
-    
-    https://jfhealthcare.github.io/object-CXR/
-    
-    https://academictorrents.com/details/fdc91f11d7010f7259a05403fc9d00079a09f5d5
-    """
-    def __init__(self, imgzippath, 
-                 csvpath, 
-                 transform=None, 
-                 data_aug=None,
-                 seed=0):
-        
-        super(ObjectCXR_Dataset, self).__init__()
+    """
+    https://jfhealthcare.github.io/object-CXR/
 
-        np.random.seed(seed)  # Reset the seed so all runs are the same.
-        self.imgzippath = imgzippath
-        self.csvpath = csvpath
-        self.transform = transform
-        self.data_aug = data_aug
-        self.views = []
-        self.MAXVAL = 255  # Range [0 255]
-        self.pathologies = ['Foreign Object']
-        
-        # Load data
-        self.csv = pd.read_csv(self.csvpath)
-        
-        self.labels = []
-        self.labels.append(~self.csv["annotation"].isnull())
-        self.labels = np.asarray(self.labels).T
-        self.labels = self.labels.astype(np.float32)
-        
-        self.csv = self.csv.reset_index()
-        
-        self.csv["has_masks"] = ~self.csv["annotation"].isnull()
-        
-        self.imgzip = zipfile.ZipFile(self.imgzippath)
+    https://academictorrents.com/details/fdc91f11d7010f7259a05403fc9d00079a09f5d5
+    """
+    def __init__(self, imgzippath, 
+                 csvpath, 
+                 transform=None, 
+                 data_aug=None,
+                 seed=0):
 
-    def string(self):
-        return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
-    
-    def __len__(self):
-        return len(self.labels)
+        super(ObjectCXR_Dataset, self).__init__()
 
-    def __getitem__(self, idx):
-        
-        sample = {}
-        sample["idx"] = idx
-        sample["lab"] = self.labels[idx]
-        imgid = self.csv.iloc[idx]["image_name"]
-        
-        with zipfile.ZipFile(self.imgzippath).open("train/" + imgid) as file:
-            img = imageio.imread(file.read())
-            img = normalize(img, self.MAXVAL)  
+        np.random.seed(seed)  # Reset the seed so all runs are the same.
+        self.imgzippath = imgzippath
+        self.csvpath = csvpath
+        self.transform = transform
+        self.data_aug = data_aug
+        self.views = []
+        self.MAXVAL = 255  # Range [0 255]
+        self.pathologies = ['Foreign Object']
 
-        # Check that images are 2D arrays
-        if len(img.shape) > 2:
-            img = img[:, :, 0]
-        if len(img.shape) < 2:
-            print("error, dimension lower than 2 for image")
+        # Load data
+        self.csv = pd.read_csv(self.csvpath)
 
-        # Add color channel
-        sample["img"] = img[None, :, :]     
-        
-        transform_seed = np.random.randint(2147483647)
-            
-        if self.transform is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.transform(sample["img"])
-  
-        if self.data_aug is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.data_aug(sample["img"])
-            
-        return sample   
+        self.labels = []
+        self.labels.append(~self.csv["annotation"].isnull())
+        self.labels = np.asarray(self.labels).T
+        self.labels = self.labels.astype(np.float32)
+
+        self.csv = self.csv.reset_index()
+
+        self.csv["has_masks"] = ~self.csv["annotation"].isnull()
+
+        self.imgzip = zipfile.ZipFile(self.imgzippath)
+
+    def string(self):
+        return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+
+        sample = {}
+        sample["idx"] = idx
+        sample["lab"] = self.labels[idx]
+        imgid = self.csv.iloc[idx]["image_name"]
+
+        with zipfile.ZipFile(self.imgzippath).open("train/" + imgid) as file:
+            img = imageio.imread(file.read())
+            img = normalize(img, self.MAXVAL)
+
+        # Check that images are 2D arrays
+        if len(img.shape) > 2:
+            img = img[:, :, 0]
+        if len(img.shape) < 2:
+            print("error, dimension lower than 2 for image")
+
+        # Add color channel
+        sample["img"] = img[None, :, :]
+
+        transform_seed = np.random.randint(2147483647)
+
+        if self.transform is not None:
+            random.seed(transform_seed)
+            sample["img"] = self.transform(sample["img"])
+
+        if self.data_aug is not None:
+            random.seed(transform_seed)
+            sample["img"] = self.data_aug(sample["img"])
+
+        return sample
     
     
 class ToPILImage(object):
