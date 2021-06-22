@@ -53,13 +53,18 @@ Specify weights for pretrained models (currently all DenseNet121)
 Note: Each pretrained model has 18 outputs. The `all` model has every output trained. However, for the other weights some targets are not trained and will predict randomly becuase they do not exist in the training dataset. The only valid outputs are listed in the field `{dataset}.pathologies` on the dataset that corresponds to the weights. 
 
 ```python3
-model = xrv.models.DenseNet(weights="all")
-model = xrv.models.DenseNet(weights="rsna") # RSNA Pneumonia Challenge
-model = xrv.models.DenseNet(weights="nih") # NIH chest X-ray8
-model = xrv.models.DenseNet(weights="pc") # PadChest (University of Alicante)
-model = xrv.models.DenseNet(weights="chex") # CheXpert (Stanford)
-model = xrv.models.DenseNet(weights="mimic_nb") # MIMIC-CXR (MIT)
-model = xrv.models.DenseNet(weights="mimic_ch") # MIMIC-CXR (MIT)
+
+## 224x224 models
+model = xrv.models.DenseNet(weights="densenet121-res224-all")
+model = xrv.models.DenseNet(weights="densenet121-res224-rsna") # RSNA Pneumonia Challenge
+model = xrv.models.DenseNet(weights="densenet121-res224-nih") # NIH chest X-ray8
+model = xrv.models.DenseNet(weights="densenet121-res224-pc") # PadChest (University of Alicante)
+model = xrv.models.DenseNet(weights="densenet121-res224-chex") # CheXpert (Stanford)
+model = xrv.models.DenseNet(weights="densenet121-res224-mimic_nb") # MIMIC-CXR (MIT)
+model = xrv.models.DenseNet(weights="densenet121-res224-mimic_ch") # MIMIC-CXR (MIT)
+
+# 512x512 models
+model = xrv.baseline_models.chexpert.ResNet(weights="resnet50-res512-all")
 
 # DenseNet121 from JF Healthcare for the CheXpert competition
 model = xrv.baseline_models.jfhealthcare.DenseNet() 
