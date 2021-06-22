@@ -47,6 +47,7 @@ default_pathologies = [  'Atelectasis',
                 ]
 
 thispath = os.path.dirname(os.path.realpath(__file__))
+datapath = os.path.join(thispath,"data")
 
 # this is for caching small things for speed
 _cache_dict = {}
@@ -232,8 +233,8 @@ class NIH_Dataset(Dataset):
     https://academictorrents.com/details/e615d3aebce373f1dc8bd9d11064da55bdadede0
     """
     def __init__(self, imgpath, 
-                 csvpath=os.path.join(thispath, "Data_Entry_2017_v2020.csv.gz"),
-                 bbox_list_path=os.path.join(thispath, "BBox_List_2017.csv.gz"),
+                 csvpath=os.path.join(datapath, "Data_Entry_2017_v2020.csv.gz"),
+                 bbox_list_path=os.path.join(datapath, "BBox_List_2017.csv.gz"),
                  views=["PA"],
                  transform=None, 
                  data_aug=None, 
@@ -409,8 +410,8 @@ class RSNA_Pneumonia_Dataset(Dataset):
     """
     def __init__(self, 
                  imgpath, 
-                 csvpath=os.path.join(thispath, "kaggle_stage_2_train_labels.csv.zip"),
-                 dicomcsvpath=os.path.join(thispath, "kaggle_stage_2_train_images_dicom_headers.csv.gz"),
+                 csvpath=os.path.join(datapath, "kaggle_stage_2_train_labels.csv.zip"),
+                 dicomcsvpath=os.path.join(datapath, "kaggle_stage_2_train_images_dicom_headers.csv.gz"),
                  views=["PA"],
                  transform=None, 
                  data_aug=None, 
@@ -580,7 +581,7 @@ class NIH_Google_Dataset(Dataset):
     """
     
     def __init__(self, imgpath, 
-                 csvpath=os.path.join(thispath, "google2019_nih-chest-xray-labels.csv.gz"), 
+                 csvpath=os.path.join(datapath, "google2019_nih-chest-xray-labels.csv.gz"), 
                  views=["PA"],
                  transform=None, 
                  data_aug=None, 
@@ -684,7 +685,7 @@ class PC_Dataset(Dataset):
     https://academictorrents.com/details/96ebb4f92b85929eadfb16761f310a6d04105797
     """
     def __init__(self, imgpath, 
-                 csvpath=os.path.join(thispath, "PADCHEST_chest_x_ray_images_labels_160K_01.02.19.csv.gz"), 
+                 csvpath=os.path.join(datapath, "PADCHEST_chest_x_ray_images_labels_160K_01.02.19.csv.gz"), 
                  views=["PA"],
                  transform=None, 
                  data_aug=None,
@@ -701,9 +702,10 @@ class PC_Dataset(Dataset):
                             "Cardiomegaly", "Nodule", "Mass", "Hernia","Fracture", 
                             "Granuloma", "Flattened Diaphragm", "Bronchiectasis",
                             "Aortic Elongation", "Scoliosis", 
-                            "Hilar Enlargement", "Support Devices" , "Tuberculosis",
+                            "Hilar Enlargement", "Tuberculosis",
                             "Air Trapping", "Costophrenic Angle Blunting", "Aortic Atheromatosis",
-                            "Hemidiaphragm Elevation"]
+                            "Hemidiaphragm Elevation", 
+                            "Support Devices", "Tube'"] # the Tube' is intentional
         
         self.pathologies = sorted(self.pathologies)
         
@@ -723,6 +725,7 @@ class PC_Dataset(Dataset):
                                         "pulmonary artery enlargement"]
         mapping["Support Devices"] = ["device",
                                       "pacemaker"]
+        mapping["Tube'"] = ["stent'"] ## the ' is to select findings which end in that word
         
         self.imgpath = imgpath
         self.transform = transform
@@ -758,11 +761,15 @@ class PC_Dataset(Dataset):
                    "216840111366964012373310883942009117084022290_00-064-025.png",
                    "216840111366964012283393834152009033102258826_00-059-087.png",
                    "216840111366964012373310883942009170084120009_00-097-074.png",
-                   "216840111366964012819207061112010315104455352_04-024-184.png"]
+                   "216840111366964012819207061112010315104455352_04-024-184.png",
+                   "216840111366964012819207061112010306085429121_04-020-102.png"]
         self.csv = self.csv[~self.csv["ImageID"].isin(missing)]
         
         if unique_patients:
             self.csv = self.csv.groupby("PatientID").first().reset_index()
+            
+        # filter out age < 10 (paper published 2019)
+        self.csv = self.csv[(2019-self.csv.PatientBirth > 10)]
         
         # Get our classes.
         self.labels = []
@@ -775,6 +782,8 @@ class PC_Dataset(Dataset):
             self.labels.append(mask.values)
         self.labels = np.asarray(self.labels).T
         self.labels = self.labels.astype(np.float32)
+        
+        self.pathologies[self.pathologies.index("Tube'")] = "Tube"
         
         ########## add consistent csv values
         
@@ -875,7 +884,8 @@ class CheX_Dataset(Dataset):
         self.labels = []
         for pathology in self.pathologies:
             if pathology in self.csv.columns:
-                self.csv.loc[healthy, pathology] = 0
+                if pathology != "Support Devices":
+                    self.csv.loc[healthy, pathology] = 0
                 mask = self.csv[pathology]
                 
             self.labels.append(mask.values)
@@ -1069,9 +1079,9 @@ class Openi_Dataset(Dataset):
     https://academictorrents.com/details/5a3a439df24931f410fac269b87b050203d9467d
     """
     def __init__(self, imgpath, 
-                 xmlpath=os.path.join(thispath, "NLMCXR_reports.tgz"), 
-                 dicomcsv_path=os.path.join(thispath, "nlmcxr_dicom_metadata.csv.gz"),
-                 tsnepacsv_path=os.path.join(thispath, "nlmcxr_tsne_pa.csv.gz"),
+                 xmlpath=os.path.join(datapath, "NLMCXR_reports.tgz"), 
+                 dicomcsv_path=os.path.join(datapath, "nlmcxr_dicom_metadata.csv.gz"),
+                 tsnepacsv_path=os.path.join(datapath, "nlmcxr_tsne_pa.csv.gz"),
                  filter_pa=True,
                  transform=None, data_aug=None, 
                  nrows=None, seed=0,
@@ -1220,7 +1230,7 @@ class COVID19_Dataset(Dataset):
     def __init__(self, 
                  imgpath=os.path.join(thispath, "covid-chestxray-dataset", "images"), 
                  csvpath=os.path.join(thispath, "covid-chestxray-dataset", "metadata.csv"), 
-                 semantic_masks_v7labs_lungs_path=os.path.join(thispath, "data" , "semantic_masks_v7labs_lungs.zip"),
+                 semantic_masks_v7labs_lungs_path=os.path.join(datapath, "semantic_masks_v7labs_lungs.zip"),
                  views=["PA", "AP"],
                  transform=None, 
                  data_aug=None, 
@@ -1628,6 +1638,8 @@ class VinBrain_Dataset(Dataset):
         self.rawcsv = pd.read_csv(self.csvpath)
         self.csv = pd.DataFrame(self.rawcsv.groupby("image_id")["class_name"].apply(lambda x: "|".join(np.unique(x))))
         
+        self.csv["has_masks"] = self.csv.class_name != "No finding"
+        
         self.labels = []
         for pathology in self.pathologies:
             mask = self.csv["class_name"].str.lower().str.contains(pathology.lower())
@@ -1820,10 +1832,7 @@ class StonyBrookCOVID_Dataset(Dataset):
             random.seed(transform_seed)
             sample["img"] = self.data_aug(sample["img"])
             
-        return sample
-
-    
-    
+        return sample 
     
 class ToPILImage(object):
     def __init__(self):
