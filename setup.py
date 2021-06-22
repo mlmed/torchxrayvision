@@ -33,5 +33,5 @@ setuptools.setup(
     ],
     packages=find_packages(),
     package_dir={'torchxrayvision': 'torchxrayvision'},
-    package_data={'torchxrayvision': ['data/*.zip','*.gz','*.tgz','*.zip']},
+    package_data={'torchxrayvision': ['data/*.zip','*.gz','*.tgz','*.zip', 'baseline_models/chexpert/*.json']},
 )
