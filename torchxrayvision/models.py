@@ -240,7 +240,6 @@ class ResNet(nn.Module):
         
         self.weights = weights
         self.apply_sigmoid = apply_sigmoid
-        self.op_threshs = None
         
         if weights is None:
             raise Exception("Must specify the `weights` argument to load this model")
@@ -266,7 +265,7 @@ class ResNet(nn.Module):
             raise e
         
         if "op_threshs" in model_urls[weights]:
-            self.op_threshs = torch.tensor(model_urls[weights]["op_threshs"])
+            self.register_buffer('op_threshs', torch.tensor(model_urls[weights]["op_threshs"]))
         
         self.eval()
        
