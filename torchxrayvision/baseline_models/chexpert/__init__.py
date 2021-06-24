@@ -58,18 +58,19 @@ class DenseNet(nn.Module):
         x = x/512
         #now between [-2,2] for this model
         
+        outputs = []
+        for sample in x: #sorry hard to make parallel
+            all_task2prob = {}
+            for tasks in self.model:
+                task2prob = self.model.infer(sample.unsqueeze(0), tasks)
+                for task, task_prob in task2prob.items():
+                    all_task2prob[task] = task_prob
+
+            output = [all_task2prob[patho] for patho in ["Atelectasis", "Cardiomegaly", "Consolidation", "Edema", "Pleural Effusion"]]
+            output = torch.stack(output)
+            outputs.append(output)
         
-        all_task2prob = {}
-        for tasks in self.model:
-            task2prob = self.model.infer(x, tasks)
-            #return task2prob
-            for task, task_prob in task2prob.items():
-                all_task2prob[task] = task_prob
-                
-        output = [all_task2prob[patho] for patho in ["Atelectasis", "Cardiomegaly", "Consolidation", "Edema", "Pleural Effusion"]]
-        output = torch.stack(output)
-            
-        return output
+        return torch.stack(outputs)
     
     def features(self, x):
         x = x.repeat(1, 3, 1, 1)
