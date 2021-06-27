@@ -28,8 +28,9 @@ parser.add_argument('dataset', type=str)
 parser.add_argument('weights_filename', type=str,)
 parser.add_argument('-seed', type=int, default=0, help='')
 parser.add_argument('-cuda', type=bool, default=True, help='')
-parser.add_argument('-batch_size', type=int, default=64, help='')
-parser.add_argument('-threads', type=int, default=12, help='')
+parser.add_argument('-batch_size', type=int, default=8, help='')
+parser.add_argument('-threads', type=int, default=4, help='')
+parser.add_argument('-mdtable', action='store_true', help='')
 parser.add_argument('--dataset_dir', type=str, default="/home/groups/akshaysc/joecohen/")
 
 cfg = parser.parse_args()
@@ -92,11 +93,25 @@ if "siim" in cfg.dataset:
         transform=transforms, data_aug=data_aug)
     datas.append(dataset)
     datas_names.append("siim")
-
+if "vin" in cfg.dataset:
+    dataset = xrv.datasets.VinBrain_Dataset(
+        imgpath=cfg.dataset_dir + "vinbigdata-chest-xray-abnormalities-detection/train",
+        csvpath=cfg.dataset_dir + "vinbigdata-chest-xray-abnormalities-detection/train.csv",
+        transform=transforms, data_aug=data_aug)
+    datas.append(dataset)
+    datas_names.append("vin")
+    
+orj_dataset_pathologies = datas[0].pathologies
 
 # load model
-model = xrv.models.get_model(cfg.weights_filename, apply_sigmoid=True)
-model.op_threshs = None
+
+if cfg.weights_filename == "jfhealthcare":
+    model = xrv.baseline_models.jfhealthcare.DenseNet() 
+elif cfg.weights_filename == "chexpert":
+    model = xrv.baseline_models.chexpert.DenseNet(weights_zip="/home/users/joecohen/scratch/chexpert/chexpert_weights.zip")
+else:
+    model = xrv.models.get_model(cfg.weights_filename, apply_sigmoid=True)
+    model.op_threshs = None
 
 print("datas_names", datas_names)
 
@@ -167,15 +182,19 @@ else:
     results = train_utils.valid_test_epoch("test", 0, model, "cuda", test_loader, torch.nn.BCEWithLogitsLoss(), limit=99999999)
     pickle.dump(results, open(filename, "bw"))
 
-    
+print("Model pathologies:",model.pathologies)
+print("Dataset pathologies:",test_dataset.pathologies)
 
+perf_dict = {}
 all_threshs = []
 all_min = []
 all_max = []
 all_ppv80 = []
 for i, patho in enumerate(test_dataset.pathologies):
     opt_thres = np.nan
+    opt_min = np.nan
     opt_max = np.nan
+    ppv80_thres = np.nan
     if (len(results[3][i]) > 0) and (len(np.unique(results[3][i])) == 2):
         
         #sigmoid
@@ -194,8 +213,10 @@ for i, patho in enumerate(test_dataset.pathologies):
         auc = sklearn.metrics.roc_auc_score(results[3][i], all_outputs)
         
         print(patho, auc)
+        perf_dict[patho] = str(round(auc,2))
         
-    
+    else:
+        perf_dict[patho] = "-"
         
     all_threshs.append(opt_thres)
     all_min.append(opt_min)
@@ -213,6 +234,13 @@ print("max",str(all_max).replace("nan","np.nan"))
 
 print("ppv80",str(all_ppv80).replace("nan","np.nan"))
     
+    
+if cfg.mdtable:
+    print("|Model Name|" + "|".join(orj_dataset_pathologies) + "|")
+    print("|---|" + "|".join(("-"*len(orj_dataset_pathologies))) + "|")
+    
+    accs = [perf_dict[patho] if (patho in perf_dict) else "-" for patho in orj_dataset_pathologies]
+    print("|"+str(model)+"|" + "|".join(accs) + "|")
     
 print("Done")
 
