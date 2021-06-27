@@ -1,3 +1,5 @@
+Updated: 06/27/2021
+
 ## Google
 
 |Model Name|Lung Opacity|Fracture|Nodule or mass|Pneumothorax|
@@ -35,3 +37,15 @@
 | XRV-DenseNet121-densenet121-res224-all | 0.67 | 0.9 | 0.93 | 0.87 | 0.86 | 0.85 | 0.84 | 0.93 |
 | jfhealthcare-DenseNet121 | 0.79 | 0.81 | 0.95 | 0.92 | - | - | - | - |
 | CheXpert-DenseNet121-ensemble | 0.74 | 0.89 | 0.97 | 0.93 | - | - | - | - |
+
+## CheXpert
+
+|Model Name|Atelectasis|Cardiomegaly|Consolidation|Edema|Enlarged Cardiomediastinum|Fracture|Lung Lesion|Lung Opacity|Effusion|Pleural Other|Pneumonia|Pneumothorax|Support Devices|
+|---|-|-|-|-|-|-|-|-|-|-|-|-|-|
+|XRV-ResNet-resnet50-res512-all|0.63|0.84|0.74|0.79|0.5|0.58|0.5|0.71|0.81|-|0.67|0.61|-|
+|XRV-DenseNet121-densenet121-res224-all|0.91|0.91|0.9|0.92|0.78|0.74|0.84|0.87|0.94|-|0.84|0.85|-|
+|jfhealthcare-DenseNet121|0.91|0.89|0.91|0.9|-|-|-|-|0.95|-|-|-|-|
+|CheXpert-DenseNet121-ensemble|0.93|0.91|0.91|0.92|-|-|-|-|0.96|-|-|-|-|
+
+
+
