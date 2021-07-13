@@ -237,7 +237,7 @@ ratio=1.0 means images from d1 will have no positive label
 
 With any ratio the number of samples returned will be the same.
 
-```
+```python3
 d = xrv.datasets.CovariateDataset(d1 = # dataset1 with a specific condition
                                   d1_target = #target label to predict,
                                   d2 = # dataset2 with a specific condition
