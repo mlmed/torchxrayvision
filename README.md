@@ -2,7 +2,7 @@
 
 # torchxrayvision
 
-A library for chest X-ray datasets and models. Including pre-trainined models.
+A library for chest X-ray datasets and models. Including pre-trained models.
 
 ([🎬 promo video about the project](https://www.youtube.com/watch?v=Rl7xz0uULGQ))
 
