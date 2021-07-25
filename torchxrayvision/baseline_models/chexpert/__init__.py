@@ -26,13 +26,17 @@ class DenseNet(nn.Module):
     
     Modified for torchxrayvision to maintain the pytorch gradient tape 
     and also to provide the features() argument.
+    
+    Weights can be found: 
+    https://academictorrents.com/details/5c7ee21e6770308f2d2b4bd829e896dbd9d3ee87
+    https://archive.org/download/torchxrayvision_chexpert_weights/chexpert_weights.zip
     """
 
     def __init__(self, weights_zip="", num_models=30):
         
         super(DenseNet, self).__init__()
 
-        url = "https://archive.org/download/torchxrayvision_chexpert_weights/chexpert_weights.zip"
+        url = "https://academictorrents.com/details/5c7ee21e6770308f2d2b4bd829e896dbd9d3ee87"
         self.weights_zip = weights_zip
         self.num_models = num_models
         
