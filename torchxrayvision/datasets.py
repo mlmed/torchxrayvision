@@ -52,15 +52,24 @@ datapath = os.path.join(thispath,"data")
 # this is for caching small things for speed
 _cache_dict = {}
 
-def normalize(sample, maxval):
+def normalize(img, maxval):
     """Scales images to be roughly [-1024 1024]."""
     
-    if sample.max() > maxval:
-        raise Exception("max image value ({}) higher than expected bound ({}).".format(sample.max(), maxval))
+    if img.max() > maxval:
+        raise Exception("max image value ({}) higher than expected bound ({}).".format(img.max(), maxval))
     
-    sample = (2 * (sample.astype(np.float32) / maxval) - 1.) * 1024
-    #sample = sample / np.std(sample)
-    return sample
+    img = (2 * (img.astype(np.float32) / maxval) - 1.) * 1024
+
+    # Check that images are 2D arrays
+    if len(img.shape) > 2:
+        img = img[:, :, 0]
+    if len(img.shape) < 2:
+        print("error, dimension lower than 2 for image")
+        
+    # add color channel
+    img = img[None, :, :] 
+    
+    return img
 
 def relabel_dataset(pathologies, dataset, silent=False):
     """
@@ -240,9 +249,7 @@ class NIH_Dataset(Dataset):
                  data_aug=None, 
                  nrows=None, 
                  seed=0,
-                 pure_labels=False, 
                  unique_patients=True,
-                 normalize=True,
                  pathology_masks=False):
         
         super(NIH_Dataset, self).__init__()
@@ -261,11 +268,9 @@ class NIH_Dataset(Dataset):
         
         self.pathologies = sorted(self.pathologies)
         
-        self.normalize = normalize
         # Load data
         self.check_paths_exist()
         self.csv = pd.read_csv(self.csvpath, nrows=nrows)
-        self.MAXVAL = 255  # Range [0 255]
         
         if type(views) is not list:
             views = [views]
@@ -273,10 +278,6 @@ class NIH_Dataset(Dataset):
         # Remove images with view position other than specified
         self.csv["view"] = self.csv['View Position']
         self.csv = self.csv[self.csv["view"].isin(self.views)]
-        
-        # Remove multi-finding images.
-        if pure_labels:
-            self.csv = self.csv[~self.csv["Finding Labels"].str.contains("\|")]
         
         if unique_patients:
             self.csv = self.csv.groupby("Patient ID").first()
@@ -328,17 +329,8 @@ class NIH_Dataset(Dataset):
         img_path = os.path.join(self.imgpath, imgid)
         #print(img_path)
         img = imread(img_path)
-        if self.normalize:
-            img = normalize(img, self.MAXVAL)  
-
-        # Check that images are 2D arrays
-        if len(img.shape) > 2:
-            img = img[:, :, 0]
-        if len(img.shape) < 2:
-            print("error, dimension lower than 2 for image")
-
-        # Add color channel
-        sample["img"] = img[None, :, :]                    
+        
+        sample["img"] = normalize(img, maxval=255)
 
         transform_seed = np.random.randint(2147483647)
         
@@ -419,7 +411,6 @@ class RSNA_Pneumonia_Dataset(Dataset):
                  seed=0,
                  pure_labels=False, 
                  unique_patients=True,
-                 normalize=True,
                  pathology_masks=False,
                  extension=".jpg"):
 
@@ -433,8 +424,6 @@ class RSNA_Pneumonia_Dataset(Dataset):
         self.pathologies = ["Pneumonia", "Lung Opacity"]
         
         self.pathologies = sorted(self.pathologies)
-        
-        self.normalize=normalize
         
         self.extension = extension
         self.use_pydicom=( extension == ".dcm" ) 
@@ -452,8 +441,6 @@ class RSNA_Pneumonia_Dataset(Dataset):
         self.dicomcsv = pd.read_csv(self.dicomcsvpath, nrows=nrows, index_col="PatientID")
         
         self.csv = self.csv.join(self.dicomcsv, on="patientId")
-        
-        self.MAXVAL = 255  # Range [0 255]
         
         if type(views) is not list:
             views = [views]
@@ -502,17 +489,8 @@ class RSNA_Pneumonia_Dataset(Dataset):
             img=pydicom.filereader.dcmread(img_path).pixel_array
         else:
             img = imread(img_path)
-        if self.normalize:
-            img = normalize(img, self.MAXVAL)  
-
-        # Check that images are 2D arrays
-        if len(img.shape) > 2:
-            img = img[:, :, 0]
-        if len(img.shape) < 2:
-            print("error, dimension lower than 2 for image")
-
-        # Add color channel
-        sample["img"] = img[None, :, :]                
+            
+        sample["img"] = normalize(img, maxval=255)              
                                
         transform_seed = np.random.randint(2147483647)
         
@@ -588,8 +566,7 @@ class NIH_Google_Dataset(Dataset):
                  nrows=None, 
                  seed=0,
                  pure_labels=False, 
-                 unique_patients=True,
-                 normalize=True):
+                 unique_patients=True):
 
         super(NIH_Google_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
@@ -601,13 +578,10 @@ class NIH_Google_Dataset(Dataset):
                             "Nodule or mass"]
         
         self.pathologies = sorted(self.pathologies)
-        
-        self.normalize = normalize
 
         # Load data
         self.csvpath = csvpath
         self.csv = pd.read_csv(self.csvpath, nrows=nrows)
-        self.MAXVAL = 255  # Range [0 255]
         
         if type(views) is not list:
             views = [views]
@@ -641,29 +615,25 @@ class NIH_Google_Dataset(Dataset):
         return len(self.labels)
 
     def __getitem__(self, idx):
+        
+        sample = {}
+        sample["idx"] = idx
+        sample["lab"] = self.labels[idx]
+        
         imgid = self.csv['Image Index'].iloc[idx]
         img_path = os.path.join(self.imgpath, imgid)
         #print(img_path)
         img = imread(img_path)
-        if self.normalize:
-            img = normalize(img, self.MAXVAL)  
 
-        # Check that images are 2D arrays
-        if len(img.shape) > 2:
-            img = img[:, :, 0]
-        if len(img.shape) < 2:
-            print("error, dimension lower than 2 for image")
-
-        # Add color channel
-        img = img[None, :, :]                    
+        sample["img"] = normalize(img, maxval=255)
                                
         if self.transform is not None:
-            img = self.transform(img)
+            sample["img"] = self.transform(sample["img"])
 
         if self.data_aug is not None:
-            img = self.data_aug(img)
+            sample["img"] = self.data_aug(sample["img"])
             
-        return {"img":img, "lab":self.labels[idx], "idx":idx}
+        return sample
     
     
 class PC_Dataset(Dataset):
@@ -735,7 +705,6 @@ class PC_Dataset(Dataset):
         
         self.check_paths_exist()
         self.csv = pd.read_csv(self.csvpath, low_memory=False)
-        self.MAXVAL = 65535
 
         # standardize view names
         self.csv.loc[self.csv["Projection"].isin(["AP_horizontal"]),"Projection"] = "AP Supine"
@@ -802,27 +771,23 @@ class PC_Dataset(Dataset):
 
     def __getitem__(self, idx):
 
+        sample = {}
+        sample["idx"] = idx
+        sample["lab"] = self.labels[idx]
+        
         imgid = self.csv['ImageID'].iloc[idx]
         img_path = os.path.join(self.imgpath,imgid)
         img = imread(img_path)
-        img = normalize(img, self.MAXVAL)   
         
-        # Check that images are 2D arrays
-        if len(img.shape) > 2:
-            img = img[:, :, 0]
-        if len(img.shape) < 2:
-            print("error, dimension lower than 2 for image")
-
-        # Add color channel
-        img = img[None, :, :]                    
+        sample["img"] = normalize(img, maxval=65535)               
                                
         if self.transform is not None:
-            img = self.transform(img)
+            sample["img"] = self.transform(sample["img"])
             
         if self.data_aug is not None:
-            img = self.data_aug(img)
+            sample["img"] = self.data_aug(sample["img"])
 
-        return {"img":img, "lab":self.labels[idx], "idx":idx}
+        return sample
 
 class CheX_Dataset(Dataset):
     """
@@ -840,7 +805,6 @@ class CheX_Dataset(Dataset):
 
         super(CheX_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
-        self.MAXVAL = 255
         
         self.pathologies = ["Enlarged Cardiomediastinum",
                             "Cardiomegaly",
@@ -922,28 +886,24 @@ class CheX_Dataset(Dataset):
 
     def __getitem__(self, idx):
         
+        sample = {}
+        sample["idx"] = idx
+        sample["lab"] = self.labels[idx]
+        
         imgid = self.csv['Path'].iloc[idx]
         imgid = imgid.replace("CheXpert-v1.0-small/","")
         img_path = os.path.join(self.imgpath, imgid)
         img = imread(img_path)
-        img = normalize(img, self.MAXVAL)      
-        
-        # Check that images are 2D arrays
-        if len(img.shape) > 2:
-            img = img[:, :, 0]
-        if len(img.shape) < 2:
-            print("error, dimension lower than 2 for image")
 
-        # Add color channel
-        img = img[None, :, :]
+        sample["img"] = normalize(img, maxval=255)
 
         if self.transform is not None:
-            img = self.transform(img)
+            sample["img"] = self.transform(sample["img"])
             
         if self.data_aug is not None:
-            img = self.data_aug(img)
+            sample["img"] = self.data_aug(sample["img"])
 
-        return {"img":img, "lab":self.labels[idx], "idx":idx}
+        return sample
     
 class MIMIC_Dataset(Dataset):
     """
@@ -961,7 +921,6 @@ class MIMIC_Dataset(Dataset):
 
         super(MIMIC_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
-        self.MAXVAL = 255
         
         self.pathologies = ["Enlarged Cardiomediastinum",
                             "Cardiomegaly",
@@ -1039,30 +998,26 @@ class MIMIC_Dataset(Dataset):
 
     def __getitem__(self, idx):
         
+        sample = {}
+        sample["idx"] = idx
+        sample["lab"] = self.labels[idx]
+        
         subjectid = str(self.csv.iloc[idx]["subject_id"])
         studyid = str(self.csv.iloc[idx]["study_id"])
         dicom_id = str(self.csv.iloc[idx]["dicom_id"])
         
         img_path = os.path.join(self.imgpath, "p" + subjectid[:2], "p" + subjectid, "s" + studyid, dicom_id + ".jpg")
         img = imread(img_path)
-        img = normalize(img, self.MAXVAL)      
         
-        # Check that images are 2D arrays
-        if len(img.shape) > 2:
-            img = img[:, :, 0]
-        if len(img.shape) < 2:
-            print("error, dimension lower than 2 for image")
-
-        # Add color channel
-        img = img[None, :, :]
+        sample["img"] = normalize(img, maxval=255)
 
         if self.transform is not None:
-            img = self.transform(img)
+            sample["img"] = self.transform(sample["img"])
             
         if self.data_aug is not None:
-            img = self.data_aug(img)
+            sample["img"] = self.data_aug(sample["img"])
 
-        return {"img":img, "lab":self.labels[idx], "idx":idx}
+        return sample
     
 class Openi_Dataset(Dataset):
     """
@@ -1136,7 +1091,6 @@ class Openi_Dataset(Dataset):
                     samples.append(sample)
        
         self.csv = pd.DataFrame(samples)
-        self.MAXVAL = 255  # Range [0 255]
             
         self.dicom_metadata = pd.read_csv(dicomcsv_path, index_col="imageid", low_memory=False)
 
@@ -1189,28 +1143,25 @@ class Openi_Dataset(Dataset):
         return len(self.labels)
 
     def __getitem__(self, idx):
+        
+        sample = {}
+        sample["idx"] = idx
+        sample["lab"] = self.labels[idx]
+        
         imageid = self.csv.iloc[idx].imageid
         img_path = os.path.join(self.imgpath,imageid + ".png")
         #print(img_path)
         img = imread(img_path)
-        img = normalize(img, self.MAXVAL)  
-
-        # Check that images are 2D arrays
-        if len(img.shape) > 2:
-            img = img[:, :, 0]
-        if len(img.shape) < 2:
-            print("error, dimension lower than 2 for image")
-
-        # Add color channel
-        img = img[None, :, :]                    
+        
+        sample["img"] = normalize(img, maxval=255)
                                
         if self.transform is not None:
-            img = self.transform(img)
+            sample["img"] = self.transform(sample["img"])
 
         if self.data_aug is not None:
-            img = self.data_aug(img)
+            sample["img"] = self.data_aug(sample["img"])
             
-        return {"img":img, "lab":self.labels[idx], "idx":idx}
+        return sample
 
 class COVID19_Dataset(Dataset):
     """
@@ -1252,7 +1203,6 @@ class COVID19_Dataset(Dataset):
         # Load data
         self.csvpath = csvpath
         self.csv = pd.read_csv(self.csvpath, nrows=nrows)
-        self.MAXVAL = 255  # Range [0 255]
 
         # Keep only the frontal views.
         #idx_pa = self.csv["view"].isin(["PA", "AP", "AP Supine"])
@@ -1302,16 +1252,8 @@ class COVID19_Dataset(Dataset):
         img_path = os.path.join(self.imgpath, imgid)
         #print(img_path)
         img = imread(img_path)
-        img = normalize(img, self.MAXVAL)  
-
-        # Check that images are 2D arrays
-        if len(img.shape) > 2:
-            img = img[:, :, 0]
-        if len(img.shape) < 2:
-            print("error, dimension lower than 2 for image")
-
-        # Add color channel
-        sample["img"] = img[None, :, :]                    
+        
+        sample["img"] = normalize(img, maxval=255)
                                
         transform_seed = np.random.randint(2147483647)
         
@@ -1405,9 +1347,6 @@ class NLMTB_Dataset(Dataset):
         self.labels = self.csv["label"].values.reshape(-1,1)
         self.pathologies = ["Tuberculosis"]
         self.views = views
-        
-        
-        self.MAXVAL = 255
 
     def string(self):
         return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
@@ -1416,28 +1355,25 @@ class NLMTB_Dataset(Dataset):
         return len(self.labels)
 
     def __getitem__(self, idx):
+        
+        sample = {}
+        sample["idx"] = idx
+        sample["lab"] = self.labels[idx]
+        
         item = self.csv.iloc[idx]
         img_path = os.path.join(self.imgpath, "CXR_png", item["fname"])
         #print(img_path)
         img = imread(img_path)
-        img = normalize(img, self.MAXVAL)  
-
-        # Check that images are 2D arrays
-        if len(img.shape) > 2:
-            img = img[:, :, 0]
-        if len(img.shape) < 2:
-            print("error, dimension lower than 2 for image")
-
-        # Add color channel
-        img = img[None, :, :]                    
+        
+        sample["img"] = normalize(img, maxval=255)
                                
         if self.transform is not None:
-            img = self.transform(img)
+            sample["img"] = self.transform(sample["img"])
 
         if self.data_aug is not None:
-            img = self.data_aug(img)
+            sample["img"] = self.data_aug(sample["img"])
             
-        return {"img":img, "lab":self.labels[idx], "idx":idx}    
+        return sample  
 
 class SIIM_Pneumothorax_Dataset(Dataset):
     """
@@ -1467,7 +1403,6 @@ class SIIM_Pneumothorax_Dataset(Dataset):
         # Load data
         self.csvpath = csvpath
         self.csv = pd.read_csv(self.csvpath)
-        self.MAXVAL = 255  # Range [0 255]
         
         self.pathologies = ["Pneumothorax"]
         
@@ -1508,16 +1443,8 @@ class SIIM_Pneumothorax_Dataset(Dataset):
         #print(img_path)
         img = pydicom.filereader.dcmread(img_path).pixel_array
         #img = imread(img_path)
-        img = normalize(img, self.MAXVAL)  
-
-        # Check that images are 2D arrays
-        if len(img.shape) > 2:
-            img = img[:, :, 0]
-        if len(img.shape) < 2:
-            print("error, dimension lower than 2 for image")
-
-        # Add color channel
-        sample["img"] = img[None, :, :]                    
+        
+        sample["img"] = normalize(img, maxval=255)
                                
         transform_seed = np.random.randint(2147483647)
         
@@ -1632,7 +1559,6 @@ class VinBrain_Dataset(Dataset):
         self.mapping["Pleural_Thickening"] = ["Pleural thickening"]
         self.mapping["Effusion"] = ["Pleural effusion"]
         
-        self.normalize = normalize
         # Load data
         self.check_paths_exist()
         self.rawcsv = pd.read_csv(self.csvpath)
@@ -1689,17 +1615,8 @@ class VinBrain_Dataset(Dataset):
         else:
             raise Exception("Unknown Photometric Interpretation mode")
             
-        if self.normalize:
-            img = normalize(img, 2**float(bitdepth))
-
-        # Check that images are 2D arrays
-        if len(img.shape) > 2:
-            img = img[:, :, 0]
-        if len(img.shape) < 2:
-            print("error, dimension lower than 2 for image")
-
-        # Add color channel
-        sample["img"] = img[None, :, :]
+            
+        sample["img"] = normalize(img, maxval=2**float(bitdepth))
         
         transform_seed = np.random.randint(2147483647)
         
@@ -1811,16 +1728,8 @@ class StonyBrookCOVID_Dataset(Dataset):
         img_path = os.path.join(self.imgpath, str(idx) + ".jpg")
         #print(img_path)
         img = imread(img_path)
-        img = normalize(img, self.MAXVAL)  
-
-        # Check that images are 2D arrays
-        if len(img.shape) > 2:
-            img = img[:, :, 0]
-        if len(img.shape) < 2:
-            print("error, dimension lower than 2 for image")
-
-        # Add color channel
-        sample["img"] = img[None, :, :]                    
+        
+        sample["img"] = normalize(img, maxval=255)
                                
         transform_seed = np.random.randint(2147483647)
             
@@ -1854,7 +1763,6 @@ class ObjectCXR_Dataset(Dataset):
         self.transform = transform
         self.data_aug = data_aug
         self.views = []
-        self.MAXVAL = 255  # Range [0 255]
         self.pathologies = ['Foreign Object']
 
         # Load data
@@ -1885,17 +1793,9 @@ class ObjectCXR_Dataset(Dataset):
         imgid = self.csv.iloc[idx]["image_name"]
 
         with zipfile.ZipFile(self.imgzippath).open("train/" + imgid) as file:
-            img = imageio.imread(file.read())
-            img = normalize(img, self.MAXVAL)
-
-        # Check that images are 2D arrays
-        if len(img.shape) > 2:
-            img = img[:, :, 0]
-        if len(img.shape) < 2:
-            print("error, dimension lower than 2 for image")
-
-        # Add color channel
-        sample["img"] = img[None, :, :]
+            sample["img"] = imageio.imread(file.read())
+        
+        sample["img"] = normalize(sample["img"], maxval=255)
 
         transform_seed = np.random.randint(2147483647)
 
