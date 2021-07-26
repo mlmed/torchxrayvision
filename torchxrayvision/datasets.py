@@ -1455,14 +1455,14 @@ class SIIM_Pneumothorax_Dataset(Dataset):
                  data_aug=None, 
                  seed=0,
                  unique_patients=True,
-                 masks=False):
+                 pathology_masks=False):
 
         super(SIIM_Pneumothorax_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.imgpath = imgpath
         self.transform = transform
         self.data_aug = data_aug
-        self.masks = masks
+        self.pathology_masks = pathology_masks
                 
         # Load data
         self.csvpath = csvpath
@@ -1521,13 +1521,13 @@ class SIIM_Pneumothorax_Dataset(Dataset):
                                
         transform_seed = np.random.randint(2147483647)
         
-        if self.masks:
+        if self.pathology_masks:
             sample["pathology_masks"] = self.get_pathology_mask_dict(imgid, sample["img"].shape[2])
             
         if self.transform is not None:
             random.seed(transform_seed)
             sample["img"] = self.transform(sample["img"])
-            if self.masks:
+            if self.pathology_masks:
                 for i in sample["pathology_masks"].keys():
                     random.seed(transform_seed)
                     sample["pathology_masks"][i] = self.transform(sample["pathology_masks"][i])
@@ -1535,7 +1535,7 @@ class SIIM_Pneumothorax_Dataset(Dataset):
         if self.data_aug is not None:
             random.seed(transform_seed)
             sample["img"] = self.data_aug(sample["img"])
-            if self.masks:
+            if self.pathology_masks:
                 for i in sample["pathology_masks"].keys():
                     random.seed(transform_seed)
                     sample["pathology_masks"][i] = self.data_aug(sample["pathology_masks"][i])
