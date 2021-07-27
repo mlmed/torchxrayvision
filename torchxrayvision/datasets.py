@@ -607,6 +607,8 @@ class NIH_Google_Dataset(Dataset):
         
         # rename pathologies
         self.pathologies = np.char.replace(self.pathologies, "Airspace opacity", "Lung Opacity")
+        self.pathologies = np.char.replace(self.pathologies, "Nodule or mass", "Nodule/Mass")
+        self.pathologies = list(self.pathologies)
 
     def string(self):
         return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
