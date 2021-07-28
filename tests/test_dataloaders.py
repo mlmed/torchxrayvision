@@ -32,7 +32,8 @@ def create_test_img(test_img_file, clazz, filename):
 @pytest.fixture(scope="session", autouse=True)
 def resource(request):
     
-    shutil.rmtree(test_data_path)
+    if os.path.exists(test_data_path):
+        shutil.rmtree(test_data_path)
     
     # for nih dataset
     create_test_img(test_png_img_file, xrv.datasets.NIH_Dataset, "00000001_000.png")
