@@ -802,8 +802,15 @@ class CheX_Dataset(Dataset):
     Dataset website here:
     https://stanfordmlgroup.github.io/competitions/chexpert/
     """
-    def __init__(self, imgpath, csvpath, views=["PA"], transform=None, data_aug=None,
-                 flat_dir=True, seed=0, unique_patients=True):
+    def __init__(self, 
+                 imgpath, 
+                 csvpath=os.path.join(datapath, "chexpert_train.csv.gz"),
+                 views=["PA"], 
+                 transform=None, 
+                 data_aug=None,
+                 flat_dir=True, 
+                 seed=0, 
+                 unique_patients=True):
 
         super(CheX_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
