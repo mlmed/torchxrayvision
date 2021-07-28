@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="torchxrayvision",
-    version="0.0.27",
+    version="0.0.30",
     author="Joseph Paul Cohen",
     author_email="joseph@josephpcohen.com",
     description="TorchXRayVision: A library of chest X-ray datasets and models",
@@ -33,5 +33,5 @@ setuptools.setup(
     ],
     packages=find_packages(),
     package_dir={'torchxrayvision': 'torchxrayvision'},
-    package_data={'torchxrayvision': ['data/*.zip','*.gz','*.tgz','*.zip', 'baseline_models/chexpert/*.json']},
+    package_data={'torchxrayvision': ['data/*.zip','data/*.gz','data/*.tgz','baseline_models/chexpert/*.json']},
 )
