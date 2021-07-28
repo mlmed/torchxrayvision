@@ -51,10 +51,6 @@ jobs:
         echo "Installing torch ${{ matrix.torch-version }}"
         python -m pip install torch==${{ matrix.torch-version }}
 
-    - name: Install library
-      run: |
-        echo "Installing library"
-        python -m pip install -e .
     - name: Run tests
       run: pytest
       
