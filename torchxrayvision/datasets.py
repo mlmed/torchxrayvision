@@ -1395,7 +1395,7 @@ class SIIM_Pneumothorax_Dataset(Dataset):
     
     def __init__(self, 
                  imgpath, 
-                 csvpath, 
+                 csvpath=os.path.join(datapath, "siim-pneumothorax-train-rle.csv.gz"), 
                  transform=None, 
                  data_aug=None, 
                  seed=0,
@@ -1530,7 +1530,7 @@ class VinBrain_Dataset(Dataset):
     https://www.kaggle.com/c/vinbigdata-chest-xray-abnormalities-detection
     """
     def __init__(self, imgpath, 
-                 csvpath, 
+                 csvpath=os.path.join(datapath, "vinbigdata-train.csv.gz"), 
                  views=None,
                  transform=None, 
                  data_aug=None,
