@@ -7,7 +7,7 @@ from glob import glob
 import matplotlib.pyplot as plt
 import numpy as np
 import argparse
-import skimage
+import skimage, skimage.io
 import pprint
 
 import torch
@@ -27,7 +27,7 @@ cfg = parser.parse_args()
 
 
 img = skimage.io.imread(cfg.img_path)
-img = xrv.datasets.normalize(img, 255)  
+img = xrv.datasets.normalize(img, 255, reshape=True)  
 
 transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
                                             xrv.datasets.XRayResizer(224)])

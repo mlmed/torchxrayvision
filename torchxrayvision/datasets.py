@@ -52,7 +52,7 @@ datapath = os.path.join(thispath,"data")
 # this is for caching small things for speed
 _cache_dict = {}
 
-def normalize(img, maxval):
+def normalize(img, maxval, reshape=False):
     """Scales images to be roughly [-1024 1024]."""
     
     if img.max() > maxval:
@@ -60,14 +60,15 @@ def normalize(img, maxval):
     
     img = (2 * (img.astype(np.float32) / maxval) - 1.) * 1024
 
-    # Check that images are 2D arrays
-    if len(img.shape) > 2:
-        img = img[:, :, 0]
-    if len(img.shape) < 2:
-        print("error, dimension lower than 2 for image")
-        
-    # add color channel
-    img = img[None, :, :] 
+    if reshape:
+        # Check that images are 2D arrays
+        if len(img.shape) > 2:
+            img = img[:, :, 0]
+        if len(img.shape) < 2:
+            print("error, dimension lower than 2 for image")
+
+        # add color channel
+        img = img[None, :, :] 
     
     return img
 
@@ -330,7 +331,7 @@ class NIH_Dataset(Dataset):
         #print(img_path)
         img = imread(img_path)
         
-        sample["img"] = normalize(img, maxval=255)
+        sample["img"] = normalize(img, maxval=255, reshape=True)
 
         transform_seed = np.random.randint(2147483647)
         
@@ -490,7 +491,7 @@ class RSNA_Pneumonia_Dataset(Dataset):
         else:
             img = imread(img_path)
             
-        sample["img"] = normalize(img, maxval=255)              
+        sample["img"] = normalize(img, maxval=255, reshape=True)              
                                
         transform_seed = np.random.randint(2147483647)
         
@@ -627,7 +628,7 @@ class NIH_Google_Dataset(Dataset):
         #print(img_path)
         img = imread(img_path)
 
-        sample["img"] = normalize(img, maxval=255)
+        sample["img"] = normalize(img, maxval=255, reshape=True)
                                
         if self.transform is not None:
             sample["img"] = self.transform(sample["img"])
@@ -781,7 +782,7 @@ class PC_Dataset(Dataset):
         img_path = os.path.join(self.imgpath,imgid)
         img = imread(img_path)
         
-        sample["img"] = normalize(img, maxval=65535)               
+        sample["img"] = normalize(img, maxval=65535, reshape=True)               
                                
         if self.transform is not None:
             sample["img"] = self.transform(sample["img"])
@@ -904,7 +905,7 @@ class CheX_Dataset(Dataset):
         img_path = os.path.join(self.imgpath, imgid)
         img = imread(img_path)
 
-        sample["img"] = normalize(img, maxval=255)
+        sample["img"] = normalize(img, maxval=255, reshape=True)
 
         if self.transform is not None:
             sample["img"] = self.transform(sample["img"])
@@ -1018,7 +1019,7 @@ class MIMIC_Dataset(Dataset):
         img_path = os.path.join(self.imgpath, "p" + subjectid[:2], "p" + subjectid, "s" + studyid, dicom_id + ".jpg")
         img = imread(img_path)
         
-        sample["img"] = normalize(img, maxval=255)
+        sample["img"] = normalize(img, maxval=255, reshape=True)
 
         if self.transform is not None:
             sample["img"] = self.transform(sample["img"])
@@ -1162,7 +1163,7 @@ class Openi_Dataset(Dataset):
         #print(img_path)
         img = imread(img_path)
         
-        sample["img"] = normalize(img, maxval=255)
+        sample["img"] = normalize(img, maxval=255, reshape=True)
                                
         if self.transform is not None:
             sample["img"] = self.transform(sample["img"])
@@ -1262,7 +1263,7 @@ class COVID19_Dataset(Dataset):
         #print(img_path)
         img = imread(img_path)
         
-        sample["img"] = normalize(img, maxval=255)
+        sample["img"] = normalize(img, maxval=255, reshape=True)
                                
         transform_seed = np.random.randint(2147483647)
         
@@ -1374,7 +1375,7 @@ class NLMTB_Dataset(Dataset):
         #print(img_path)
         img = imread(img_path)
         
-        sample["img"] = normalize(img, maxval=255)
+        sample["img"] = normalize(img, maxval=255, reshape=True)
                                
         if self.transform is not None:
             sample["img"] = self.transform(sample["img"])
@@ -1453,7 +1454,7 @@ class SIIM_Pneumothorax_Dataset(Dataset):
         img = pydicom.filereader.dcmread(img_path).pixel_array
         #img = imread(img_path)
         
-        sample["img"] = normalize(img, maxval=255)
+        sample["img"] = normalize(img, maxval=255, reshape=True)
                                
         transform_seed = np.random.randint(2147483647)
         
@@ -1625,7 +1626,7 @@ class VinBrain_Dataset(Dataset):
             raise Exception("Unknown Photometric Interpretation mode")
             
             
-        sample["img"] = normalize(img, maxval=2**float(bitdepth))
+        sample["img"] = normalize(img, maxval=2**float(bitdepth), reshape=True)
         
         transform_seed = np.random.randint(2147483647)
         
@@ -1738,7 +1739,7 @@ class StonyBrookCOVID_Dataset(Dataset):
         #print(img_path)
         img = imread(img_path)
         
-        sample["img"] = normalize(img, maxval=255)
+        sample["img"] = normalize(img, maxval=255, reshape=True)
                                
         transform_seed = np.random.randint(2147483647)
             
@@ -1804,7 +1805,7 @@ class ObjectCXR_Dataset(Dataset):
         with zipfile.ZipFile(self.imgzippath).open("train/" + imgid) as file:
             sample["img"] = imageio.imread(file.read())
         
-        sample["img"] = normalize(sample["img"], maxval=255)
+        sample["img"] = normalize(sample["img"], maxval=255, reshape=True)
 
         transform_seed = np.random.randint(2147483647)
 
