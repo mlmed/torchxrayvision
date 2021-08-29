@@ -1934,8 +1934,14 @@ class CovariateDataset(Dataset):
         all_1_pos = np.setdiff1d(all_1_pos, train_1_pos)
 
         if verbose:
-            print("TRAIN: neg={}, pos={}".format(len(train_0_neg)+len(train_1_neg),
-                                                 len(train_0_pos)+len(train_1_pos)))
+            print("TRAIN (ratio={:.2}): neg={}, pos={}, d1_pos/neg={}/{}, d2_pos/neg={}/{}".format(
+                   ratio,
+                   len(train_0_neg)+len(train_1_neg),
+                   len(train_0_pos)+len(train_1_pos),
+                   len(train_0_pos),
+                   len(train_0_neg),
+                   len(train_1_pos),
+                   len(train_1_neg)))
 
         # VALID
         valid_0_neg = np.random.choice(
@@ -1954,8 +1960,14 @@ class CovariateDataset(Dataset):
         all_1_pos = np.setdiff1d(all_1_pos, valid_1_pos)
 
         if verbose:
-            print("VALID: neg={}, pos={}".format(len(valid_0_neg)+len(valid_1_neg),
-                                                 len(valid_0_pos)+len(valid_1_pos)))
+            print("VALID (ratio={:.2}): neg={}, pos={}, d1_pos/neg={}/{}, d2_pos/neg={}/{}".format(
+                   1-ratio,
+                   len(valid_0_neg)+len(valid_1_neg),
+                   len(valid_0_pos)+len(valid_1_pos),
+                   len(valid_0_pos),
+                   len(valid_0_neg),
+                   len(valid_1_pos),
+                   len(valid_1_neg)))
 
         # TEST
         test_0_neg = all_0_neg
@@ -1964,8 +1976,15 @@ class CovariateDataset(Dataset):
         test_1_pos = all_1_pos
 
         if verbose:
-            print("TEST: neg={}, pos={}".format(len(test_0_neg)+len(test_1_neg),
-                                                len(test_0_pos)+len(test_1_pos)))
+            print("TEST (ratio={:.2}): neg={}, pos={}, d1_pos/neg={}/{}, d2_pos/neg={}/{}".format(
+                   1-ratio,
+                   len(test_0_neg)+len(test_1_neg),
+                   len(test_0_pos)+len(test_1_pos),
+                   len(test_0_pos),
+                   len(test_0_neg),
+                   len(test_1_pos),
+                   len(test_1_neg)))
+
 
         def _reduce_nsamples(nsamples, a, b, c, d):
             if nsamples:
