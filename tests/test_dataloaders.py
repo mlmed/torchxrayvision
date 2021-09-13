@@ -72,6 +72,9 @@ def test_dataloader_merging():
     for dataset in datasets:
         xrv.datasets.relabel_dataset(xrv.datasets.default_pathologies, dataset)
         
+    dd = xrv.datasets.MergeDataset(datasets)
+    
+    # also test alias
     dd = xrv.datasets.Merge_Dataset(datasets)
     
 def test_dataloader_merging_dups():
