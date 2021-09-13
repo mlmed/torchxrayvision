@@ -153,7 +153,7 @@ class Merge_Dataset(Dataset):
         except:
             print("Could not merge dataframes (.csv not available):", sys.exc_info()[0])
         
-        self.csv = self.csv.reset_index()
+        self.csv = self.csv.reset_index(drop=True)
 
     def string(self):
         s = self.__class__.__name__ + " num_samples={}\n".format(len(self))

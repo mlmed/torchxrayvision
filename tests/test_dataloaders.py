@@ -73,6 +73,24 @@ def test_dataloader_merging():
         xrv.datasets.relabel_dataset(xrv.datasets.default_pathologies, dataset)
         
     dd = xrv.datasets.Merge_Dataset(datasets)
+    
+def test_dataloader_merging_dups():
+    
+    datasets = []
+    for dataset_class in dataset_classes:
+        dataset = dataset_class(imgpath=".")
+        datasets.append(dataset)
+    
+    for dataset in datasets:
+        xrv.datasets.relabel_dataset(xrv.datasets.default_pathologies, dataset)
+    
+    for dataset in datasets:
+        dd = xrv.datasets.Merge_Dataset([dataset,dataset])
+        
+    #now merge merge datasets
+    for dataset in datasets:
+        dd = xrv.datasets.Merge_Dataset([dataset,dataset])
+        dd = xrv.datasets.Merge_Dataset([dd,dd])
 
 # test that we catch incorrect pathology alignment
 def test_dataloader_merging_incorrect_alignment():
