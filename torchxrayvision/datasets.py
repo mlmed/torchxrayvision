@@ -116,7 +116,7 @@ class Dataset():
             raise Exception("csvpath must be a file")
         
     
-class Merge_Dataset(Dataset):
+class MergeDataset(Dataset):
     def __init__(self, datasets, seed=0, label_concat=False):
         super(Merge_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
@@ -173,6 +173,11 @@ class Merge_Dataset(Dataset):
         item["source"] = self.which_dataset[idx]
         return item
         
+
+# alias so it is backwards compatable
+Merge_Dataset = MergeDataset
+
+
 class FilterDataset(Dataset):
     def __init__(self, dataset, labels=None):
         super(FilterDataset, self).__init__()
