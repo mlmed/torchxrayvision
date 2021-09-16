@@ -562,6 +562,9 @@ class NIH_Google_Dataset(Dataset):
     Shravya Shetty. Radiology 2020
     
     https://pubs.rsna.org/doi/10.1148/radiol.2019191293
+    
+    NIH data can be downloaded here:
+    https://academictorrents.com/details/e615d3aebce373f1dc8bd9d11064da55bdadede0
     """
     
     def __init__(self, imgpath, 
