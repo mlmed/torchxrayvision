@@ -1,9 +1,11 @@
 import setuptools
-from setuptools import setup
+from setuptools import setup, find_packages
 from torchxrayvision import _version
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
+    
+REQUIREMENTS = [i.strip() for i in open("requirements.txt").readlines()]
 
 setuptools.setup(
     name="torchxrayvision",
@@ -21,16 +23,7 @@ setuptools.setup(
         "Topic :: Scientific/Engineering :: Medical Science Apps."
     ],
     python_requires='>=3.6',
-    install_requires=[
-        'torch>=1',
-        'torchvision>=0.5',
-        'scikit-image>=0.16',
-        'tqdm>=4',
-        'numpy>=1',
-        'pandas>=1',
-        'pydicom>=1',
-        'requests>=1'
-    ],
+    install_requires=REQUIREMENTS,
     packages=find_packages(),
     package_dir={'torchxrayvision': 'torchxrayvision'},
     package_data={'torchxrayvision': ['data/*.zip','data/*.gz','data/*.tgz','baseline_models/chexpert/*.json']},
