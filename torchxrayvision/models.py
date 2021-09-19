@@ -141,7 +141,8 @@ class DenseNet(nn.Module):
         
         if self.weights != None:
             if not self.weights in model_urls.keys():
-                raise Exception("weights value must be in {}".format(list(model_urls.keys())))
+                possible_weights = [k for k in model_urls.keys() if k.startswith("densenet")]
+                raise Exception("Weights value must be in {}".format(possible_weights))
                 
             # set to be what this model is trained to predict
             self.pathologies = model_urls[weights]["labels"]
@@ -250,8 +251,9 @@ class ResNet(nn.Module):
         self.weights = weights
         self.apply_sigmoid = apply_sigmoid
         
-        if weights is None:
-            raise Exception("Must specify the `weights` argument to load this model")
+        if not self.weights in model_urls.keys():
+            possible_weights = [k for k in model_urls.keys() if k.startswith("resnet")]
+            raise Exception("Weights value must be in {}".format(possible_weights))
         
         self.weights_filename_local = get_weights(weights)
         self.weights_dict = model_urls[weights]
