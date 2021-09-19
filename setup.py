@@ -1,19 +1,19 @@
 import setuptools
-from setuptools import setup, find_packages
+from setuptools import setup
+from torchxrayvision import _version
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="torchxrayvision",
-    version="0.0.32",
+    version=_version.__version__,
     author="Joseph Paul Cohen",
     author_email="joseph@josephpcohen.com",
     description="TorchXRayVision: A library of chest X-ray datasets and models",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/mlmed/torchxrayvision",
-#    packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
