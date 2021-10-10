@@ -182,6 +182,9 @@ class _ResNetAE(nn.Module):
         x = self.layer3(x)
         x = self.layer4(x)
         return x
+    
+    def features(self, x):
+        return self.encode(x)
 
     def decode(self, x, image_size=[1,1,224,224]):
         x = self.uplayer1(x)
