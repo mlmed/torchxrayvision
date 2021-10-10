@@ -91,11 +91,11 @@ class DenseNet(nn.Module):
         for sample in x: #sorry hard to make parallel
             all_feats = []
             for tasks in self.model:
-                task2prob = self.model.features(x, tasks)
-                print(task2prob.shape)
+                task2prob = self.model.features(sample.unsqueeze(0), tasks)
                 all_feats.append(task2prob)
-            outputs.append(torch.stack(all_feats))
-
+            feats = torch.stack(all_feats)
+            outputs.append(feats.flatten())
+            
         return torch.stack(outputs)
     
     
