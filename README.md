@@ -87,6 +87,29 @@ z = ae.encode(image)
 image2 = ae.decode(z)
 ```
 
+## Image pre-processing
+
+Images can be processed as follows from disk to be input to the model:
+
+```
+img = skimage.io.imread(img_path)
+img = xrv.datasets.normalize(img, 255) 
+
+# Check that images are 2D arrays
+if len(img.shape) > 2:
+    img = img[:, :, 0]
+if len(img.shape) < 2:
+    print("error, dimension lower than 2 for image")
+
+# Add color channel
+img = img[None, :, :]
+
+transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
+                                            xrv.datasets.XRayResizer(224)])
+
+img = transform(img)
+
+```
 
 ## Datasets ([demo notebook](https://github.com/mlmed/torchxrayvision/blob/master/scripts/xray_datasets.ipynb))
 Only stats for PA/AP views are shown. Datasets may include more.
