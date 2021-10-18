@@ -114,6 +114,20 @@ class Dataset():
             raise Exception("imgpath must be a directory")
         if not os.path.isfile(self.csvpath):
             raise Exception("csvpath must be a file")
+    def limit_to_selected_views(self, views):
+        if type(views) is not list:
+            views = [views]
+        if '*' in views:
+            # if you have the wildcard, the rest are irrelevant
+            views = ["*"]
+        self.views = views
+        
+        # missing data is unknown
+        self.csv.fillna("UNKNOWN")
+              
+        if "*" not in views:
+            self.csv = self.csv[self.csv["view"].isin(self.views)] # Select the view 
+
         
     
 class MergeDataset(Dataset):
@@ -278,12 +292,9 @@ class NIH_Dataset(Dataset):
         self.check_paths_exist()
         self.csv = pd.read_csv(self.csvpath, nrows=nrows)
         
-        if type(views) is not list:
-            views = [views]
-        self.views = views
         # Remove images with view position other than specified
         self.csv["view"] = self.csv['View Position']
-        self.csv = self.csv[self.csv["view"].isin(self.views)]
+        self.limit_to_selected_views(views)
         
         if unique_patients:
             self.csv = self.csv.groupby("Patient ID").first()
@@ -847,15 +858,11 @@ class CheX_Dataset(Dataset):
         self.csv = pd.read_csv(self.csvpath)
         self.views = views
         
-        # To list
-        if type(self.views) is not list:
-            views = [views]
-            self.views = views
-              
         self.csv["view"] = self.csv["Frontal/Lateral"] # Assign view column 
         self.csv.loc[(self.csv["view"] == "Frontal"), "view"] = self.csv["AP/PA"] # If Frontal change with the corresponding value in the AP/PA column otherwise remains Lateral
         self.csv["view"] = self.csv["view"].replace({'Lateral': "L"}) # Rename Lateral with L  
-        self.csv = self.csv[self.csv["view"].isin(self.views)] # Select the view 
+        
+        self.limit_to_selected_views(views)
          
         if unique_patients:
             self.csv["PatientID"] = self.csv["Path"].str.extract(pat = r'(patient\d+)')
@@ -1357,21 +1364,20 @@ class NLMTB_Dataset(Dataset):
         file_list = []
         source_list = []
         
-        # all the images are PA according to the article.
-        if "PA" in views:
-            for fname in sorted(os.listdir(os.path.join(self.imgpath, "CXR_png"))):
-                if fname.endswith(".png"):
-                    file_list.append(fname)
+        for fname in sorted(os.listdir(os.path.join(self.imgpath, "CXR_png"))):
+            if fname.endswith(".png"):
+                file_list.append(fname)
 
         self.csv = pd.DataFrame({"fname": file_list})
 
         #Label is the last digit on the simage filename
         self.csv["label"] = self.csv["fname"].apply(lambda x: int(x.split(".")[-2][-1]))
-        self.csv["View Position"] = "PA"
+        # all the images are PA according to the article.
+        self.csv["view"] = "PA"
+        self.limit_to_selected_views(views)
 
         self.labels = self.csv["label"].values.reshape(-1,1)
         self.pathologies = ["Tuberculosis"]
-        self.views = views
 
     def string(self):
         return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
