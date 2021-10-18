@@ -1367,7 +1367,7 @@ class NLMTB_Dataset(Dataset):
 
         #Label is the last digit on the simage filename
         self.csv["label"] = self.csv["fname"].apply(lambda x: int(x.split(".")[-2][-1]))
-        self.csv["view"] = "PA"
+        self.csv["View Position"] = "PA"
 
         self.labels = self.csv["label"].values.reshape(-1,1)
         self.pathologies = ["Tuberculosis"]
