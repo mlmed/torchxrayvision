@@ -1318,6 +1318,9 @@ class NLMTB_Dataset(Dataset):
     https://lhncbc.nlm.nih.gov/publication/pub9931
     https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4256233/
     
+    Note that each dataset should be loaded separately by this class (they may be
+    merged afterwards).  All images are of view PA.
+    
     Jaeger S, Candemir S, Antani S, Wang YX, Lu PX, Thoma G. Two public chest X-ray 
     datasets for computer-aided screening of pulmonary diseases. Quant Imaging Med 
     Surg. 2014 Dec;4(6):475-7. doi: 10.3978/j.issn.2223-4292.2014.11.20. 
@@ -1338,7 +1341,7 @@ class NLMTB_Dataset(Dataset):
                  transform=None, 
                  data_aug=None,
                  seed=0,
-                 views=["PA", "AP"]
+                 views=["PA"]
         ):
         """
         Args:
@@ -1353,14 +1356,18 @@ class NLMTB_Dataset(Dataset):
         
         file_list = []
         source_list = []
-        for fname in sorted(os.listdir(os.path.join(self.imgpath, "CXR_png"))):
-            if fname.endswith(".png"):
-                file_list.append(fname)
+        
+        # all the images are PA according to the article.
+        if "PA" in views:
+            for fname in sorted(os.listdir(os.path.join(self.imgpath, "CXR_png"))):
+                if fname.endswith(".png"):
+                    file_list.append(fname)
 
         self.csv = pd.DataFrame({"fname": file_list})
 
         #Label is the last digit on the simage filename
         self.csv["label"] = self.csv["fname"].apply(lambda x: int(x.split(".")[-2][-1]))
+        self.csv["view"] = "PA"
 
         self.labels = self.csv["label"].values.reshape(-1,1)
         self.pathologies = ["Tuberculosis"]
