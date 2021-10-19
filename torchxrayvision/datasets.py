@@ -663,6 +663,11 @@ class PC_Dataset(Dataset):
     PadChest dataset
     Hospital San Juan de Alicante - University of Alicante
     
+    Note that images with null labels (as opposed to normal), and images that cannot
+    be properly loaded (listed as 'missing' in the code) are excluded, which makes
+    the total number of available images slightly less than the total number of image
+    files.
+    
     PadChest: A large chest x-ray image dataset with multi-label annotated reports.
     Aurelia Bustos, Antonio Pertusa, Jose-Maria Salinas, and Maria de la Iglesia-Vayá. 
     arXiv preprint, 2019. https://arxiv.org/abs/1901.07441
@@ -731,14 +736,10 @@ class PC_Dataset(Dataset):
         # standardize view names
         self.csv.loc[self.csv["Projection"].isin(["AP_horizontal"]),"Projection"] = "AP Supine"
         
-        # Keep only the specified views
-        if type(views) is not list:
-            views = [views]
-        self.views = views
         
         self.csv["view"] = self.csv['Projection']
-        self.csv = self.csv[self.csv["view"].isin(self.views)]
-
+        self.limit_to_selected_views(views)
+ 
         # remove null stuff
         self.csv = self.csv[~self.csv["Labels"].isnull()]
         
