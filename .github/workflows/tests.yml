@@ -54,7 +54,7 @@ jobs:
     - name: Install torch version
       run: |
         echo "Installing torch ${{ matrix.torch-version }}"
-        python -m pip install torch==${{ matrix.torch-version }}
+        python -m pip install torch==${{ matrix.torch-version }} torchvision
 
     - name: Run tests
       run: pytest
