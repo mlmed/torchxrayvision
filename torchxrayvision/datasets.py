@@ -46,6 +46,7 @@ default_pathologies = [  'Atelectasis',
                  'Enlarged Cardiomediastinum'
                 ]
 
+
 thispath = os.path.dirname(os.path.realpath(__file__))
 datapath = os.path.join(thispath,"data")
 
@@ -123,7 +124,7 @@ class Dataset():
         self.views = views
         
         # missing data is unknown
-        self.csv.fillna("UNKNOWN")
+        self.csv.view.fillna("UNKNOWN", inplace=True)
               
         if "*" not in views:
             self.csv = self.csv[self.csv["view"].isin(self.views)] # Select the view 
@@ -459,12 +460,9 @@ class RSNA_Pneumonia_Dataset(Dataset):
         
         self.csv = self.csv.join(self.dicomcsv, on="patientId")
         
-        if type(views) is not list:
-            views = [views]
-        self.views = views
         # Remove images with view position other than specified
         self.csv["view"] = self.csv['ViewPosition']
-        self.csv = self.csv[self.csv["view"].isin(self.views)]
+        self.limit_to_selected_views(views)
         
         self.csv = self.csv.reset_index()
 
@@ -565,6 +563,11 @@ class RSNA_Pneumonia_Dataset(Dataset):
 class NIH_Google_Dataset(Dataset):
 
     """
+    A relabelling of a subset of images from the NIH dataset.  The data tables should
+    be applied against an NIH download.  A test and validation split are provided in the 
+    original.  They are combined here, but one or the other can be used by providing
+    the original csv to the csvpath argument.
+    
     Chest Radiograph Interpretation with Deep Learning Models: Assessment with 
     Radiologist-adjudicated Reference Standards and Population-adjusted Evaluation
     Anna Majkowska, Sid Mittal, David F. Steiner, Joshua J. Reicher, Scott Mayer 
@@ -603,12 +606,9 @@ class NIH_Google_Dataset(Dataset):
         self.csvpath = csvpath
         self.csv = pd.read_csv(self.csvpath, nrows=nrows)
         
-        if type(views) is not list:
-            views = [views]
-        self.views = views
         # Remove images with view position other than specified
         self.csv["view"] = self.csv['View Position']
-        self.csv = self.csv[self.csv["view"].isin(self.views)]
+        self.limit_to_selected_views(views)
 
         if unique_patients:
             self.csv = self.csv.groupby("Patient ID").first().reset_index()
@@ -822,6 +822,9 @@ class CheX_Dataset(Dataset):
     
     Dataset website here:
     https://stanfordmlgroup.github.io/competitions/chexpert/
+    
+    A small validation set is provided with the data as well, but is so tiny, it not included
+    here.
     """
     def __init__(self, 
                  imgpath, 
@@ -978,14 +981,8 @@ class MIMIC_Dataset(Dataset):
         self.csv = self.csv.join(self.metacsv).reset_index()
 
         # Keep only the desired view
-        self.views = views
-        if self.views:
-            if type(views) is not list:
-                views = [views]
-            self.views = views
-
-            self.csv["view"] = self.csv["ViewPosition"]
-            self.csv = self.csv[self.csv["view"].isin(self.views)]
+        self.csv["view"] = self.csv["ViewPosition"]
+        self.limit_to_selected_views(views)
 
         if unique_patients:
             self.csv = self.csv.groupby("subject_id").first().reset_index()
@@ -1053,6 +1050,9 @@ class Openi_Dataset(Dataset):
     collection of radiology examinations for distribution and retrieval. Journal of the American
     Medical Informatics Association, 2016. doi: 10.1093/jamia/ocv080.
     
+    Views have been determined by projection using T-SNE.  To use the T-SNE view rather than the
+    view defined by the record, set use_tsne_view to true.
+    
     Dataset website:
     https://openi.nlm.nih.gov/faq
     
@@ -1063,7 +1063,9 @@ class Openi_Dataset(Dataset):
                  xmlpath=os.path.join(datapath, "NLMCXR_reports.tgz"), 
                  dicomcsv_path=os.path.join(datapath, "nlmcxr_dicom_metadata.csv.gz"),
                  tsnepacsv_path=os.path.join(datapath, "nlmcxr_tsne_pa.csv.gz"),
-                 filter_pa=True,
+                 use_tsne_view=False,
+                 #filter_pa=True,
+                 views=["PA"],
                  transform=None, data_aug=None, 
                  nrows=None, seed=0,
                  pure_labels=False, unique_patients=True):
@@ -1122,18 +1124,18 @@ class Openi_Dataset(Dataset):
 
         # merge in dicom metadata
         self.csv = self.csv.join(self.dicom_metadata, on="imageid")
-            
-        #filter only PA/AP view
-        if filter_pa:
-            tsne_pa = pd.read_csv(tsnepacsv_path, index_col="imageid")
-            self.csv = self.csv.join(tsne_pa, on="imageid")
-
-            self.csv = self.csv[self.csv["tsne-view"] == "PA"]
         
-#         self.csv = self.csv[self.csv["View Position"] != "RL"]
-#         self.csv = self.csv[self.csv["View Position"] != "LATERAL"]
-#         self.csv = self.csv[self.csv["View Position"] != "LL"]
-            
+        # attach view computed by tsne
+        tsne_pa = pd.read_csv(tsnepacsv_path, index_col="imageid")
+        self.csv = self.csv.join(tsne_pa, on="imageid")
+        
+        if use_tsne_view:
+            self.csv["view"] = self.csv["tsne-view"]
+        else:
+            self.csv["view"] = self.csv["View Position"]
+
+        self.limit_to_selected_views(views)
+
         if unique_patients:
             self.csv = self.csv.groupby("uid").first().reset_index()
             
@@ -1230,10 +1232,8 @@ class COVID19_Dataset(Dataset):
         self.csvpath = csvpath
         self.csv = pd.read_csv(self.csvpath, nrows=nrows)
 
-        # Keep only the frontal views.
-        #idx_pa = self.csv["view"].isin(["PA", "AP", "AP Supine"])
-        idx_pa = self.csv["view"].isin(self.views)
-        self.csv = self.csv[idx_pa]
+        # Keep only the selected views.
+        self.limit_to_selected_views(views)
         
         #filter out in progress samples
         self.csv = self.csv[~(self.csv.finding == "todo")]
