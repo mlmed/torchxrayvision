@@ -30,7 +30,7 @@ def create_test_img(test_img_file, clazz, filename):
     
 
 @pytest.fixture(scope="session", autouse=True)
-def resource(request):
+def create_test_images(request):
     
     if os.path.exists(test_data_path):
         shutil.rmtree(test_data_path)
@@ -39,7 +39,7 @@ def resource(request):
     create_test_img(test_png_img_file, xrv.datasets.NIH_Dataset, "00000001_000.png")
     create_test_img(test_png_img_file, xrv.datasets.PC_Dataset, "125374151943505747025890313053997514922_j5rk5q.png")
     create_test_img(test_png_img_file, xrv.datasets.NIH_Google_Dataset, "00000211_006.png")
-    create_test_img(test_png_img_file, xrv.datasets.Openi_Dataset, "CXR100_IM-0002-1001.png")
+    create_test_img(test_png_img_file, xrv.datasets.Openi_Dataset, "CXR10_IM-0002-1001.png")
     create_test_img(test_jpg_img_file, xrv.datasets.CheX_Dataset, "train/patient00004/study1/view1_frontal.jpg")
     create_test_img(test_dcm_img_file, xrv.datasets.SIIM_Pneumothorax_Dataset, "1.2.276.0.7230010.3.1.2.8323329.6904.1517875201.850818/1.2.276.0.7230010.3.1.3.8323329.6904.1517875201.850817/1.2.276.0.7230010.3.1.4.8323329.6904.1517875201.850819.dcm")
     create_test_img(test_dcm_img_file, xrv.datasets.VinBrain_Dataset, "000434271f63a053c4128a0ba6352c7f.dicom")
@@ -47,7 +47,7 @@ def resource(request):
     
 
 
-def test_dataloader_basic():
+def test_dataloader_basic(create_test_images):
     
     transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
                                                 xrv.datasets.XRayResizer(224)])
