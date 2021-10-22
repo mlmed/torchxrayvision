@@ -1064,7 +1064,7 @@ class Openi_Dataset(Dataset):
                  xmlpath=os.path.join(datapath, "NLMCXR_reports.tgz"), 
                  dicomcsv_path=os.path.join(datapath, "nlmcxr_dicom_metadata.csv.gz"),
                  tsnepacsv_path=os.path.join(datapath, "nlmcxr_tsne_pa.csv.gz"),
-                 use_tsne_view=False,
+                 use_tsne_derived_view=False,
                  views=["PA"],
                  transform=None, data_aug=None, 
                  nrows=None, seed=0,
