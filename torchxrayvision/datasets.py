@@ -116,7 +116,9 @@ class Dataset():
         if not os.path.isfile(self.csvpath):
             raise Exception("csvpath must be a file")
     def limit_to_selected_views(self, views):
-    """This function is called by subclasses to filter the images by view based on the values in .csv['view']"""
+        """This function is called by subclasses to filter the 
+        images by view based on the values in .csv['view']
+        """
         if type(views) is not list:
             views = [views]
         if '*' in views:
