@@ -1054,7 +1054,7 @@ class Openi_Dataset(Dataset):
     Medical Informatics Association, 2016. doi: 10.1093/jamia/ocv080.
     
     Views have been determined by projection using T-SNE.  To use the T-SNE view rather than the
-    view defined by the record, set use_tsne_view to true.
+    view defined by the record, set use_tsne_derived_view to true.
     
     Dataset website:
     https://openi.nlm.nih.gov/faq
@@ -1131,7 +1131,7 @@ class Openi_Dataset(Dataset):
         tsne_pa = pd.read_csv(tsnepacsv_path, index_col="imageid")
         self.csv = self.csv.join(tsne_pa, on="imageid")
         
-        if use_tsne_view:
+        if use_tsne_derived_view:
             self.csv["view"] = self.csv["tsne-view"]
         else:
             self.csv["view"] = self.csv["View Position"]
