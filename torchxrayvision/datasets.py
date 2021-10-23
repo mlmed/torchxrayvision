@@ -1710,6 +1710,7 @@ class StonyBrookCOVID_Dataset(Dataset):
                  csvpath, # path to ralo-dataset-metadata.csv
                  transform=None, 
                  data_aug=None, 
+                 views=["AP"],
                  seed=0):
 
         super(StonyBrookCOVID_Dataset, self).__init__()
@@ -1746,6 +1747,10 @@ class StonyBrookCOVID_Dataset(Dataset):
         
         # patientid
         self.csv["patientid"] = self.csv["Subject_ID"].astype(str)
+        
+        # all the images are AP according to the article.
+        self.csv["view"] = "AP"
+        self.limit_to_selected_views(views)
 
     def string(self):
         return self.__class__.__name__ + " num_samples={}".format(len(self))
