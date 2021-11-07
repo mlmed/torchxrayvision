@@ -274,22 +274,26 @@ d = xrv.datasets.CovariateDataset(d1 = # dataset1 with a specific condition
 
 ## Citation
 
+Primary TorchXRayVision paper: [https://arxiv.org/abs/2111.00595](https://arxiv.org/abs/2111.00595)
+
 ```
-Joseph Paul Cohen, Joseph Viviano, Paul Morrison, Rupert Brooks, Mohammad Hashir, Hadrien Bertrand 
+Joseph Paul Cohen, Joseph D. Viviano, Paul Bertin, Paul Morrison, Parsa Torabian, Matteo Guarrera, Matthew P Lungren, Akshay Chaudhari, Rupert Brooks, Mohammad Hashir, Hadrien Bertrand
 TorchXRayVision: A library of chest X-ray datasets and models. 
 https://github.com/mlmed/torchxrayvision, 2020
 
+
 @article{Cohen2020xrv,
-author = {Cohen, Joseph Paul and Viviano, Joseph and Morrison, Paul and Brooks, Rupert and Hashir, Mohammad and Bertrand, Hadrien},
+author = {Cohen, Joseph Paul and Viviano, Joseph D. and Bertin, Paul and Morrison, Paul and Torabian, Parsa and Guarrera, Matteo and Lungren, Matthew P and Chaudhari, Akshay and Brooks, Rupert and Hashir, Mohammad and Bertrand, Hadrien},
 journal = {https://github.com/mlmed/torchxrayvision},
 title = {{TorchXRayVision: A library of chest X-ray datasets and models}},
 url = {https://github.com/mlmed/torchxrayvision},
 year = {2020}
+arxivId = {2111.00595},
 }
 
 
 ```
-and this paper [https://arxiv.org/abs/2002.02497](https://arxiv.org/abs/2002.02497)
+and this paper which initiated development of the library: [https://arxiv.org/abs/2002.02497](https://arxiv.org/abs/2002.02497)
 ```
 Joseph Paul Cohen and Mohammad Hashir and Rupert Brooks and Hadrien Bertrand
 On the limits of cross-domain generalization in automated X-ray prediction. 
