@@ -1,6 +1,8 @@
+🚨 Paper now online! [https://arxiv.org/abs/2111.00595](https://arxiv.org/abs/2111.00595)
+
 <img src="docs/torchxrayvision-logo.png" width="300px"/>
 
-# TorchXRayVision
+# TorchXRayVision 
 
 A library for chest X-ray datasets and models. Including pre-trained models.
 
