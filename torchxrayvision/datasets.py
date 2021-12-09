@@ -232,6 +232,10 @@ class SubsetDataset(Dataset):
         self.dataset = dataset
         self.pathologies = dataset.pathologies
         
+        #no need to use explicit getters or setters
+        self.transform = dataset.transform
+        self.data_aug = dataset.data_aug    
+        
         self.idxs = idxs
         
         self.labels = self.dataset.labels[self.idxs]
