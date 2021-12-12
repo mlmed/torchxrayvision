@@ -1,10 +1,9 @@
-import pytest
 import sys, os
-sys.path.insert(0,"../torchxrayvision/")
-
+import pytest
 import torch
 import torchxrayvision as xrv
- 
+sys.path.insert(0, "../torchxrayvision/")
+
 
 def test_model_basic():
     model = xrv.models.DenseNet()
@@ -17,7 +16,6 @@ def test_model_pretrained():
 
 
 def test_model_function():
-    
     models = [xrv.models.DenseNet(weights="all"),
              xrv.models.DenseNet(weights="mimic_ch"),
              xrv.models.ResNet(weights="resnet50-res512-all")]
@@ -30,7 +28,7 @@ def test_model_function():
 
         assert torch.isnan(dzdxp.flatten()).sum().cpu().numpy() == 0 
 
-        
+
 def test_autoencoder_pretrained():
     ae = xrv.autoencoders.ResNetAE(weights="101-elastic")
     
@@ -77,7 +75,3 @@ def test_num_classes():
         # should raise error:
         xrv.models.DenseNet(weights="all", num_classes=4)
         
-        
-        
-        
-            

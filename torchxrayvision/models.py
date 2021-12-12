@@ -1,17 +1,16 @@
-from collections import OrderedDict
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
-import urllib
 import pathlib
 import os
 import sys
 import requests
 import numpy as np
-import warnings; warnings.filterwarnings("ignore")
+from collections import OrderedDict
 from . import datasets
+import warnings; warnings.filterwarnings("ignore")
+
 
 model_urls = {}
 
@@ -76,6 +75,7 @@ model_urls['resnet50-res512-all'] = {
     "op_threshs": [0.51570356, 0.50444704, 0.53787947, 0.50723547, 0.5025118, 0.5035252, 0.5038076, 0.51862943, 0.5078151, 0.50724894, 0.5056339, 0.510706, 0.5053923, 0.5020846, np.nan, 0.5080557, 0.5138526, np.nan],
     "ppv80_thres": [0.690908, 0.720028, 0.7303882, 0.7235838, 0.6787441, 0.7304924, 0.73105824, 0.6839408, 0.7241559, 0.7219969, 0.6346738, 0.72764945, 0.7285066, 0.5735704, np.nan, 0.69684714, 0.7135549, np.nan]
 }
+
 
 class _DenseLayer(nn.Sequential):
     def __init__(self, num_input_features, growth_rate, bn_size, drop_rate):
@@ -149,7 +149,7 @@ class DenseNet(nn.Module):
         self.apply_sigmoid = apply_sigmoid
         self.weights = weights
         
-        if self.weights != None:
+        if self.weights is not None:
             if not self.weights in model_urls.keys():
                 possible_weights = [k for k in model_urls.keys() if k.startswith("densenet")]
                 raise Exception("Weights value must be in {}".format(possible_weights))
@@ -224,16 +224,14 @@ class DenseNet(nn.Module):
                 self.op_threshs = torch.tensor(model_urls[weights]["op_threshs"])
                 
             self.upsample = nn.Upsample(size=(224, 224), mode='bilinear', align_corners=False)
-        
-                
+
     def __repr__(self):
-        if self.weights != None:
+        if self.weights is not None:
             return "XRV-DenseNet121-{}".format(self.weights)
         else:
             return "XRV-DenseNet"
                 
     def features2(self, x):
-        
         x = fix_resolution(x, 224, self)
         
         features = self.features(x)
@@ -242,7 +240,6 @@ class DenseNet(nn.Module):
         return out
     
     def forward(self, x):
-        
         x = fix_resolution(x, 224, self)
         
         features = self.features2(x)
@@ -260,7 +257,7 @@ class DenseNet(nn.Module):
 ##########################
 class ResNet(nn.Module):
 
-    def __init__(self, weights=None, apply_sigmoid=False):
+    def __init__(self, weights: str = None, apply_sigmoid: bool = False):
         super(ResNet, self).__init__()  
         
         self.weights = weights
@@ -276,12 +273,12 @@ class ResNet(nn.Module):
 
         if self.weights.startswith("resnet101"):
             self.model = torchvision.models.resnet101(num_classes=len(self.weights_dict["labels"]), pretrained=False)
-            #patch for single channel
+            # patch for single channel
             self.model.conv1 = torch.nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
 
         elif self.weights.startswith("resnet50"):
             self.model = torchvision.models.resnet50(num_classes=len(self.weights_dict["labels"]), pretrained=False)
-            #patch for single channel
+            # patch for single channel
             self.model.conv1 = torch.nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
             
         try:
@@ -296,16 +293,14 @@ class ResNet(nn.Module):
         self.upsample = nn.Upsample(size=(512, 512), mode='bilinear', align_corners=False)
         
         self.eval()
-       
-    
+
     def __repr__(self):
-        if self.weights != None:
+        if self.weights is not None:
             return "XRV-ResNet-{}".format(self.weights)
         else:
             return "XRV-ResNet"
     
     def features(self, x):
-        
         x = fix_resolution(x, 512, self)
         
         x = self.model.conv1(x)
@@ -323,7 +318,6 @@ class ResNet(nn.Module):
         return x
     
     def forward(self, x):
-        
         x = fix_resolution(x, 512, self)
         
         out = self.model(x)
@@ -337,18 +331,15 @@ class ResNet(nn.Module):
         return out
     
 
-
 warning_log = {}
-def fix_resolution(x, resolution, model):
-    """
-    Check resolution of input and resize to match requested
-    """
+def fix_resolution(x, resolution: int, model: nn.Module):
+    """Check resolution of input and resize to match requested"""
     
     # just skip it if upsample was removed somehow
     if not hasattr(model, 'upsample') or (model.upsample == None):
         return x
     
-    if ((x.shape[2] != resolution) | (x.shape[3] != resolution)):
+    if (x.shape[2] != resolution) | (x.shape[3] != resolution):
         if not hash(model) in warning_log:
             print("Warning: Input size ({}x{}) is not the native resolution ({}x{}) for this model. A resize will be performed but this could impact performance.".format(x.shape[2], x.shape[3], resolution, resolution))
             warning_log[hash(model)] = True
@@ -357,31 +348,32 @@ def fix_resolution(x, resolution, model):
     
     
 def op_norm(outputs, op_threshs):
-    """normalize outputs according to operating points for a given model.
+    """Normalize outputs according to operating points for a given model.
     Args: 
         outputs: outputs of self.classifier(). torch.Size(batch_size, num_tasks) 
         op_threshs_arr: torch.Size(batch_size, num_tasks) with self.op_threshs expanded.
     Returns:
         outputs_new: normalized outputs, torch.Size(batch_size, num_tasks)
     """
-    #expand to batch size so we can do parallel comp
+    # expand to batch size so we can do parallel comp
     op_threshs = op_threshs.expand(outputs.shape[0],-1)
     
-    #initial values will be 0.5
+    # initial values will be 0.5
     outputs_new = torch.zeros(outputs.shape, device = outputs.device)+0.5
     
     # only select non-nan elements otherwise the gradient breaks
     mask_leq = (outputs<op_threshs) & ~torch.isnan(op_threshs)
     mask_gt = ~(outputs<op_threshs) & ~torch.isnan(op_threshs)
     
-    #scale outputs less than thresh
+    # scale outputs less than thresh
     outputs_new[mask_leq] = outputs[mask_leq]/(op_threshs[mask_leq]*2)
-    #scale outputs greater than thresh
+    # scale outputs greater than thresh
     outputs_new[mask_gt] = 1.0 - ((1.0 - outputs[mask_gt])/((1-op_threshs[mask_gt])*2))
     
     return outputs_new
-    
-def get_densenet_params(arch):
+
+
+def get_densenet_params(arch: str):
     assert 'dense' in arch
     if arch == 'densenet161':
         ret = dict(growth_rate=48, block_config=(6, 12, 36, 24), num_init_features=96)
@@ -394,7 +386,8 @@ def get_densenet_params(arch):
         ret = dict(growth_rate=32, block_config=(6, 12, 24, 16), num_init_features=64)
     return ret
 
-def get_model(weights, **kwargs):
+
+def get_model(weights: str, **kwargs):
     if weights.startswith("densenet"):
         return DenseNet(weights=weights, **kwargs)
     elif weights.startswith("resnet"):
@@ -403,8 +396,7 @@ def get_model(weights, **kwargs):
         raise Exception("Unknown model")
 
 
-def get_weights(weights):
-    
+def get_weights(weights: str):
     if not weights in model_urls:
         raise Exception("Weights not found. Valid options: {}".format(list(model_urls.keys())))
     
@@ -423,7 +415,7 @@ def get_weights(weights):
     
 
 # from here https://sumit-ghosh.com/articles/python-download-progress-bar/
-def download(url, filename):
+def download(url: str, filename: str):
     with open(filename, 'wb') as f:
         response = requests.get(url, stream=True)
         total = response.headers.get('content-length')
@@ -440,4 +432,3 @@ def download(url, filename):
                 sys.stdout.write('\r[{}{}]'.format('█' * done, '.' * (50-done)))
                 sys.stdout.flush()
     sys.stdout.write('\n')
-                                      
