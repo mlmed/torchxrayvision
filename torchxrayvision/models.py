@@ -11,6 +11,7 @@ import sys
 import requests
 import numpy as np
 import warnings; warnings.filterwarnings("ignore")
+from . import datasets
 
 model_urls = {}
 
@@ -130,9 +131,18 @@ class DenseNet(nn.Module):
         num_classes (int) - number of classification classes
     """
 
-    def __init__(self, growth_rate=32, block_config=(6, 12, 24, 16), num_init_features=64, bn_size=4,
-                 drop_rate=0, num_classes=18, in_channels=1, weights=None, op_threshs=None, 
-                 apply_sigmoid=False):
+    def __init__(self, 
+                 growth_rate=32, 
+                 block_config=(6, 12, 24, 16), 
+                 num_init_features=64, 
+                 bn_size=4,
+                 drop_rate=0, 
+                 num_classes=len(datasets.default_pathologies), 
+                 in_channels=1, 
+                 weights=None, 
+                 op_threshs=None, 
+                 apply_sigmoid=False
+        ):
 
         super(DenseNet, self).__init__()            
         
@@ -146,6 +156,11 @@ class DenseNet(nn.Module):
                 
             # set to be what this model is trained to predict
             self.pathologies = model_urls[weights]["labels"]
+            
+            # if different from default number of classes
+            if num_classes != len(datasets.default_pathologies): 
+                raise ValueError("num_classes and weights cannot both be specified. The weights loaded will define the own number of output classes.")
+            
             num_classes = len(self.pathologies)
             
         
@@ -189,10 +204,6 @@ class DenseNet(nn.Module):
         self.register_buffer('op_threshs', op_threshs)
  
         if self.weights != None:
-        
-            if num_classes != 18: # if different from default number of classes
-                raise ValueError("num_classes and weights cannot both be specified. The weights loaded will define the own number of output classes.")
-                
             self.weights_filename_local = get_weights(weights)
             
             try:
