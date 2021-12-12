@@ -189,6 +189,10 @@ class DenseNet(nn.Module):
         self.register_buffer('op_threshs', op_threshs)
  
         if self.weights != None:
+        
+            if num_classes != 16: # if different from default number of classes
+                raise ValueError("num_classes and weights cannot both be specified. The weights loaded will define the own number of output classes.")
+                
             self.weights_filename_local = get_weights(weights)
             
             try:

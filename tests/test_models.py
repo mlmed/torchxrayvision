@@ -71,3 +71,13 @@ def test_num_classes():
         for i in [1,4,11,20]:
             model = model_class(num_classes = i)
             assert model.classifier.weight.shape[0] == i
+            
+            
+    with pytest.raises(ValueError):
+        # should raise error:
+        xrv.models.DenseNet(weights="all", num_classes=4)
+        
+        
+        
+        
+            
