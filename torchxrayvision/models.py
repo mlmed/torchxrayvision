@@ -215,7 +215,7 @@ class DenseNet(nn.Module):
 
                 self.load_state_dict(savedmodel.state_dict())
             except Exception as e:
-                print("Loading failure. Check weights file:", weights_filename_local)
+                print("Loading failure. Check weights file:", self.weights_filename_local)
                 raise e
             
             self.eval()
