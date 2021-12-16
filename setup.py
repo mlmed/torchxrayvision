@@ -26,5 +26,5 @@ setuptools.setup(
     install_requires=REQUIREMENTS,
     packages=find_packages(),
     package_dir={'torchxrayvision': 'torchxrayvision'},
-    package_data={'torchxrayvision': ['data/*.zip','data/*.gz','data/*.tgz','baseline_models/chexpert/*.json']},
+    package_data={'torchxrayvision': ['data/*.zip','data/*.gz','data/*.tgz','baseline_models/*/*.json','baseline_models/*/*/*.json']},
 )
