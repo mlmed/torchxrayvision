@@ -19,7 +19,7 @@ import torchxrayvision as xrv
 parser = argparse.ArgumentParser()
 parser.add_argument('-f', type=str, default="", help='')
 parser.add_argument('img_path', type=str)
-parser.add_argument('-weights', type=str,default="all")
+parser.add_argument('-weights', type=str,default="densenet121-res224-all")
 parser.add_argument('-feats', default=False, help='', action='store_true')
 parser.add_argument('-cuda', default=False, help='', action='store_true')
 
@@ -44,7 +44,7 @@ transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
 img = transform(img)
 
 
-model = xrv.models.DenseNet(weights=cfg.weights)
+model = xrv.models.get_model(cfg.weights)
 
 output = {}
 with torch.no_grad():
