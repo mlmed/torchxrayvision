@@ -22,6 +22,7 @@ parser.add_argument('img_path', type=str)
 parser.add_argument('-weights', type=str,default="densenet121-res224-all")
 parser.add_argument('-feats', default=False, help='', action='store_true')
 parser.add_argument('-cuda', default=False, help='', action='store_true')
+parser.add_argument('-resize', default=False, help='', action='store_true')
 
 cfg = parser.parse_args()
 
@@ -38,8 +39,13 @@ if len(img.shape) < 2:
 # Add color channel
 img = img[None, :, :]
 
-transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
-                                            xrv.datasets.XRayResizer(224)])
+
+# the models will resize the input to the correct size so this is optional.
+if cfg.resize:
+    transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
+                                                xrv.datasets.XRayResizer(224)])
+else:
+    transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop()])
 
 img = transform(img)
 
