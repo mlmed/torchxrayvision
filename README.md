@@ -1,6 +1,6 @@
 🚨 Paper now online! [https://arxiv.org/abs/2111.00595](https://arxiv.org/abs/2111.00595)
 
-<img src="docs/torchxrayvision-logo.png" width="300px"/>
+<img src="https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/torchxrayvision-logo.png" width="300px"/>
 
 # TorchXRayVision 
 
@@ -50,6 +50,9 @@ xrv.datasets.default_pathologies
  'Lung Opacity',
  'Enlarged Cardiomediastinum']
 ```
+
+A sample script to process images usings pretrained models is [process_image.py](https://github.com/mlmed/torchxrayvision/blob/master/scripts/process_image.py)
+
 
 ## Models ([demo notebook](https://github.com/mlmed/torchxrayvision/blob/master/scripts/xray_models.ipynb))
 
@@ -242,12 +245,12 @@ True      6012
 # There may be more than one mask per sample. But only one per pathology.
 sample["pathology_masks"][d_rsna.pathologies.index("Lung Opacity")]
 ```
-![](docs/pathology-mask-rsna2.png)
-![](docs/pathology-mask-rsna3.png)
+![](https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/pathology-mask-rsna2.png)
+![](https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/pathology-mask-rsna3.png)
 
 it also works with data_augmentation if you pass in `data_aug=data_transforms` to the dataloader. The random seed is matched to align calls for the image and the mask.
 
-![](docs/pathology-mask-rsna614-da.png)
+![](https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/pathology-mask-rsna614-da.png)
 
 ## Distribution shift tools ([demo notebook](https://github.com/mlmed/torchxrayvision/blob/master/scripts/xray_datasets-CovariateShift.ipynb))
 
@@ -312,18 +315,18 @@ Medical Imaging with Deep Learning 2020 (Online: https://arxiv.org/abs/2002.0249
 
 ## Supporters/Sponsors
 
-<a href="https://cifar.ca/"><img width="300px" src="docs/cifar-logo.png" /></a>
+<a href="https://cifar.ca/"><img width="300px" src="https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/cifar-logo.png" /></a>
 
 CIFAR (Canadian Institute for Advanced Research)
 
-<a href="https://mila.quebec/"><img width="300px" src="docs/mila-logo.png" /></a>
+<a href="https://mila.quebec/"><img width="300px" src="https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/mila-logo.png" /></a>
 
 Mila, Quebec AI Institute, University of Montreal
 
-<a href="http://aimi.stanford.edu/"><img width="300px" src="docs/AIMI-stanford.jpg" /></a>
+<a href="http://aimi.stanford.edu/"><img width="300px" src="https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/AIMI-stanford.jpg" /></a>
 
 Stanford University's Center for Artificial Intelligence in Medicine & Imaging
 
-<a href="http://www.carestream.com/"><img width="300px" src="docs/carestream-logo.png" /></a>
+<a href="http://www.carestream.com/"><img width="300px" src="https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/carestream-logo.png" /></a>
 
 Carestream Health
