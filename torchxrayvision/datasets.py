@@ -414,7 +414,6 @@ class RSNA_Pneumonia_Dataset(Dataset):
                  data_aug=None,
                  nrows=None,
                  seed=0,
-                 pure_labels=False,
                  unique_patients=True,
                  pathology_masks=False,
                  extension=".jpg"
@@ -572,7 +571,6 @@ class NIH_Google_Dataset(Dataset):
                  data_aug=None,
                  nrows=None,
                  seed=0,
-                 pure_labels=False,
                  unique_patients=True
     ):
 
@@ -1059,7 +1057,6 @@ class Openi_Dataset(Dataset):
                  data_aug=None,
                  nrows=None,
                  seed=0,
-                 pure_labels=False,
                  unique_patients=True
     ):
 
@@ -1207,7 +1204,6 @@ class COVID19_Dataset(Dataset):
                  data_aug=None,
                  nrows=None,
                  seed=0,
-                 pure_labels=False,
                  unique_patients=True,
                  semantic_masks=False
     ):
