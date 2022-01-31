@@ -1198,6 +1198,7 @@ class COVID19_Dataset(Dataset):
     Paper: https://arxiv.org/abs/2003.11597
     """
 
+    dataset_url = "https://github.com/ieee8023/covid-chestxray-dataset"
     def __init__(self,
                  imgpath=os.path.join(thispath, "covid-chestxray-dataset", "images"),
                  csvpath=os.path.join(thispath, "covid-chestxray-dataset", "metadata.csv"),
@@ -1221,6 +1222,9 @@ class COVID19_Dataset(Dataset):
         self.semantic_masks = semantic_masks
         self.semantic_masks_v7labs_lungs_path = semantic_masks_v7labs_lungs_path
 
+        if not os.path.exists(csvpath):
+            raise FileNotFoundError(f'The csvpath does not point to a valid metadata.csv file. Please download it from {self.dataset_url}')
+        
         # Load data
         self.csvpath = csvpath
         self.csv = pd.read_csv(self.csvpath, nrows=nrows)
