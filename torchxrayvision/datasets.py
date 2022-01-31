@@ -170,9 +170,9 @@ class MergeDataset(Dataset):
 
     def __setattr__(self, name, value):
         if name == "transform":
-            raise NotImplementedError("Cannot set transform on a merged dataset. Set the transforms directly on the dataset object. If it was to be set via this merged dataset if would have to modify the internal datasets which could have unexpected side effects")
+            raise NotImplementedError("Cannot set transform on a merged dataset. Set the transforms directly on the dataset object. If it was to be set via this merged dataset it would have to modify the internal datasets which could have unexpected side effects")
         if name == "data_aug":
-            raise NotImplementedError("Cannot set data_aug on a merged dataset. Set the transforms directly on the dataset object. If it was to be set via this merged dataset if would have to modify the internal datasets which could have unexpected side effects")
+            raise NotImplementedError("Cannot set data_aug on a merged dataset. Set the transforms directly on the dataset object. If it was to be set via this merged dataset it would have to modify the internal datasets which could have unexpected side effects")
             
         object.__setattr__(self, name, value)
         
@@ -242,9 +242,9 @@ class SubsetDataset(Dataset):
 
     def __setattr__(self, name, value):
         if name == "transform":
-            raise NotImplementedError("Cannot set transform on a subset dataset. Set the transforms directly on the dataset object. If it was to be set via this subset dataset if would have to modify the internal dataset which could have unexpected side effects")
+            raise NotImplementedError("Cannot set transform on a subset dataset. Set the transforms directly on the dataset object. If it was to be set via this subset dataset it would have to modify the internal dataset which could have unexpected side effects")
         if name == "data_aug":
-            raise NotImplementedError("Cannot set data_aug on a subset dataset. Set the transforms directly on the dataset object. If it was to be set via this subset dataset if would have to modify the internal dataset which could have unexpected side effects")
+            raise NotImplementedError("Cannot set data_aug on a subset dataset. Set the transforms directly on the dataset object. If it was to be set via this subset dataset it would have to modify the internal dataset which could have unexpected side effects")
             
         object.__setattr__(self, name, value)
             
