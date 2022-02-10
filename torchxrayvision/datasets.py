@@ -168,6 +168,15 @@ class MergeDataset(Dataset):
 
         self.csv = self.csv.reset_index(drop=True)
 
+    def __setattr__(self, name, value):
+        if name == "transform":
+            raise NotImplementedError("Cannot set transform on a merged dataset. Set the transforms directly on the dataset object. If it was to be set via this merged dataset it would have to modify the internal datasets which could have unexpected side effects")
+        if name == "data_aug":
+            raise NotImplementedError("Cannot set data_aug on a merged dataset. Set the transforms directly on the dataset object. If it was to be set via this merged dataset it would have to modify the internal datasets which could have unexpected side effects")
+            
+        object.__setattr__(self, name, value)
+        
+    
     def string(self):
         s = self.__class__.__name__ + " num_samples={}\n".format(len(self))
         for i, d in enumerate(self.datasets):
@@ -231,6 +240,14 @@ class SubsetDataset(Dataset):
         if hasattr(self.dataset, 'which_dataset'):
             self.which_dataset = self.dataset.which_dataset[self.idxs]
 
+    def __setattr__(self, name, value):
+        if name == "transform":
+            raise NotImplementedError("Cannot set transform on a subset dataset. Set the transforms directly on the dataset object. If it was to be set via this subset dataset it would have to modify the internal dataset which could have unexpected side effects")
+        if name == "data_aug":
+            raise NotImplementedError("Cannot set data_aug on a subset dataset. Set the transforms directly on the dataset object. If it was to be set via this subset dataset it would have to modify the internal dataset which could have unexpected side effects")
+            
+        object.__setattr__(self, name, value)
+            
     def string(self):
         return self.__class__.__name__ + " num_samples={}\n".format(len(self)) + "└ of " + self.dataset.string().replace("\n", "\n  ")
 

@@ -122,3 +122,54 @@ def test_dataloader_merging_incorrect_alignment():
         dd = xrv.datasets.Merge_Dataset([d_nih, d_pc])
 
     assert "incorrect pathology alignment" in str(excinfo.value)
+    
+    
+    
+    
+def test_errors_when_doing_things_that_shouldnt_work():
+    
+    
+    transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
+                                                xrv.datasets.XRayResizer(224)])
+    
+    data_aug = torchvision.transforms.Compose([
+        xrv.datasets.ToPILImage(),
+        torchvision.transforms.RandomAffine(15, translate=(0.1, 0.1), scale=(0.5, 1.5)),
+        torchvision.transforms.ToTensor()
+    ])
+    
+    datasets = []
+    for dataset_class in dataset_classes:
+        dataset = dataset_class(imgpath=".", transform=transform, data_aug=data_aug)
+        datasets.append(dataset)
+
+    for dataset in datasets:
+        xrv.datasets.relabel_dataset(xrv.datasets.default_pathologies, dataset)
+
+    merged_dataset = xrv.datasets.MergeDataset(datasets)
+    
+    with pytest.raises(NotImplementedError) as excinfo:
+        # Try to set the transforms on a merged dataset
+        merged_dataset.transform = None
+        
+    with pytest.raises(NotImplementedError) as excinfo:
+        # Try to set the data_aug on a merged dataset
+        merged_dataset.transform = None
+    
+    
+    subset_dataset = xrv.datasets.SubsetDataset(datasets[0], [0,1,2])
+    
+    with pytest.raises(NotImplementedError) as excinfo:
+        # Try to set the transforms on a subset dataset
+        subset_dataset.transform = None
+        
+    with pytest.raises(NotImplementedError) as excinfo:
+        # Try to set the data_aug on a subset dataset
+        subset_dataset.transform = None
+    
+    
+    
+    
+    
+    
+    
