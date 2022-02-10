@@ -11,7 +11,6 @@ import zipfile
 import imageio
 import numpy as np
 import pandas as pd
-import pydicom
 import skimage
 import skimage.transform
 from skimage.io import imread
@@ -487,6 +486,11 @@ class RSNA_Pneumonia_Dataset(Dataset):
         img_path = os.path.join(self.imgpath, imgid + self.extension)
 
         if self.use_pydicom:
+            try:
+                import pydicom
+            except ImportError as e:
+                raise Exception("Please install pydicom to work with this dataset")
+            
             img=pydicom.filereader.dcmread(img_path).pixel_array
         else:
             img = imread(img_path)
@@ -1458,6 +1462,11 @@ class SIIM_Pneumothorax_Dataset(Dataset):
 
         imgid = self.csv['ImageId'].iloc[idx]
         img_path = self.file_map[imgid + ".dcm"]
+        
+        try:
+            import pydicom
+        except ImportError as e:
+            raise Exception("Please install pydicom to work with this dataset")
         img = pydicom.filereader.dcmread(img_path).pixel_array
 
         sample["img"] = normalize(img, maxval=255, reshape=True)
@@ -1611,6 +1620,10 @@ class VinBrain_Dataset(Dataset):
         imgid = self.csv['image_id'].iloc[idx]
         img_path = os.path.join(self.imgpath, imgid + ".dicom")
 
+        try:
+            import pydicom
+        except ImportError as e:
+            raise Exception("Please install pydicom to work with this dataset")
         from pydicom.pixel_data_handlers.util import apply_modality_lut
         dicom_obj = pydicom.filereader.dcmread(img_path)
         img = apply_modality_lut(dicom_obj.pixel_array, dicom_obj)
