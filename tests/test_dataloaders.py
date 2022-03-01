@@ -20,11 +20,22 @@ dataset_classes = [xrv.datasets.NIH_Dataset,
                    xrv.datasets.SIIM_Pneumothorax_Dataset,
                    xrv.datasets.VinBrain_Dataset]
 
+dataset_classes_pydicom = [xrv.datasets.SIIM_Pneumothorax_Dataset,
+                           xrv.datasets.VinBrain_Dataset]
+
 test_data_path = "/tmp/testdata"
 test_png_img_file = os.path.join(file_path, "00000001_000.png")
 test_jpg_img_file = os.path.join(file_path, "16747_3_1.jpg")
 test_dcm_img_file = os.path.join(file_path, "1.2.276.0.7230010.3.1.4.8323329.6904.1517875201.850819.dcm")
 
+
+@pytest.fixture
+def is_pydicom_installed():
+    try:
+        import pydicom
+        return True
+    except:
+        return False
 
 def get_clazz_imgpath(clazz):
     return os.path.join(test_data_path, clazz.__name__)
@@ -52,27 +63,29 @@ def create_test_images(request):
     create_test_img(test_dcm_img_file, xrv.datasets.VinBrain_Dataset, "000434271f63a053c4128a0ba6352c7f.dicom")
 
 
-def test_dataloader_basic(create_test_images):
+def test_dataloader_basic(create_test_images, is_pydicom_installed):
 
     transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
                                                 xrv.datasets.XRayResizer(224)])
 
     for dataset_class in dataset_classes:
-        dataset = dataset_class(imgpath=get_clazz_imgpath(dataset_class), transform=transform)
+        if is_pydicom_installed or (dataset_class not in dataset_classes_pydicom):
+            dataset = dataset_class(imgpath=get_clazz_imgpath(dataset_class), transform=transform)
 
-        sample = dataset[0]
+            sample = dataset[0]
 
-        assert("img" in sample)
-        assert("lab" in sample)
-        assert("idx" in sample)
+            assert("img" in sample)
+            assert("lab" in sample)
+            assert("idx" in sample)
 
 
-def test_dataloader_merging():
+def test_dataloader_merging(is_pydicom_installed):
 
     datasets = []
     for dataset_class in dataset_classes:
-        dataset = dataset_class(imgpath=".")
-        datasets.append(dataset)
+        if is_pydicom_installed or (dataset_class not in dataset_classes_pydicom):
+            dataset = dataset_class(imgpath=".")
+            datasets.append(dataset)
 
     for dataset in datasets:
         xrv.datasets.relabel_dataset(xrv.datasets.default_pathologies, dataset)
