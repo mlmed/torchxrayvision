@@ -350,7 +350,11 @@ def fix_resolution(x, resolution: int, model: nn.Module):
     return x
 
 def warn_normalization(x):
-    """Check normalization of input and warn if possibly wrong."""
+    """Check normalization of input and warn if possibly wrong. When 
+    processing an image that may likely not have the correct 
+    normalization we can issue a warning. But running min and max on 
+    every image/batch is costly so we only do it on the first image/batch.
+    """
     
     # Only run this check on the first image so we don't hurt performance.
     if not "norm_check" in warning_log:
