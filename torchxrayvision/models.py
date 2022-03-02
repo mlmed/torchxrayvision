@@ -233,6 +233,7 @@ class DenseNet(nn.Module):
                 
     def features2(self, x):
         x = fix_resolution(x, 224, self)
+        warn_normalization(x)
         
         features = self.features(x)
         out = F.relu(features, inplace=True)
@@ -302,6 +303,7 @@ class ResNet(nn.Module):
     
     def features(self, x):
         x = fix_resolution(x, 512, self)
+        warn_normalization(x)
         
         x = self.model.conv1(x)
         x = self.model.bn1(x)
@@ -319,6 +321,7 @@ class ResNet(nn.Module):
     
     def forward(self, x):
         x = fix_resolution(x, 512, self)
+        warn_normalization(x)
         
         out = self.model(x)
         
@@ -333,7 +336,7 @@ class ResNet(nn.Module):
 
 warning_log = {}
 def fix_resolution(x, resolution: int, model: nn.Module):
-    """Check resolution of input and resize to match requested"""
+    """Check resolution of input and resize to match requested."""
     
     # just skip it if upsample was removed somehow
     if not hasattr(model, 'upsample') or (model.upsample == None):
@@ -345,6 +348,22 @@ def fix_resolution(x, resolution: int, model: nn.Module):
             warning_log[hash(model)] = True
         return model.upsample(x)
     return x
+
+def warn_normalization(x):
+    """Check normalization of input and warn if possibly wrong."""
+    
+    # Only run this check on the first image so we don't hurt performance.
+    if not "norm_check" in warning_log:
+        x_min = x.min()
+        x_max = x.max()
+        if not torch.logical_and(x_min < -255, x_max > 255):
+            print(f'Warning: Input image does not appear to normalized correctly. The input image has the range [{x_min:.2f},{x_max:.2f}] which doesn\'t seem to be in the [-1024,1024] range. This warning may be wrong though. Only the first image is tested and we are only use a heurstic in an attempt to save a user from using the wrong normalization.')
+            warning_log["norm_correct"] = False
+        else:
+            warning_log["norm_correct"] = True
+              
+        warning_log["norm_check"] = True
+        
     
     
 def op_norm(outputs, op_threshs):
