@@ -360,8 +360,8 @@ def warn_normalization(x):
     if not "norm_check" in warning_log:
         x_min = x.min()
         x_max = x.max()
-        if not torch.logical_and(x_min < -255, x_max > 255):
-            print(f'Warning: Input image does not appear to normalized correctly. The input image has the range [{x_min:.2f},{x_max:.2f}] which doesn\'t seem to be in the [-1024,1024] range. This warning may be wrong though. Only the first image is tested and we are only use a heurstic in an attempt to save a user from using the wrong normalization.')
+        if torch.logical_or(-255 < x_min, x_max < 255) or torch.logical_or(x_min < -1024, 1024 < x_max):
+            print(f'Warning: Input image does not appear to be normalized correctly. The input image has the range [{x_min:.2f},{x_max:.2f}] which doesn\'t seem to be in the [-1024,1024] range. This warning may be wrong though. Only the first image is tested and we are only using a heuristic in an attempt to save a user from using the wrong normalization.')
             warning_log["norm_correct"] = False
         else:
             warning_log["norm_correct"] = True

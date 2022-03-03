@@ -84,6 +84,7 @@ def test_normalization_check():
         [0, 1],
         [-1, 1],
         [0, 1024],
+        [-1026, 1024],
     ]
     correct_ranges = [
         [-1024, 1024],
@@ -96,12 +97,12 @@ def test_normalization_check():
             test_x.uniform_(ra[0], ra[1])
             xrv.models.warning_log = {}
             model(test_x)
-            assert xrv.models.warning_log['norm_correct'] == False
+            assert xrv.models.warning_log['norm_correct'] == False, ra
             
         for ra in correct_ranges:
             test_x = torch.zeros([1,1,224,224])
             test_x.uniform_(ra[0], ra[1])
             xrv.models.warning_log = {}
             model(test_x)
-            assert xrv.models.warning_log['norm_correct'] == True
+            assert xrv.models.warning_log['norm_correct'] == True, ra
 
