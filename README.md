@@ -53,6 +53,28 @@ xrv.datasets.default_pathologies
 
 A sample script to process images usings pretrained models is [process_image.py](https://github.com/mlmed/torchxrayvision/blob/master/scripts/process_image.py)
 
+```
+$python3 process_image.py ../tests/00000001_000.png
+{'preds': {'Atelectasis': 0.50500506,
+           'Cardiomegaly': 0.6600903,
+           'Consolidation': 0.30575264,
+           'Edema': 0.274184,
+           'Effusion': 0.4026162,
+           'Emphysema': 0.5036339,
+           'Enlarged Cardiomediastinum': 0.40989172,
+           'Fibrosis': 0.53293407,
+           'Fracture': 0.32376793,
+           'Hernia': 0.011924741,
+           'Infiltration': 0.5154413,
+           'Lung Lesion': 0.22231922,
+           'Lung Opacity': 0.2772148,
+           'Mass': 0.32237658,
+           'Nodule': 0.5091847,
+           'Pleural_Thickening': 0.5102617,
+           'Pneumonia': 0.30947986,
+           'Pneumothorax': 0.24847917}}
+
+```
 
 ## Models ([demo notebook](https://github.com/mlmed/torchxrayvision/blob/master/scripts/xray_models.ipynb))
 
