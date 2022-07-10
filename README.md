@@ -51,9 +51,11 @@ xrv.datasets.default_pathologies
  'Enlarged Cardiomediastinum']
 ```
 
-A sample script to process images usings pretrained models is [process_image.py](https://github.com/mlmed/torchxrayvision/blob/master/scripts/process_image.py)
+A sample script to process images using pretrained model - [process_image.py](https://github.com/mlmed/torchxrayvision/blob/master/scripts/process_image.py)
 
 ```
+git clone https://github.com/mlmed/torchxrayvision
+cd torchxrayvision/scripts
 $python3 process_image.py ../tests/00000001_000.png
 {'preds': {'Atelectasis': 0.50500506,
            'Cardiomegaly': 0.6600903,
@@ -75,6 +77,20 @@ $python3 process_image.py ../tests/00000001_000.png
            'Pneumothorax': 0.24847917}}
 
 ```
+
+[Streamlit](https://streamlit.io/) script/app [process_image_app.py](https://github.com/mlmed/torchxrayvision/blob/master/scripts/process_image.py) of [process_image.py](https://github.com/mlmed/torchxrayvision/blob/master/scripts/process_image.py)
+
+```
+pip install streamlit
+streamlit run process_image_app.py
+
+  You can now view your Streamlit app in your browser.
+
+  Network URL: http://10.128.0.9:8501
+  External URL: http://graph.fuzzylife.org/
+```
+
+for example try http://graph.fuzzylife.org/ with https://raw.githubusercontent.com/mlmed/torchxrayvision/master/tests/00000001_000.png should give the same output as the commandline version [process_image.py](https://github.com/mlmed/torchxrayvision/blob/master/scripts/process_image.py)
 
 ## Models ([demo notebook](https://github.com/mlmed/torchxrayvision/blob/master/scripts/xray_models.ipynb))
 
