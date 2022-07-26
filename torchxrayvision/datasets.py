@@ -12,8 +12,10 @@ import imageio
 import numpy as np
 import pandas as pd
 import skimage
+from typing import Dict
 import skimage.transform
 from skimage.io import imread
+import torch
 from torchvision import transforms
 
 default_pathologies = [
@@ -63,6 +65,30 @@ def normalize(img, maxval, reshape=False):
         img = img[None, :, :]
 
     return img
+
+
+def apply_transforms(sample, transform) -> Dict:
+    
+    transform_seed = np.random.randint(2147483647)
+    
+    if transform is not None:
+        random.seed(transform_seed)
+        torch.random.manual_seed(transform_seed)
+        sample["img"] = transform(sample["img"])
+        
+        if "pathology_masks" in sample:
+            for i in sample["pathology_masks"].keys():
+                random.seed(transform_seed)
+                torch.random.manual_seed(transform_seed)
+                sample["pathology_masks"][i] = transform(sample["pathology_masks"][i])
+
+        if "semantic_masks" in sample:
+            for i in sample["semantic_masks"].keys():
+                random.seed(transform_seed)
+                torch.random.manual_seed(transform_seed)
+                sample["semantic_masks"][i] = transform(sample["semantic_masks"][i])
+                
+    return sample
 
 
 def relabel_dataset(pathologies, dataset, silent=False):
@@ -126,7 +152,7 @@ class Dataset():
 
         if "*" not in views:
             self.csv = self.csv[self.csv["view"].isin(self.views)] # Select the view
-
+    
 
 class MergeDataset(Dataset):
     def __init__(self, datasets, seed=0, label_concat=False):
@@ -354,26 +380,11 @@ class NIH_Dataset(Dataset):
 
         sample["img"] = normalize(img, maxval=255, reshape=True)
 
-        transform_seed = np.random.randint(2147483647)
-
         if self.pathology_masks:
             sample["pathology_masks"] = self.get_mask_dict(imgid, sample["img"].shape[2])
-
-        if self.transform is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.transform(sample["img"])
-            if self.pathology_masks:
-                for i in sample["pathology_masks"].keys():
-                    random.seed(transform_seed)
-                    sample["pathology_masks"][i] = self.transform(sample["pathology_masks"][i])
-
-        if self.data_aug is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.data_aug(sample["img"])
-            if self.pathology_masks:
-                for i in sample["pathology_masks"].keys():
-                    random.seed(transform_seed)
-                    sample["pathology_masks"][i] = self.data_aug(sample["pathology_masks"][i])
+        
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -514,26 +525,11 @@ class RSNA_Pneumonia_Dataset(Dataset):
 
         sample["img"] = normalize(img, maxval=255, reshape=True)
 
-        transform_seed = np.random.randint(2147483647)
-
         if self.pathology_masks:
             sample["pathology_masks"] = self.get_mask_dict(imgid, sample["img"].shape[2])
 
-        if self.transform is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.transform(sample["img"])
-            if self.pathology_masks:
-                for i in sample["pathology_masks"].keys():
-                    random.seed(transform_seed)
-                    sample["pathology_masks"][i] = self.transform(sample["pathology_masks"][i])
-
-        if self.data_aug is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.data_aug(sample["img"])
-            if self.pathology_masks:
-                for i in sample["pathology_masks"].keys():
-                    random.seed(transform_seed)
-                    sample["pathology_masks"][i] = self.data_aug(sample["pathology_masks"][i])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -649,11 +645,8 @@ class NIH_Google_Dataset(Dataset):
 
         sample["img"] = normalize(img, maxval=255, reshape=True)
 
-        if self.transform is not None:
-            sample["img"] = self.transform(sample["img"])
-
-        if self.data_aug is not None:
-            sample["img"] = self.data_aug(sample["img"])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -803,11 +796,8 @@ class PC_Dataset(Dataset):
 
         sample["img"] = normalize(img, maxval=65535, reshape=True)
 
-        if self.transform is not None:
-            sample["img"] = self.transform(sample["img"])
-
-        if self.data_aug is not None:
-            sample["img"] = self.data_aug(sample["img"])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -926,11 +916,8 @@ class CheX_Dataset(Dataset):
 
         sample["img"] = normalize(img, maxval=255, reshape=True)
 
-        if self.transform is not None:
-            sample["img"] = self.transform(sample["img"])
-
-        if self.data_aug is not None:
-            sample["img"] = self.data_aug(sample["img"])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -1043,11 +1030,8 @@ class MIMIC_Dataset(Dataset):
 
         sample["img"] = normalize(img, maxval=255, reshape=True)
 
-        if self.transform is not None:
-            sample["img"] = self.transform(sample["img"])
-
-        if self.data_aug is not None:
-            sample["img"] = self.data_aug(sample["img"])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -1191,11 +1175,8 @@ class Openi_Dataset(Dataset):
 
         sample["img"] = normalize(img, maxval=255, reshape=True)
 
-        if self.transform is not None:
-            sample["img"] = self.transform(sample["img"])
-
-        if self.data_aug is not None:
-            sample["img"] = self.data_aug(sample["img"])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -1297,21 +1278,8 @@ class COVID19_Dataset(Dataset):
         if self.semantic_masks:
             sample["semantic_masks"] = self.get_semantic_mask_dict(imgid, sample["img"].shape)
 
-        if self.transform is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.transform(sample["img"])
-            if self.semantic_masks:
-                for i in sample["semantic_masks"].keys():
-                    random.seed(transform_seed)
-                    sample["semantic_masks"][i] = self.transform(sample["semantic_masks"][i])
-
-        if self.data_aug is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.data_aug(sample["img"])
-            if self.semantic_masks:
-                for i in sample["semantic_masks"].keys():
-                    random.seed(transform_seed)
-                    sample["semantic_masks"][i] = self.data_aug(sample["semantic_masks"][i])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -1410,11 +1378,8 @@ class NLMTB_Dataset(Dataset):
 
         sample["img"] = normalize(img, maxval=255, reshape=True)
 
-        if self.transform is not None:
-            sample["img"] = self.transform(sample["img"])
-
-        if self.data_aug is not None:
-            sample["img"] = self.data_aug(sample["img"])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -1497,21 +1462,8 @@ class SIIM_Pneumothorax_Dataset(Dataset):
         if self.pathology_masks:
             sample["pathology_masks"] = self.get_pathology_mask_dict(imgid, sample["img"].shape[2])
 
-        if self.transform is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.transform(sample["img"])
-            if self.pathology_masks:
-                for i in sample["pathology_masks"].keys():
-                    random.seed(transform_seed)
-                    sample["pathology_masks"][i] = self.transform(sample["pathology_masks"][i])
-
-        if self.data_aug is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.data_aug(sample["img"])
-            if self.pathology_masks:
-                for i in sample["pathology_masks"].keys():
-                    random.seed(transform_seed)
-                    sample["pathology_masks"][i] = self.data_aug(sample["pathology_masks"][i])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -1672,21 +1624,8 @@ class VinBrain_Dataset(Dataset):
         if self.pathology_masks:
             sample["pathology_masks"] = self.get_mask_dict(imgid, sample["img"].shape)
 
-        if self.transform is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.transform(sample["img"])
-            if self.pathology_masks:
-                for i in sample["pathology_masks"].keys():
-                    random.seed(transform_seed)
-                    sample["pathology_masks"][i] = self.transform(sample["pathology_masks"][i])
-
-        if self.data_aug is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.data_aug(sample["img"])
-            if self.pathology_masks:
-                for i in sample["pathology_masks"].keys():
-                    random.seed(transform_seed)
-                    sample["pathology_masks"][i] = self.data_aug(sample["pathology_masks"][i])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -1781,15 +1720,8 @@ class StonyBrookCOVID_Dataset(Dataset):
 
         sample["img"] = normalize(img, maxval=255, reshape=True)
 
-        transform_seed = np.random.randint(2147483647)
-
-        if self.transform is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.transform(sample["img"])
-
-        if self.data_aug is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.data_aug(sample["img"])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -1853,13 +1785,8 @@ class ObjectCXR_Dataset(Dataset):
 
         transform_seed = np.random.randint(2147483647)
 
-        if self.transform is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.transform(sample["img"])
-
-        if self.data_aug is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.data_aug(sample["img"])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
