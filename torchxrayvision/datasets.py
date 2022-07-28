@@ -12,8 +12,10 @@ import imageio
 import numpy as np
 import pandas as pd
 import skimage
+from typing import Dict
 import skimage.transform
 from skimage.io import imread
+import torch
 from torchvision import transforms
 
 default_pathologies = [
@@ -65,6 +67,38 @@ def normalize(img, maxval, reshape=False):
     return img
 
 
+def apply_transforms(sample, transform, seed=None) -> Dict:
+    """Applies transforms to the image and masks.
+    The seeds are set so that the transforms that are applied
+    to the image are the same that are applied to each mask.
+    This way data augmentation will work for segmentation or 
+    other tasks which use masks information.
+    """
+    
+    if seed is None:
+        MAX_RAND_VAL = 2147483647
+        seed = np.random.randint(MAX_RAND_VAL)
+        
+    if transform is not None:
+        random.seed(seed)
+        torch.random.manual_seed(seed)
+        sample["img"] = transform(sample["img"])
+
+        if "pathology_masks" in sample:
+            for i in sample["pathology_masks"].keys():
+                random.seed(seed)
+                torch.random.manual_seed(seed)
+                sample["pathology_masks"][i] = transform(sample["pathology_masks"][i])
+
+        if "semantic_masks" in sample:
+            for i in sample["semantic_masks"].keys():
+                random.seed(seed)
+                torch.random.manual_seed(seed)
+                sample["semantic_masks"][i] = transform(sample["semantic_masks"][i])
+
+    return sample
+
+
 def relabel_dataset(pathologies, dataset, silent=False):
     """
     Reorder, remove, or add (nans) to a dataset's labels.
@@ -111,7 +145,7 @@ class Dataset():
             raise Exception("csvpath must be a file")
 
     def limit_to_selected_views(self, views):
-        """This function is called by subclasses to filter the 
+        """This function is called by subclasses to filter the
         images by view based on the values in .csv['view']
         """
         if type(views) is not list:
@@ -172,10 +206,10 @@ class MergeDataset(Dataset):
             raise NotImplementedError("Cannot set transform on a merged dataset. Set the transforms directly on the dataset object. If it was to be set via this merged dataset it would have to modify the internal datasets which could have unexpected side effects")
         if name == "data_aug":
             raise NotImplementedError("Cannot set data_aug on a merged dataset. Set the transforms directly on the dataset object. If it was to be set via this merged dataset it would have to modify the internal datasets which could have unexpected side effects")
-            
+
         object.__setattr__(self, name, value)
-        
-    
+
+
     def string(self):
         s = self.__class__.__name__ + " num_samples={}\n".format(len(self))
         for i, d in enumerate(self.datasets):
@@ -244,9 +278,9 @@ class SubsetDataset(Dataset):
             raise NotImplementedError("Cannot set transform on a subset dataset. Set the transforms directly on the dataset object. If it was to be set via this subset dataset it would have to modify the internal dataset which could have unexpected side effects")
         if name == "data_aug":
             raise NotImplementedError("Cannot set data_aug on a subset dataset. Set the transforms directly on the dataset object. If it was to be set via this subset dataset it would have to modify the internal dataset which could have unexpected side effects")
-            
+
         object.__setattr__(self, name, value)
-            
+
     def string(self):
         return self.__class__.__name__ + " num_samples={}\n".format(len(self)) + "└ of " + self.dataset.string().replace("\n", "\n  ")
 
@@ -262,10 +296,10 @@ class NIH_Dataset(Dataset):
 
     Dataset release website:
     https://www.nih.gov/news-events/news-releases/nih-clinical-center-provides-one-largest-publicly-available-chest-x-ray-datasets-scientific-community
-    
+
     Download full size images here:
     https://academictorrents.com/details/557481faacd824c83fbf57dcf7b6da9383b3235a
-    
+
     Download resized (224x224) images here:
     https://academictorrents.com/details/e615d3aebce373f1dc8bd9d11064da55bdadede0
     """
@@ -354,26 +388,11 @@ class NIH_Dataset(Dataset):
 
         sample["img"] = normalize(img, maxval=255, reshape=True)
 
-        transform_seed = np.random.randint(2147483647)
-
         if self.pathology_masks:
             sample["pathology_masks"] = self.get_mask_dict(imgid, sample["img"].shape[2])
 
-        if self.transform is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.transform(sample["img"])
-            if self.pathology_masks:
-                for i in sample["pathology_masks"].keys():
-                    random.seed(transform_seed)
-                    sample["pathology_masks"][i] = self.transform(sample["pathology_masks"][i])
-
-        if self.data_aug is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.data_aug(sample["img"])
-            if self.pathology_masks:
-                for i in sample["pathology_masks"].keys():
-                    random.seed(transform_seed)
-                    sample["pathology_masks"][i] = self.data_aug(sample["pathology_masks"][i])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -404,20 +423,20 @@ class NIH_Dataset(Dataset):
 
 class RSNA_Pneumonia_Dataset(Dataset):
     """RSNA Pneumonia Detection Challenge
-    
-    Augmenting the National Institutes of Health Chest Radiograph Dataset with Expert 
+
+    Augmenting the National Institutes of Health Chest Radiograph Dataset with Expert
     Annotations of Possible Pneumonia.
-    Shih, George, Wu, Carol C., Halabi, Safwan S., Kohli, Marc D., Prevedello, Luciano M., 
-    Cook, Tessa S., Sharma, Arjun, Amorosa, Judith K., Arteaga, Veronica, Galperin-Aizenberg, 
-    Maya, Gill, Ritu R., Godoy, Myrna C.B., Hobbs, Stephen, Jeudy, Jean, Laroia, Archana, 
-    Shah, Palmi N., Vummidi, Dharshan, Yaddanapudi, Kavitha, and Stein, Anouk.  
+    Shih, George, Wu, Carol C., Halabi, Safwan S., Kohli, Marc D., Prevedello, Luciano M.,
+    Cook, Tessa S., Sharma, Arjun, Amorosa, Judith K., Arteaga, Veronica, Galperin-Aizenberg,
+    Maya, Gill, Ritu R., Godoy, Myrna C.B., Hobbs, Stephen, Jeudy, Jean, Laroia, Archana,
+    Shah, Palmi N., Vummidi, Dharshan, Yaddanapudi, Kavitha, and Stein, Anouk.
     Radiology: Artificial Intelligence, 1 2019. doi: 10.1148/ryai.2019180041.
-    
+
     More info: https://www.rsna.org/en/education/ai-resources-and-training/ai-image-challenge/RSNA-Pneumonia-Detection-Challenge-2018
-    
+
     Challenge site:
     https://www.kaggle.com/c/rsna-pneumonia-detection-challenge
-    
+
     JPG files stored here:
     https://academictorrents.com/details/95588a735c9ae4d123f3ca408e56570409bcf2a9
     """
@@ -507,33 +526,18 @@ class RSNA_Pneumonia_Dataset(Dataset):
                 import pydicom
             except ImportError as e:
                 raise Exception("Please install pydicom to work with this dataset")
-            
+
             img=pydicom.filereader.dcmread(img_path).pixel_array
         else:
             img = imread(img_path)
 
         sample["img"] = normalize(img, maxval=255, reshape=True)
 
-        transform_seed = np.random.randint(2147483647)
-
         if self.pathology_masks:
             sample["pathology_masks"] = self.get_mask_dict(imgid, sample["img"].shape[2])
 
-        if self.transform is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.transform(sample["img"])
-            if self.pathology_masks:
-                for i in sample["pathology_masks"].keys():
-                    random.seed(transform_seed)
-                    sample["pathology_masks"][i] = self.transform(sample["pathology_masks"][i])
-
-        if self.data_aug is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.data_aug(sample["img"])
-            if self.pathology_masks:
-                for i in sample["pathology_masks"].keys():
-                    random.seed(transform_seed)
-                    sample["pathology_masks"][i] = self.data_aug(sample["pathology_masks"][i])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -568,19 +572,19 @@ class RSNA_Pneumonia_Dataset(Dataset):
 
 class NIH_Google_Dataset(Dataset):
     """A relabelling of a subset of images from the NIH dataset.  The data tables should
-    be applied against an NIH download.  A test and validation split are provided in the 
+    be applied against an NIH download.  A test and validation split are provided in the
     original.  They are combined here, but one or the other can be used by providing
     the original csv to the csvpath argument.
-    
-    Chest Radiograph Interpretation with Deep Learning Models: Assessment with 
+
+    Chest Radiograph Interpretation with Deep Learning Models: Assessment with
     Radiologist-adjudicated Reference Standards and Population-adjusted Evaluation
-    Anna Majkowska, Sid Mittal, David F. Steiner, Joshua J. Reicher, Scott Mayer 
-    McKinney, Gavin E. Duggan, Krish Eswaran, Po-Hsuan Cameron Chen, Yun Liu, 
-    Sreenivasa Raju Kalidindi, Alexander Ding, Greg S. Corrado, Daniel Tse, and 
+    Anna Majkowska, Sid Mittal, David F. Steiner, Joshua J. Reicher, Scott Mayer
+    McKinney, Gavin E. Duggan, Krish Eswaran, Po-Hsuan Cameron Chen, Yun Liu,
+    Sreenivasa Raju Kalidindi, Alexander Ding, Greg S. Corrado, Daniel Tse, and
     Shravya Shetty. Radiology 2020
-    
+
     https://pubs.rsna.org/doi/10.1148/radiol.2019191293
-    
+
     NIH data can be downloaded here:
     https://academictorrents.com/details/e615d3aebce373f1dc8bd9d11064da55bdadede0
     """
@@ -649,11 +653,8 @@ class NIH_Google_Dataset(Dataset):
 
         sample["img"] = normalize(img, maxval=255, reshape=True)
 
-        if self.transform is not None:
-            sample["img"] = self.transform(sample["img"])
-
-        if self.data_aug is not None:
-            sample["img"] = self.data_aug(sample["img"])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -661,22 +662,22 @@ class NIH_Google_Dataset(Dataset):
 class PC_Dataset(Dataset):
     """PadChest dataset
     Hospital San Juan de Alicante - University of Alicante
-    
+
     Note that images with null labels (as opposed to normal), and images that cannot
     be properly loaded (listed as 'missing' in the code) are excluded, which makes
     the total number of available images slightly less than the total number of image
     files.
-    
+
     PadChest: A large chest x-ray image dataset with multi-label annotated reports.
-    Aurelia Bustos, Antonio Pertusa, Jose-Maria Salinas, and Maria de la Iglesia-Vayá. 
+    Aurelia Bustos, Antonio Pertusa, Jose-Maria Salinas, and Maria de la Iglesia-Vayá.
     arXiv preprint, 2019. https://arxiv.org/abs/1901.07441
-    
+
     Dataset website:
     http://bimcv.cipf.es/bimcv-projects/padchest/
-    
+
     Download full size images here:
     https://academictorrents.com/details/dec12db21d57e158f78621f06dcbe78248d14850
-    
+
     Download resized (224x224) images here (recropped):
     https://academictorrents.com/details/96ebb4f92b85929eadfb16761f310a6d04105797
     """
@@ -803,11 +804,8 @@ class PC_Dataset(Dataset):
 
         sample["img"] = normalize(img, maxval=65535, reshape=True)
 
-        if self.transform is not None:
-            sample["img"] = self.transform(sample["img"])
-
-        if self.data_aug is not None:
-            sample["img"] = self.data_aug(sample["img"])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -815,14 +813,14 @@ class CheX_Dataset(Dataset):
     """CheXpert Dataset
 
     CheXpert: A Large Chest Radiograph Dataset with Uncertainty Labels and Expert Comparison.
-    Jeremy Irvin *, Pranav Rajpurkar *, Michael Ko, Yifan Yu, Silviana Ciurea-Ilcus, Chris Chute, 
-    Henrik Marklund, Behzad Haghgoo, Robyn Ball, Katie Shpanskaya, Jayne Seekins, David A. Mong, 
-    Safwan S. Halabi, Jesse K. Sandberg, Ricky Jones, David B. Larson, Curtis P. Langlotz, 
+    Jeremy Irvin *, Pranav Rajpurkar *, Michael Ko, Yifan Yu, Silviana Ciurea-Ilcus, Chris Chute,
+    Henrik Marklund, Behzad Haghgoo, Robyn Ball, Katie Shpanskaya, Jayne Seekins, David A. Mong,
+    Safwan S. Halabi, Jesse K. Sandberg, Ricky Jones, David B. Larson, Curtis P. Langlotz,
     Bhavik N. Patel, Matthew P. Lungren, Andrew Y. Ng. https://arxiv.org/abs/1901.07031
-    
+
     Dataset website here:
     https://stanfordmlgroup.github.io/competitions/chexpert/
-    
+
     A small validation set is provided with the data as well, but is so tiny, it not included
     here.
     """
@@ -926,23 +924,20 @@ class CheX_Dataset(Dataset):
 
         sample["img"] = normalize(img, maxval=255, reshape=True)
 
-        if self.transform is not None:
-            sample["img"] = self.transform(sample["img"])
-
-        if self.data_aug is not None:
-            sample["img"] = self.data_aug(sample["img"])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
 class MIMIC_Dataset(Dataset):
     """MIMIC-CXR Dataset
 
-    Johnson AE, Pollard TJ, Berkowitz S, Greenbaum NR, Lungren MP, Deng CY, Mark RG, Horng S. 
-    MIMIC-CXR: A large publicly available database of labeled chest radiographs. 
+    Johnson AE, Pollard TJ, Berkowitz S, Greenbaum NR, Lungren MP, Deng CY, Mark RG, Horng S.
+    MIMIC-CXR: A large publicly available database of labeled chest radiographs.
     arXiv preprint arXiv:1901.07042. 2019 Jan 21.
-    
+
     https://arxiv.org/abs/1901.07042
-    
+
     Dataset website here:
     https://physionet.org/content/mimic-cxr-jpg/2.0.0/
     """
@@ -1043,11 +1038,8 @@ class MIMIC_Dataset(Dataset):
 
         sample["img"] = normalize(img, maxval=255, reshape=True)
 
-        if self.transform is not None:
-            sample["img"] = self.transform(sample["img"])
-
-        if self.data_aug is not None:
-            sample["img"] = self.data_aug(sample["img"])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -1058,13 +1050,13 @@ class Openi_Dataset(Dataset):
     Rodriguez, Sameer Antani, George R. Thoma, and Clement J. McDonald. Preparing a
     collection of radiology examinations for distribution and retrieval. Journal of the American
     Medical Informatics Association, 2016. doi: 10.1093/jamia/ocv080.
-    
+
     Views have been determined by projection using T-SNE.  To use the T-SNE view rather than the
     view defined by the record, set use_tsne_derived_view to true.
-    
+
     Dataset website:
     https://openi.nlm.nih.gov/faq
-    
+
     Download images:
     https://academictorrents.com/details/5a3a439df24931f410fac269b87b050203d9467d
     """
@@ -1149,7 +1141,7 @@ class Openi_Dataset(Dataset):
         if unique_patients:
             self.csv = self.csv.groupby("uid").first().reset_index()
 
-        # Get our classes.        
+        # Get our classes.
         self.labels = []
         for pathology in self.pathologies:
             mask = self.csv["labels_automatic"].str.contains(pathology.lower())
@@ -1191,11 +1183,8 @@ class Openi_Dataset(Dataset):
 
         sample["img"] = normalize(img, maxval=255, reshape=True)
 
-        if self.transform is not None:
-            sample["img"] = self.transform(sample["img"])
-
-        if self.data_aug is not None:
-            sample["img"] = self.data_aug(sample["img"])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -1206,13 +1195,13 @@ class COVID19_Dataset(Dataset):
     COVID-19 Image Data Collection: Prospective Predictions Are the Future
     Joseph Paul Cohen and Paul Morrison and Lan Dao and Karsten Roth and Tim Q Duong and Marzyeh Ghassemi
     arXiv:2006.11988, 2020
-    
-    COVID-19 image data collection, 
+
+    COVID-19 image data collection,
     Joseph Paul Cohen and Paul Morrison and Lan Dao
     arXiv:2003.11597, 2020
 
     Dataset: https://github.com/ieee8023/covid-chestxray-dataset
-    
+
     Paper: https://arxiv.org/abs/2003.11597
     """
 
@@ -1241,7 +1230,7 @@ class COVID19_Dataset(Dataset):
 
         if not os.path.exists(csvpath):
             raise FileNotFoundError(f'The csvpath does not point to a valid metadata.csv file. Please download it from {self.dataset_url}')
-        
+
         # Load data
         self.csvpath = csvpath
         self.csv = pd.read_csv(self.csvpath, nrows=nrows)
@@ -1292,26 +1281,11 @@ class COVID19_Dataset(Dataset):
 
         sample["img"] = normalize(img, maxval=255, reshape=True)
 
-        transform_seed = np.random.randint(2147483647)
-
         if self.semantic_masks:
             sample["semantic_masks"] = self.get_semantic_mask_dict(imgid, sample["img"].shape)
 
-        if self.transform is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.transform(sample["img"])
-            if self.semantic_masks:
-                for i in sample["semantic_masks"].keys():
-                    random.seed(transform_seed)
-                    sample["semantic_masks"][i] = self.transform(sample["semantic_masks"][i])
-
-        if self.data_aug is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.data_aug(sample["img"])
-            if self.semantic_masks:
-                for i in sample["semantic_masks"].keys():
-                    random.seed(transform_seed)
-                    sample["semantic_masks"][i] = self.data_aug(sample["semantic_masks"][i])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -1337,13 +1311,13 @@ class NLMTB_Dataset(Dataset):
 
     https://lhncbc.nlm.nih.gov/publication/pub9931
     https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4256233/
-    
+
     Note that each dataset should be loaded separately by this class (they may be
     merged afterwards).  All images are of view PA.
-    
-    Jaeger S, Candemir S, Antani S, Wang YX, Lu PX, Thoma G. Two public chest X-ray 
-    datasets for computer-aided screening of pulmonary diseases. Quant Imaging Med 
-    Surg. 2014 Dec;4(6):475-7. doi: 10.3978/j.issn.2223-4292.2014.11.20. 
+
+    Jaeger S, Candemir S, Antani S, Wang YX, Lu PX, Thoma G. Two public chest X-ray
+    datasets for computer-aided screening of pulmonary diseases. Quant Imaging Med
+    Surg. 2014 Dec;4(6):475-7. doi: 10.3978/j.issn.2223-4292.2014.11.20.
     PMID: 25525580; PMCID: PMC4256233.
 
     Download Links:
@@ -1410,11 +1384,8 @@ class NLMTB_Dataset(Dataset):
 
         sample["img"] = normalize(img, maxval=255, reshape=True)
 
-        if self.transform is not None:
-            sample["img"] = self.transform(sample["img"])
-
-        if self.data_aug is not None:
-            sample["img"] = self.data_aug(sample["img"])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -1423,7 +1394,7 @@ class SIIM_Pneumothorax_Dataset(Dataset):
 
     https://academictorrents.com/details/6ef7c6d039e85152c4d0f31d83fa70edc4aba088
     https://www.kaggle.com/c/siim-acr-pneumothorax-segmentation
-    
+
     "The data is comprised of images in DICOM format and annotations in the form of image IDs and run-length-encoded (RLE) masks. Some of the images contain instances of pneumothorax (collapsed lung), which are indicated by encoded binary masks in the annotations. Some training images have multiple annotations.
     Images without pneumothorax have a mask value of -1."
     """
@@ -1483,7 +1454,7 @@ class SIIM_Pneumothorax_Dataset(Dataset):
 
         imgid = self.csv['ImageId'].iloc[idx]
         img_path = self.file_map[imgid + ".dcm"]
-        
+
         try:
             import pydicom
         except ImportError as e:
@@ -1492,26 +1463,11 @@ class SIIM_Pneumothorax_Dataset(Dataset):
 
         sample["img"] = normalize(img, maxval=255, reshape=True)
 
-        transform_seed = np.random.randint(2147483647)
-
         if self.pathology_masks:
             sample["pathology_masks"] = self.get_pathology_mask_dict(imgid, sample["img"].shape[2])
 
-        if self.transform is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.transform(sample["img"])
-            if self.pathology_masks:
-                for i in sample["pathology_masks"].keys():
-                    random.seed(transform_seed)
-                    sample["pathology_masks"][i] = self.transform(sample["pathology_masks"][i])
-
-        if self.data_aug is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.data_aug(sample["img"])
-            if self.pathology_masks:
-                for i in sample["pathology_masks"].keys():
-                    random.seed(transform_seed)
-                    sample["pathology_masks"][i] = self.data_aug(sample["pathology_masks"][i])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -1565,7 +1521,7 @@ class VinBrain_Dataset(Dataset):
 
     Nguyen et al., VinDr-CXR: An open dataset of chest X-rays with radiologist's annotations
     https://arxiv.org/abs/2012.15029
-    
+
     https://www.kaggle.com/c/vinbigdata-chest-xray-abnormalities-detection
     """
     def __init__(self,
@@ -1667,26 +1623,11 @@ class VinBrain_Dataset(Dataset):
 
         sample["img"] = normalize(img, maxval=2**float(bitdepth), reshape=True)
 
-        transform_seed = np.random.randint(2147483647)
-
         if self.pathology_masks:
             sample["pathology_masks"] = self.get_mask_dict(imgid, sample["img"].shape)
 
-        if self.transform is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.transform(sample["img"])
-            if self.pathology_masks:
-                for i in sample["pathology_masks"].keys():
-                    random.seed(transform_seed)
-                    sample["pathology_masks"][i] = self.transform(sample["pathology_masks"][i])
-
-        if self.data_aug is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.data_aug(sample["img"])
-            if self.pathology_masks:
-                for i in sample["pathology_masks"].keys():
-                    random.seed(transform_seed)
-                    sample["pathology_masks"][i] = self.data_aug(sample["pathology_masks"][i])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -1712,9 +1653,9 @@ class VinBrain_Dataset(Dataset):
 
 class StonyBrookCOVID_Dataset(Dataset):
     """Stonybrook Radiographic Assessment of Lung Opacity Score Dataset
-    
+
     https://doi.org/10.5281/zenodo.4633999
-    
+
     Citation will be set soon.
     """
 
@@ -1781,15 +1722,8 @@ class StonyBrookCOVID_Dataset(Dataset):
 
         sample["img"] = normalize(img, maxval=255, reshape=True)
 
-        transform_seed = np.random.randint(2147483647)
-
-        if self.transform is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.transform(sample["img"])
-
-        if self.data_aug is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.data_aug(sample["img"])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -1851,15 +1785,8 @@ class ObjectCXR_Dataset(Dataset):
 
         sample["img"] = normalize(sample["img"], maxval=255, reshape=True)
 
-        transform_seed = np.random.randint(2147483647)
-
-        if self.transform is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.transform(sample["img"])
-
-        if self.data_aug is not None:
-            random.seed(transform_seed)
-            sample["img"] = self.data_aug(sample["img"])
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
@@ -1908,7 +1835,7 @@ class XRayCenterCrop(object):
 
 class CovariateDataset(Dataset):
     """Dataset which will correlate the dataset with a specific label.
-    
+
     Viviano et al. Saliency is a Possible Red Herring When Diagnosing Poor Generalization
     https://arxiv.org/abs/1910.00199
     """
