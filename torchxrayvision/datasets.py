@@ -67,11 +67,10 @@ def normalize(img, maxval, reshape=False):
     return img
 
 
-def apply_transforms(sample, transform, seed=2147483647) -> Dict:
+def apply_transforms(sample, transform) -> Dict:
 
-    # TODO: Consider passing rng in instead.
-    # rng = np.random.default_rng(12345).
-    transform_seed = np.random.randint(seed)
+    MAX_RAND_VAL = 2147483647
+    transform_seed = np.random.randint(MAX_RAND_VAL)
 
     if transform is not None:
         random.seed(transform_seed)
