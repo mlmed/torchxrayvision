@@ -67,27 +67,32 @@ def normalize(img, maxval, reshape=False):
     return img
 
 
-def apply_transforms(sample, transform, seed=2147483647) -> Dict:
-
-    # TODO: Consider passing rng in instead.
-    # rng = np.random.default_rng(12345).
-    transform_seed = np.random.randint(seed)
+def apply_transforms(sample, transform, seed=None) -> Dict:
+    """Applies transforms to the image and masks.
+    The seeds are set so that the transforms that are applied
+    to the image are the same that are applied to each mask.
+    This way data augmentation will work for segmentation or 
+    other tasks which use masks information.
+    """
+    
+    if seed is None:
+        seed = np.random.randint(2147483647)
 
     if transform is not None:
-        random.seed(transform_seed)
-        torch.random.manual_seed(transform_seed)
+        random.seed(seed)
+        torch.random.manual_seed(seed)
         sample["img"] = transform(sample["img"])
 
         if "pathology_masks" in sample:
             for i in sample["pathology_masks"].keys():
-                random.seed(transform_seed)
-                torch.random.manual_seed(transform_seed)
+                random.seed(seed)
+                torch.random.manual_seed(seed)
                 sample["pathology_masks"][i] = transform(sample["pathology_masks"][i])
 
         if "semantic_masks" in sample:
             for i in sample["semantic_masks"].keys():
-                random.seed(transform_seed)
-                torch.random.manual_seed(transform_seed)
+                random.seed(seed)
+                torch.random.manual_seed(seed)
                 sample["semantic_masks"][i] = transform(sample["semantic_masks"][i])
 
     return sample
@@ -1275,8 +1280,6 @@ class COVID19_Dataset(Dataset):
 
         sample["img"] = normalize(img, maxval=255, reshape=True)
 
-        transform_seed = np.random.randint(2147483647)
-
         if self.semantic_masks:
             sample["semantic_masks"] = self.get_semantic_mask_dict(imgid, sample["img"].shape)
 
@@ -1459,8 +1462,6 @@ class SIIM_Pneumothorax_Dataset(Dataset):
 
         sample["img"] = normalize(img, maxval=255, reshape=True)
 
-        transform_seed = np.random.randint(2147483647)
-
         if self.pathology_masks:
             sample["pathology_masks"] = self.get_pathology_mask_dict(imgid, sample["img"].shape[2])
 
@@ -1620,8 +1621,6 @@ class VinBrain_Dataset(Dataset):
             raise Exception("Unknown Photometric Interpretation mode")
 
         sample["img"] = normalize(img, maxval=2**float(bitdepth), reshape=True)
-
-        transform_seed = np.random.randint(2147483647)
 
         if self.pathology_masks:
             sample["pathology_masks"] = self.get_mask_dict(imgid, sample["img"].shape)
@@ -1784,8 +1783,6 @@ class ObjectCXR_Dataset(Dataset):
             sample["img"] = imageio.imread(file.read())
 
         sample["img"] = normalize(sample["img"], maxval=255, reshape=True)
-
-        transform_seed = np.random.randint(2147483647)
 
         sample = apply_transforms(sample, self.transform)
         sample = apply_transforms(sample, self.data_aug)
