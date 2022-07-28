@@ -76,8 +76,9 @@ def apply_transforms(sample, transform, seed=None) -> Dict:
     """
     
     if seed is None:
-        seed = np.random.randint(2147483647)
-
+        MAX_RAND_VAL = 2147483647
+        seed = np.random.randint(MAX_RAND_VAL)
+        
     if transform is not None:
         random.seed(seed)
         torch.random.manual_seed(seed)
