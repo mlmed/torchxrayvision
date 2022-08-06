@@ -1863,7 +1863,8 @@ class CovariateDataset(Dataset):
         np.random.seed(seed)  # Reset the seed so all runs are the same.
 
         all_imageids = np.concatenate([np.arange(len(self.d1)),
-                                       np.arange(len(self.d2))]).astype(int)
+                                       np.arange(len(self.d2))]).astype(int)        
+        
         all_idx = np.arange(len(all_imageids)).astype(int)
 
         all_labels = np.concatenate([d1_target,
@@ -1877,6 +1878,10 @@ class CovariateDataset(Dataset):
                                  sum(idx_sick[all_site==1]),
                                  sum(~idx_sick[all_site==0]),
                                  sum(~idx_sick[all_site==1])])
+        
+        all_csv = pd.concat([d1.csv, d2.csv])
+        all_csv['site'] = all_site
+        all_csv['label'] = all_labels
 
         if verbose:
             print("n_per_category={}".format(n_per_category))
@@ -1985,6 +1990,8 @@ class CovariateDataset(Dataset):
         self.pathologies = ["Custom"]
         self.labels = all_labels[self.select_idx].reshape(-1,1)
         self.site = all_site[self.select_idx]
+        self.csv = all_csv.iloc[self.select_idx]
+        
 
     def __repr__(self):
         pprint.pprint(self.totals())
