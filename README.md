@@ -140,8 +140,11 @@ img = transform(img)
 
 ```
 
-## Datasets ([demo notebook](https://github.com/mlmed/torchxrayvision/blob/master/scripts/xray_datasets.ipynb))
-Only stats for PA/AP views are shown. Datasets may include more.
+## Datasets 
+
+[Demo notebook](https://github.com/mlmed/torchxrayvision/blob/master/scripts/xray_datasets.ipynb)
+
+[Example loading script](https://github.com/mlmed/torchxrayvision/blob/master/scripts/dataset_utils.py)
 
 ```python3
 transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
