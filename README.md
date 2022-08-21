@@ -115,7 +115,7 @@ model = xrv.baseline_models.jfhealthcare.DenseNet()
 # Official Stanford CheXpert model
 model = xrv.baseline_models.chexpert.DenseNet(weights_zip="chexpert_weights.zip")
 
-# Emory Hiti lab Race prediction model
+# Emory HITI lab Race prediction model
 model = xrv.baseline_models.emory_hiti.RaceModel()
 model.pathologies -> ["Asian", "Black", "White"]
 
