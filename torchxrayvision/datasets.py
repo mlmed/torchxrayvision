@@ -370,6 +370,13 @@ class NIH_Dataset(Dataset):
 
         # patientid
         self.csv["patientid"] = self.csv["Patient ID"].astype(str)
+        
+        # age
+        self.csv['age_years'] = self.csv['Patient Age']*1.0
+        
+        # sex
+        self.csv['sex_male'] = self.csv['Patient Gender'] == 'M'
+        self.csv['sex_female'] = self.csv['Patient Gender'] == 'F'
 
     def string(self):
         return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
@@ -786,6 +793,13 @@ class PC_Dataset(Dataset):
 
         # patientid
         self.csv["patientid"] = self.csv["PatientID"].astype(str)
+        
+        # age
+        self.csv['age_years'] = (2017 - self.csv['PatientBirth'])
+        
+        # sex
+        self.csv['sex_male'] = self.csv['PatientSex_DICOM'] == 'M'
+        self.csv['sex_female'] = self.csv['PatientSex_DICOM'] == 'F'
 
     def string(self):
         return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
@@ -904,7 +918,19 @@ class CheX_Dataset(Dataset):
 
         patientid = patientid.str.split("/study", expand=True)[0]
         patientid = patientid.str.replace("patient","")
+        
+        # patientid
         self.csv["patientid"] = patientid
+        
+        # age
+        self.csv['age_years'] = self.csv['Age']*1.0
+        self.csv['Age'][(self.csv['Age'] == 0)] = None
+        
+        # sex
+        self.csv['sex_male'] = self.csv['Sex'] == 'Male'
+        self.csv['sex_female'] = self.csv['Sex'] == 'Female'
+        
+        
 
     def string(self):
         return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
