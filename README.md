@@ -1,60 +1,74 @@
 🚨 Paper now online! [https://arxiv.org/abs/2111.00595](https://arxiv.org/abs/2111.00595)
 
-<img src="https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/torchxrayvision-logo.png" width="300px"/>
-
 # TorchXRayVision 
+
+| <img src="https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/torchxrayvision-logo.png" width="300px"/>  |  ([🎬 promo video](https://www.youtube.com/watch?v=Rl7xz0uULGQ)) <br>[<img src="http://img.youtube.com/vi/Rl7xz0uULGQ/0.jpg" width="400px"/>)](http://www.youtube.com/watch?v=Rl7xz0uULGQ "Video Title") |
+|---|---|
+
+# What is it?
 
 A library for chest X-ray datasets and models. Including pre-trained models.
 
-([🎬 promo video about the project](https://www.youtube.com/watch?v=Rl7xz0uULGQ))
-
-[![🎬 promo video about the project](http://img.youtube.com/vi/Rl7xz0uULGQ/0.jpg)](http://www.youtube.com/watch?v=Rl7xz0uULGQ "Video Title")
 
 TorchXRayVision is an open source software library for working with chest X-ray datasets and deep learning models. It provides a common interface and common pre-processing chain for a wide set of publicly available chest X-ray datasets. In addition, a number of classification and representation learning models with different architectures, trained on different data combinations, are available through the library to serve as baselines or feature extractors.
 
 - In the case of researchers addressing clinical questions it is a waste of time for them to train models from scratch. To address this, TorchXRayVision provides pre-trained models which are trained on large cohorts of data and enables 1) rapid analysis of large datasets 2) feature reuse for few-shot learning.
 - In the case of researchers developing algorithms it is important to robustly evaluate models using multiple external datasets. Metadata associated with each dataset can vary greatly which makes it difficult to apply methods to multiple datasets. TorchXRayVision provides access to many datasets in a uniform way so that they can be swapped out with a single line of code. These datasets can also be merged and filtered to construct specific distributional shifts for studying generalization.
 
-This code is still under development
-
 Twitter: [@torchxrayvision](https://twitter.com/torchxrayvision)
 
 ## Getting started
 
 ```
-pip install torchxrayvision
-
-import torchxrayvision as xrv
+$ pip install torchxrayvision
 ```
 
-These are default pathologies:
 ```python3
-xrv.datasets.default_pathologies 
+import torchxrayvision as xrv
+import skimage, torch, torchvision
 
-['Atelectasis',
- 'Consolidation',
- 'Infiltration',
- 'Pneumothorax',
- 'Edema',
- 'Emphysema',
- 'Fibrosis',
- 'Effusion',
- 'Pneumonia',
- 'Pleural_Thickening',
- 'Cardiomegaly',
- 'Nodule',
- 'Mass',
- 'Hernia',
- 'Lung Lesion',
- 'Fracture',
- 'Lung Opacity',
- 'Enlarged Cardiomediastinum']
+# Prepare the image:
+img = skimage.io.imread("16747_3_1.jpg")
+img = xrv.datasets.normalize(img, 255) # convert 8-bit image to [-1024, 1024] range
+img = img.mean(2)[None, ...] # Make single color channel
+
+transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),xrv.datasets.XRayResizer(224)])
+
+img = transform(img)
+img = torch.from_numpy(img)
+
+# Load model and process image
+model = xrv.models.DenseNet(weights="densenet121-res224-all")
+outputs = model(img[None,...]) # or model.features(img[None,...]) 
+
+# Print results
+dict(zip(model.pathologies,outputs[0].detach().numpy()))
+
+{'Atelectasis': 0.32797316,
+ 'Consolidation': 0.42933336,
+ 'Infiltration': 0.5316924,
+ 'Pneumothorax': 0.28849724,
+ 'Edema': 0.024142697,
+ 'Emphysema': 0.5011832,
+ 'Fibrosis': 0.51887786,
+ 'Effusion': 0.27805611,
+ 'Pneumonia': 0.18569896,
+ 'Pleural_Thickening': 0.24489835,
+ 'Cardiomegaly': 0.3645515,
+ 'Nodule': 0.68982,
+ 'Mass': 0.6392845,
+ 'Hernia': 0.00993878,
+ 'Lung Lesion': 0.011150705,
+ 'Fracture': 0.51916164,
+ 'Lung Opacity': 0.59073937,
+ 'Enlarged Cardiomediastinum': 0.27218717}
+
 ```
 
 A sample script to process images usings pretrained models is [process_image.py](https://github.com/mlmed/torchxrayvision/blob/master/scripts/process_image.py)
 
 ```
-$python3 process_image.py ../tests/00000001_000.png
+$ python3 process_image.py ../tests/00000001_000.png
 {'preds': {'Atelectasis': 0.50500506,
            'Cardiomegaly': 0.6600903,
            'Consolidation': 0.30575264,
@@ -103,9 +117,7 @@ model = xrv.baseline_models.chexpert.DenseNet()
 
 ```
 
-Benchmarks of the modes are here: [BENCHMARKS.md](BENCHMARKS.md)
-
-The performance of some of the models can be seen in this paper [arxiv.org/abs/2002.02497](https://arxiv.org/abs/2002.02497). 
+Benchmarks of the modes are here: [BENCHMARKS.md](BENCHMARKS.md) and the performance of some of the models can be seen in this paper [arxiv.org/abs/2002.02497](https://arxiv.org/abs/2002.02497). 
 
 
 ## Autoencoders 
@@ -116,91 +128,67 @@ z = ae.encode(image)
 image2 = ae.decode(z)
 ```
 
-## Image pre-processing
-
-Images can be processed as follows from disk to be input to the model:
-
-```
-img = skimage.io.imread(img_path)
-img = xrv.datasets.normalize(img, 255) 
-
-# Check that images are 2D arrays
-if len(img.shape) > 2:
-    img = img[:, :, 0]
-if len(img.shape) < 2:
-    print("error, dimension lower than 2 for image")
-
-# Add color channel
-img = img[None, :, :]
-
-transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
-                                            xrv.datasets.XRayResizer(224)])
-
-img = transform(img)
-
-```
-
 ## Datasets 
-
-[Demo notebook](https://github.com/mlmed/torchxrayvision/blob/master/scripts/xray_datasets.ipynb)
-
-[Example loading script](https://github.com/mlmed/torchxrayvision/blob/master/scripts/dataset_utils.py)
+[View docstrings for more detail on each dataset](https://github.com/mlmed/torchxrayvision/blob/master/torchxrayvision/datasets.py) and [Demo notebook](https://github.com/mlmed/torchxrayvision/blob/master/scripts/xray_datasets.ipynb) and [Example loading script](https://github.com/mlmed/torchxrayvision/blob/master/scripts/dataset_utils.py)
 
 ```python3
 transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
                                             xrv.datasets.XRayResizer(224)])
 
+# RSNA Pneumonia Detection Challenge. https://pubs.rsna.org/doi/full/10.1148/ryai.2019180041
 d_kaggle = xrv.datasets.RSNA_Pneumonia_Dataset(imgpath="path to stage_2_train_images_jpg",
                                        transform=transform)
                 
+# CheXpert: A Large Chest Radiograph Dataset with Uncertainty Labels and Expert Comparison. https://arxiv.org/abs/1901.07031             
 d_chex = xrv.datasets.CheX_Dataset(imgpath="path to CheXpert-v1.0-small",
                                    csvpath="path to CheXpert-v1.0-small/train.csv",
                                    transform=transform)
 
+# National Institutes of Health ChestX-ray8 dataset. https://arxiv.org/abs/1705.02315
 d_nih = xrv.datasets.NIH_Dataset(imgpath="path to NIH images")
 
+# A relabelling of a subset of NIH images from: https://pubs.rsna.org/doi/10.1148/radiol.2019191293
 d_nih2 = xrv.datasets.NIH_Google_Dataset(imgpath="path to NIH images")
 
+# PadChest: A large chest x-ray image dataset with multi-label annotated reports. https://arxiv.org/abs/1901.07441
 d_pc = xrv.datasets.PC_Dataset(imgpath="path to image folder")
 
-
+# COVID-19 Image Data Collection. https://arxiv.org/abs/2006.11988
 d_covid19 = xrv.datasets.COVID19_Dataset() # specify imgpath and csvpath for the dataset
 
+# SIIM Pneumothorax Dataset. https://www.kaggle.com/c/siim-acr-pneumothorax-segmentation
 d_siim = xrv.datasets.SIIM_Pneumothorax_Dataset(imgpath="dicom-images-train/",
                                                 csvpath="train-rle.csv")
 
+# VinDr-CXR: An open dataset of chest X-rays with radiologist's annotations. https://arxiv.org/abs/2012.15029
 d_vin = xrv.datasets.VinBrain_Dataset(imgpath=".../train",
                                       csvpath=".../train.csv")
-```
 
-National Library of Medicine Tuberculosis Datasets [paper](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4256233/)
-
-```python3
+# National Library of Medicine Tuberculosis Datasets. https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4256233/
 d_nlmtb = xrv.datasets.NLMTB_Dataset(imgpath="path to MontgomerySet or ChinaSet_AllFiles")
-
-Using MontgomerySet data:
-NLMTB_Dataset num_samples=138 views=['PA']
-{'Tuberculosis': {0: 80, 1: 58}}
-or using ChinaSet_AllFiles data:
-NLMTB_Dataset num_samples=662 views=['PA', 'AP']
-{'Tuberculosis': {0: 326, 1: 336}}
-
 ```
+
 ## Dataset fields
 
 Each dataset contains a number of fields. These fields are maintained when xrv.datasets.Subset_Dataset and xrv.datasets.Merge_Dataset are used.
 
-Each dataset has a `.pathologies` field which is a list of the pathologies contained in this dataset that will be contained in the `.labels` field ].
+ - `.pathologies` This field is a list of the pathologies contained in this dataset that will be contained in the `.labels` field ].
 
-Each dataset has a `.labels` field which contains a 1,0, or NaN for each label defined in `.pathologies`. 
+ - `.labels` This field contains a 1,0, or NaN for each label defined in `.pathologies`. 
 
-Each dataset has a `.csv` field which corresponds to pandas DataFrame of the metadata csv file that comes with the data. Each row aligns with the elements of the dataset so indexing using `.iloc` will work. 
+ - `.csv` This field is a pandas DataFrame of the metadata csv file that comes with the data. Each row aligns with the elements of the dataset so indexing using `.iloc` will work. 
 
 If possible, each dataset's `.csv` will have some common fields of the csv. These will be aligned when The list is as follows:
 
-`csv.patientid` A unique id that will uniqely identify samples in this dataset
+- `csv.patientid` A unique id that will uniqely identify samples in this dataset
 
-`csv.offset_day_int` An integer time offset for the image in the unit of days. This is expected to be for relative times and has no absolute meaning although for some datasets it is the epoch time.
+- `csv.offset_day_int` An integer time offset for the image in the unit of days. This is expected to be for relative times and has no absolute meaning although for some datasets it is the epoch time.
+
+- `csv.age_years` The age of the patient in years.
+
+- `csv.sex_male` If the patient is male
+
+- `csv.sex_female` If the patient is female
 
 
 ## Dataset tools
@@ -340,18 +328,10 @@ Medical Imaging with Deep Learning 2020 (Online: https://arxiv.org/abs/2002.0249
 
 ## Supporters/Sponsors
 
-<a href="https://cifar.ca/"><img width="300px" src="https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/cifar-logo.png" /></a>
 
-CIFAR (Canadian Institute for Advanced Research)
+| <a href="https://cifar.ca/"><img width="300px" src="https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/cifar-logo.png" /></a><br> CIFAR (Canadian Institute for Advanced Research)  |  <a href="https://mila.quebec/"><img width="300px" src="https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/mila-logo.png" /></a><br> Mila, Quebec AI Institute, University of Montreal |
+|:---:|:---:|
+| <a href="http://aimi.stanford.edu/"><img width="300px" src="https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/AIMI-stanford.jpg" /></a> <br><b>Stanford University's Center for <br>Artificial Intelligence in Medicine & Imaging</b>  | <a href="http://www.carestream.com/"><img width="300px" src="https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/carestream-logo.png" /></a> <br><b>Carestream Health</b>  |
 
-<a href="https://mila.quebec/"><img width="300px" src="https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/mila-logo.png" /></a>
 
-Mila, Quebec AI Institute, University of Montreal
 
-<a href="http://aimi.stanford.edu/"><img width="300px" src="https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/AIMI-stanford.jpg" /></a>
-
-Stanford University's Center for Artificial Intelligence in Medicine & Imaging
-
-<a href="http://www.carestream.com/"><img width="300px" src="https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/carestream-logo.png" /></a>
-
-Carestream Health
