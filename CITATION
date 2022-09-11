@@ -1,0 +1,8 @@
+@inproceedings{Cohen2022xrv,
+title = {{TorchXRayVision: A library of chest X-ray datasets and models}},
+author = {Cohen, Joseph Paul and Viviano, Joseph D. and Bertin, Paul and Morrison, Paul and Torabian, Parsa and Guarrera, Matteo and Lungren, Matthew P and Chaudhari, Akshay and Brooks, Rupert and Hashir, Mohammad and Bertrand, Hadrien},
+booktitle = {Medical Imaging with Deep Learning},
+url = {https://github.com/mlmed/torchxrayvision},
+arxivId = {2111.00595},
+year = {2022}
+}
