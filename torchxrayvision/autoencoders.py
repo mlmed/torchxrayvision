@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import pathlib
 import os
+import sys
+import requests
 
 
 model_urls = {}
@@ -100,9 +102,8 @@ class DeconvBottleneck(nn.Module):
 
         return out
 
+
 # source: https://github.com/ycszen/pytorch-segmentation/blob/master/resnet.py
-
-
 class _ResNetAE(nn.Module):
     def __init__(self, downblock, upblock, num_layers, n_classes):
         super(_ResNetAE, self).__init__()
@@ -248,12 +249,7 @@ def ResNetAE(weights=None):
     return ae
 
 
-import sys
-import requests
-
 # from here https://sumit-ghosh.com/articles/python-download-progress-bar/
-
-
 def download(url, filename):
     with open(filename, 'wb') as f:
         response = requests.get(url, stream=True)

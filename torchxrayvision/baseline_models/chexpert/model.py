@@ -1,16 +1,12 @@
-import os
 import json
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-import numpy as np
-
-from collections import OrderedDict
 from torchvision import models
 import zipfile
 import io
 import tqdm
+
 
 def uncertain_logits_to_probs(logits):
     """Convert explicit uncertainty modeling logits to probabilities P(is_abnormal).
@@ -39,6 +35,7 @@ class Model(nn.Module):
     """Models from TorchVision's GitHub page of pretrained neural networks:
         https://github.com/pytorch/vision/tree/master/torchvision/models
     """
+
     def __init__(self, model_fn, task_sequence, model_uncertainty, use_gpu):
         super(Model, self).__init__()
 
@@ -47,7 +44,7 @@ class Model(nn.Module):
         self.use_gpu = use_gpu
 
         # Set pretrained to False to avoid loading weights which will be overwritten
-        self.model = model_fn(pretrained=False) 
+        self.model = model_fn(pretrained=False)
 
         self.pool = nn.AdaptiveAvgPool2d(1)
 
@@ -66,20 +63,18 @@ class Model(nn.Module):
         x = self.model.classifier(x)
 
         return x
-    
+
     def features2(self, x):
         features = self.model.features(x)
         out = F.relu(features, inplace=True)
         out = F.adaptive_avg_pool2d(out, (1, 1)).view(features.size(0), -1)
         return out
-    
 
     def infer(self, x, tasks):
 
         preds = self(x)
-
         probs = self.get_probs(preds)[0]
-        
+
         task2results = {}
         for task in tasks:
 
@@ -98,15 +93,13 @@ class DenseNet121(Model):
 
 def load_individual(weights_zip, ckpt_path, model_uncertainty, use_gpu=False):
 
-    #print(ckpt_path)
     with weights_zip.open(ckpt_path) as file:
-        
+
         stream = io.BytesIO(file.read())
         ckpt_dict = torch.load(stream, map_location="cpu")
-    
+
     device = 'cuda:0' if use_gpu else 'cpu'
-    #ckpt_path  = os.path.join(os.path.dirname(__file__), ckpt_path)
-    
+
     # Build model, load parameters
     task_sequence = ckpt_dict['task_sequence']
     model = DenseNet121(task_sequence, model_uncertainty, use_gpu)
@@ -121,9 +114,10 @@ class Tasks2Models(object):
     Main attribute is a (task tuple) -> {iterator, list} dictionary,
     which loads models iteratively depending on the
     specified task.
-    """ 
+    """
+
     def __init__(self, config_path, weights_zip, num_models=1, dynamic=True, use_gpu=False):
-    
+
         super(Tasks2Models).__init__()
 
         self.get_config(config_path)
@@ -187,7 +181,7 @@ class Tasks2Models(object):
             raise ValueError('Invalid configuration: {} = {} (expected "max" or "mean")'.format('aggregation_method', agg_method))
 
     def model_iterator(self, model_dicts, num_models, desc=""):
-        
+
         def iterator():
 
             for model_dict in model_dicts[:num_models]:
@@ -201,7 +195,7 @@ class Tasks2Models(object):
         return iterator
 
     def model_list(self, model_dicts, num_models, desc=""):
-        
+
         loaded_models = []
         toiter = tqdm.tqdm(model_dicts[:num_models])
         toiter.set_description(desc)
@@ -218,7 +212,7 @@ class Tasks2Models(object):
         return iterator
 
     def infer(self, img, tasks):
-        
+
         ensemble_probs = []
 
         model_iterable = self.tasks2models[tasks]
@@ -239,11 +233,11 @@ class Tasks2Models(object):
         for task in tasks:
             ensemble_probs = task2ensemble_results[task]
             task2results[task] = self.aggregation_fn(torch.stack(ensemble_probs), dim=0)
-            
+
         assert all([task in task2results for task in tasks]), "Not all tasks in task2results"
 
         return task2results
-    
+
     def features(self, img, tasks):
         """
         Return shape is [3, 30, 1, 1024]
