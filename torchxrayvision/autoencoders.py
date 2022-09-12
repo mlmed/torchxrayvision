@@ -1,21 +1,17 @@
 import torch
 import torch.nn as nn
-import torchvision
-from torch.nn import Module
-import urllib
 import pathlib
-import torch.nn.functional as F
 import os
-import numpy as np
+
 
 model_urls = {}
-
 model_urls['101-elastic'] = {
     "description": 'This model was trained on the datasets: nih pc rsna mimic_ch chex datasets.',
     "weights_url": 'https://github.com/mlmed/torchxrayvision/releases/download/v1/nihpcrsnamimic_ch-resnet101-2-ae-test2-elastic-e250.pt',
-    "image_range": [-1024,1024],
-    "class":"ResNetAE101"
-    }
+    "image_range": [-1024, 1024],
+    "class": "ResNetAE101"
+}
+
 
 class Bottleneck(nn.Module):
     expansion = 4
@@ -105,10 +101,12 @@ class DeconvBottleneck(nn.Module):
         return out
 
 # source: https://github.com/ycszen/pytorch-segmentation/blob/master/resnet.py
+
+
 class _ResNetAE(nn.Module):
     def __init__(self, downblock, upblock, num_layers, n_classes):
         super(_ResNetAE, self).__init__()
-        
+
         self.in_channels = 64
 
         self.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
@@ -121,7 +119,7 @@ class _ResNetAE(nn.Module):
         self.layer3 = self._make_downlayer(downblock, 256, num_layers[2], stride=2)
         self.layer4 = self._make_downlayer(downblock, 128, num_layers[3], stride=6)
 
-        self.uplayer1 = self._make_up_block(upblock, 128,  num_layers[3], stride=6)
+        self.uplayer1 = self._make_up_block(upblock, 128, num_layers[3], stride=6)
         self.uplayer2 = self._make_up_block(upblock, 64, num_layers[2], stride=2)
         self.uplayer3 = self._make_up_block(upblock, 32, num_layers[1], stride=2)
         self.uplayer4 = self._make_up_block(upblock, 16, num_layers[0], stride=2)
@@ -133,13 +131,13 @@ class _ResNetAE(nn.Module):
         self.uplayer_top = DeconvBottleneck(self.in_channels, 64, 1, 2, upsample)
 
         self.conv1_1 = nn.ConvTranspose2d(64, n_classes, kernel_size=1, stride=1, bias=False)
-        
+
     def __repr__(self):
         if self.weights != None:
             return "XRV-ResNetAE-{}".format(self.weights)
         else:
             return "XRV-ResNetAE"
-        
+
     def _make_downlayer(self, block, init_channels, num_layer, stride=1):
         downsample = None
         if stride != 1 or self.in_channels != init_channels * block.expansion:
@@ -160,13 +158,13 @@ class _ResNetAE(nn.Module):
         # expansion = block.expansion
         if stride != 1 or self.in_channels != init_channels * 2:
             upsample = nn.Sequential(
-                nn.ConvTranspose2d(self.in_channels, init_channels * 2,kernel_size=1, stride=stride, bias=False, output_padding=1),
+                nn.ConvTranspose2d(self.in_channels, init_channels * 2, kernel_size=1, stride=stride, bias=False, output_padding=1),
                 nn.BatchNorm2d(init_channels * 2),
             )
         layers = []
         for i in range(1, num_layer):
             layers.append(block(self.in_channels, init_channels, 4))
-            
+
         layers.append(block(self.in_channels, init_channels, 2, stride, upsample))
         self.in_channels = init_channels * 2
         return nn.Sequential(*layers)
@@ -182,11 +180,11 @@ class _ResNetAE(nn.Module):
         x = self.layer3(x)
         x = self.layer4(x)
         return x
-    
+
     def features(self, x):
         return self.encode(x)
 
-    def decode(self, x, image_size=[1,1,224,224]):
+    def decode(self, x, image_size=[1, 1, 224, 224]):
         x = self.uplayer1(x)
         x = self.uplayer2(x)
         x = self.uplayer3(x)
@@ -195,14 +193,15 @@ class _ResNetAE(nn.Module):
 
         x = self.conv1_1(x, output_size=image_size)
         return x
-    
+
     def forward(self, x):
         ret = {}
         ret["z"] = z = self.encode(x)
         ret["out"] = self.decode(z, x.size())
 
         return ret
-    
+
+
 def ResNetAE50(**kwargs):
     return _ResNetAE(Bottleneck, DeconvBottleneck, [3, 4, 6, 3], 1, **kwargs)
 
@@ -212,21 +211,21 @@ def ResNetAE101(**kwargs):
 
 
 def ResNetAE(weights=None):
-    
+
     if weights == None:
         return ResNetAE101()
-    
+
     if not weights in model_urls.keys():
         raise Exception("weights value must be in {}".format(list(model_urls.keys())))
-    
+
     method_to_call = globals()[model_urls[weights]["class"]]
     ae = method_to_call()
-    
-    ## load pretrained models
+
+    # load pretrained models
     url = model_urls[weights]["weights_url"]
     weights_filename = os.path.basename(url)
-    weights_storage_folder = os.path.expanduser(os.path.join("~",".torchxrayvision","models_data"))
-    weights_filename_local = os.path.expanduser(os.path.join(weights_storage_folder,weights_filename))
+    weights_storage_folder = os.path.expanduser(os.path.join("~", ".torchxrayvision", "models_data"))
+    weights_filename_local = os.path.expanduser(os.path.join(weights_storage_folder, weights_filename))
 
     if not os.path.isfile(weights_filename_local):
         print("Downloading weights...")
@@ -239,19 +238,22 @@ def ResNetAE(weights=None):
         ae.load_state_dict(state_dict)
     except Exception as e:
         print("Loading failure. Check weights file:", weights_filename_local)
-        raise(e)
-        
+        raise (e)
+
     ae = ae.eval()
-    
+
     ae.weights = weights
     ae.description = model_urls[weights]["description"]
-    
+
     return ae
-    
+
+
 import sys
 import requests
 
 # from here https://sumit-ghosh.com/articles/python-download-progress-bar/
+
+
 def download(url, filename):
     with open(filename, 'wb') as f:
         response = requests.get(url, stream=True)
@@ -262,11 +264,10 @@ def download(url, filename):
         else:
             downloaded = 0
             total = int(total)
-            for data in response.iter_content(chunk_size=max(int(total/1000), 1024*1024)):
+            for data in response.iter_content(chunk_size=max(int(total / 1000), 1024 * 1024)):
                 downloaded += len(data)
                 f.write(data)
-                done = int(50*downloaded/total)
-                sys.stdout.write('\r[{}{}]'.format('█' * done, '.' * (50-done)))
+                done = int(50 * downloaded / total)
+                sys.stdout.write('\r[{}{}]'.format('█' * done, '.' * (50 - done)))
                 sys.stdout.flush()
     sys.stdout.write('\n')
-    
