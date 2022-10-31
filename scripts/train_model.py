@@ -154,9 +154,6 @@ for i, dataset in enumerate(datas):
     train_dataset = xrv.datasets.SubsetDataset(dataset, train_inds)
     test_dataset = xrv.datasets.SubsetDataset(dataset, test_inds)
     
-    #disable data augs
-    test_dataset.data_aug = None
-    
     train_datas.append(train_dataset)
     test_datas.append(test_dataset)
     
