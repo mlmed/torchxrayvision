@@ -45,6 +45,12 @@ def test_autoencoder_function():
     assert torch.isnan(dzdxp.flatten()).sum().cpu().numpy() == 0 
     
     
+def test_autoencoder_resolution_check():
+    ae = xrv.autoencoders.ResNetAE(weights="101-elastic")
+    
+    with pytest.raises(ValueError):
+        ae(torch.zeros(1,1,10,10))
+    
 def test_baselinemodel_pretrained():
     model = xrv.baseline_models.jfhealthcare.DenseNet()
     
