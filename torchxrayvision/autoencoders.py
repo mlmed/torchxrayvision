@@ -175,7 +175,7 @@ class _ResNetAE(nn.Module):
         if check_resolution and hasattr(self, 'weights_metadata'):
             resolution = self.weights_metadata['resolution']
             if (x.shape[2] != resolution) | (x.shape[3] != resolution):
-                raise Exception("Input size ({}x{}) is not the native resolution ({}x{}) for this model. Set check_resolution=False on the encode function to override this error.".format(x.shape[2], x.shape[3], resolution, resolution))
+                raise ValueError("Input size ({}x{}) is not the native resolution ({}x{}) for this model. Set check_resolution=False on the encode function to override this error.".format(x.shape[2], x.shape[3], resolution, resolution))
         
         
         x = self.conv1(x)
