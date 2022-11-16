@@ -11,9 +11,9 @@ model_urls['101-elastic'] = {
     "description": 'This model was trained on the datasets: nih pc rsna mimic_ch chex datasets.',
     "weights_url": 'https://github.com/mlmed/torchxrayvision/releases/download/v1/nihpcrsnamimic_ch-resnet101-2-ae-test2-elastic-e250.pt',
     "image_range": [-1024, 1024],
+    "resolution": 224,
     "class": "ResNetAE101"
 }
-
 
 class Bottleneck(nn.Module):
     expansion = 4
@@ -170,7 +170,14 @@ class _ResNetAE(nn.Module):
         self.in_channels = init_channels * 2
         return nn.Sequential(*layers)
 
-    def encode(self, x):
+    def encode(self, x, check_resolution=True):
+        
+        if check_resolution and hasattr(self, 'weights_metadata'):
+            resolution = self.weights_metadata['resolution']
+            if (x.shape[2] != resolution) | (x.shape[3] != resolution):
+                raise Exception("Input size ({}x{}) is not the native resolution ({}x{}) for this model. Set check_resolution=False on the encode function to override this error.".format(x.shape[2], x.shape[3], resolution, resolution))
+        
+        
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -244,6 +251,7 @@ def ResNetAE(weights=None):
     ae = ae.eval()
 
     ae.weights = weights
+    ae.weights_metadata = model_urls[weights]
     ae.description = model_urls[weights]["description"]
 
     return ae
