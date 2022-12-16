@@ -17,6 +17,7 @@ import skimage.transform
 from skimage.io import imread
 import torch
 from torchvision import transforms
+from . import utils
 
 default_pathologies = [
     'Atelectasis',
@@ -135,7 +136,8 @@ class Dataset():
         return dict(zip(self.pathologies, counts))
 
     def __repr__(self):
-        pprint.pprint(self.totals())
+        if utils.in_notebook():
+            pprint.pprint(self.totals())
         return self.string()
 
     def check_paths_exist(self):
