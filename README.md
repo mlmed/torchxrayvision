@@ -128,6 +128,21 @@ z = ae.encode(image)
 image2 = ae.decode(z)
 ```
 
+## Segmentation
+
+You can load pretrained anatomical segmentation models. [Demo Notebook](scripts/segmentation.ipynb)
+
+```python3
+seg_model = xrv.baseline_models.chestx_det.PSPNet()
+output = seg_model(image)
+output.shape # [1, 14, 512, 512]
+seg_model.targets # ['Left Clavicle', 'Right Clavicle', 'Left Scapula', 'Right Scapula',
+                  #  'Left Lung', 'Right Lung', 'Left Hilus Pulmonis', 'Right Hilus Pulmonis',
+                  #  'Heart', 'Aorta', 'Facies Diaphragmatica', 'Mediastinum',  'Weasand', 'Spine']
+```
+
+![](docs/segmentation-pspnet.png)
+
 ## Datasets 
 [View docstrings for more detail on each dataset](https://github.com/mlmed/torchxrayvision/blob/master/torchxrayvision/datasets.py) and [Demo notebook](https://github.com/mlmed/torchxrayvision/blob/master/scripts/xray_datasets.ipynb) and [Example loading script](https://github.com/mlmed/torchxrayvision/blob/master/scripts/dataset_utils.py)
 
