@@ -113,7 +113,7 @@ model = xrv.models.ResNet(weights="resnet50-res512-all")
 model = xrv.baseline_models.jfhealthcare.DenseNet() 
 
 # Official Stanford CheXpert model
-model = xrv.baseline_models.chexpert.DenseNet()
+model = xrv.baseline_models.chexpert.DenseNet(weights_zip="chexpert_weights.zip")
 
 ```
 
