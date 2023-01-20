@@ -49,7 +49,7 @@ class PSPNet(nn.Module):
             )
         ])
 
-        self.targets = ['Left Clavicle', 'Right Clavicle', 'Left Scapula', 'Right Scapula',
+        self._targets = ['Left Clavicle', 'Right Clavicle', 'Left Scapula', 'Right Scapula',
             'Left Lung', 'Right Lung', 'Left Hilus Pulmonis', 'Right Hilus Pulmonis',
             'Heart', 'Aorta', 'Facies Diaphragmatica', 'Mediastinum',  'Weasand', 'Spine']
         
@@ -78,6 +78,11 @@ class PSPNet(nn.Module):
         model.eval()
         self.model = model
         self.upsample = nn.Upsample(size=(512, 512), mode='bilinear', align_corners=False)
+
+    @property
+    def targets(self):
+        """A list of the targets that this model will predict"""
+        return self._targets
 
     def forward(self, x):
         x = x.repeat(1, 3, 1, 1)
