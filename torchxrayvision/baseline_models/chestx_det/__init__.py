@@ -1,10 +1,13 @@
-import sys, os
-import json
+import os
 import pathlib
+import sys
+from collections import OrderedDict
+
+import requests
 import torch
 import torch.nn as nn
 import torchvision
-from collections import OrderedDict
+
 from .ptsemseg.pspnet import pspnet
 
 
@@ -12,7 +15,6 @@ def _convert_state_dict(state_dict):
     """Converts a state dict saved from a dataParallel module to normal 
        module state_dict inplace
        :param state_dict is the loaded DataParallel model_state
-    
     """
     new_state_dict = OrderedDict()
     for k, v in state_dict.items():
@@ -22,7 +24,8 @@ def _convert_state_dict(state_dict):
 
 
 class PSPNet(nn.Module):
-    """
+    """ChestX-Det Segmentation Model
+
     https://github.com/Deepwise-AILab/ChestX-Det-Dataset
 
     @article{Lian2021,
@@ -33,8 +36,6 @@ class PSPNet(nn.Module):
         url = {https://arxiv.org/abs/2104.10326},
         year = {2021}
     }
-
-
     """
 
     def __init__(self):
@@ -42,9 +43,12 @@ class PSPNet(nn.Module):
         super(PSPNet, self).__init__()
         
         self.transform = torchvision.transforms.Compose([
-            torchvision.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            torchvision.transforms.Normalize(
+                [0.485, 0.456, 0.406],
+                [0.229, 0.224, 0.225]
+            )
         ])
-        
+
         self.targets = ['Left Clavicle', 'Right Clavicle', 'Left Scapula', 'Right Scapula',
             'Left Lung', 'Right Lung', 'Left Hilus Pulmonis', 'Right Hilus Pulmonis',
             'Heart', 'Aorta', 'Facies Diaphragmatica', 'Mediastinum',  'Weasand', 'Spine']
@@ -92,12 +96,7 @@ class PSPNet(nn.Module):
         return "chestx-det-pspnet"
 
 
-import sys
-import requests
-
 # from here https://sumit-ghosh.com/articles/python-download-progress-bar/
-
-
 def download(url, filename):
     with open(filename, 'wb') as f:
         response = requests.get(url, stream=True)
@@ -115,4 +114,3 @@ def download(url, filename):
                 sys.stdout.write('\r[{}{}]'.format('█' * done, '.' * (50 - done)))
                 sys.stdout.flush()
     sys.stdout.write('\n')
-
