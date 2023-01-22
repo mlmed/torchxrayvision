@@ -41,7 +41,7 @@ class PSPNet(nn.Module):
     def __init__(self):
 
         super(PSPNet, self).__init__()
-        
+
         self.transform = torchvision.transforms.Compose([
             torchvision.transforms.Normalize(
                 [0.485, 0.456, 0.406],
@@ -50,9 +50,9 @@ class PSPNet(nn.Module):
         ])
 
         self._targets = ['Left Clavicle', 'Right Clavicle', 'Left Scapula', 'Right Scapula',
-            'Left Lung', 'Right Lung', 'Left Hilus Pulmonis', 'Right Hilus Pulmonis',
-            'Heart', 'Aorta', 'Facies Diaphragmatica', 'Mediastinum',  'Weasand', 'Spine']
-        
+                         'Left Lung', 'Right Lung', 'Left Hilus Pulmonis', 'Right Hilus Pulmonis',
+                         'Heart', 'Aorta', 'Facies Diaphragmatica', 'Mediastinum', 'Weasand', 'Spine']
+
         model = pspnet(len(self.targets))
 
         url = "https://github.com/mlmed/torchxrayvision/releases/download/v1/pspnet_chestxray_best_model_4.pth"
@@ -74,7 +74,7 @@ class PSPNet(nn.Module):
         except Exception as e:
             print("Loading failure. Check weights file:", self.weights_filename_local)
             raise (e)
-        
+
         model.eval()
         self.model = model
         self.upsample = nn.Upsample(size=(512, 512), mode='bilinear', align_corners=False)
@@ -90,7 +90,7 @@ class PSPNet(nn.Module):
 
         # expecting values between [-1024,1024]
         x = (x + 1024) / 2048
-        
+
         # now between [0,1] for this model preprocessing
         x = self.transform(x)
         y = self.model(x)

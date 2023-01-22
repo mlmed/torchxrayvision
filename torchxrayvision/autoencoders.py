@@ -15,6 +15,7 @@ model_urls['101-elastic'] = {
     "class": "ResNetAE101"
 }
 
+
 class Bottleneck(nn.Module):
     expansion = 4
 
@@ -171,13 +172,12 @@ class _ResNetAE(nn.Module):
         return nn.Sequential(*layers)
 
     def encode(self, x, check_resolution=True):
-        
+
         if check_resolution and hasattr(self, 'weights_metadata'):
             resolution = self.weights_metadata['resolution']
             if (x.shape[2] != resolution) | (x.shape[3] != resolution):
                 raise ValueError("Input size ({}x{}) is not the native resolution ({}x{}) for this model. Set check_resolution=False on the encode function to override this error.".format(x.shape[2], x.shape[3], resolution, resolution))
-        
-        
+
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
