@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 import torchvision
 import chess_resnet
+import torchxrayvision as xrv
 
 
 class CheSS(nn.Module):
@@ -17,7 +18,7 @@ class CheSS(nn.Module):
     License: Apache-2.0 license
     """
     def __init__(self):
-        super(self).__init__()
+        super().__init__()
         
         self.model = chess_resnet.resnet50(num_classes=128)
         
@@ -31,26 +32,23 @@ class CheSS(nn.Module):
             print("Downloading weights...")
             print("If this fails you can run `wget {} -O {}`".format(url, self.weights_filename_local))
             pathlib.Path(weights_storage_folder).mkdir(parents=True, exist_ok=True)
-            download(url, self.weights_filename_local)
+            xrv.utils.download(url, self.weights_filename_local)
         
         try:
             state_dict = torch.load(self.weights_filename_local, map_location="cpu")
-            model.load_state_dict(state_dict)
+            self.model.load_state_dict(state_dict)
         except Exception as e:
             print("Loading failure. Check weights file:", self.weights_filename_local)
             raise (e)
         
-        
-        self.apply_sigmoid = apply_sigmoid
         self.upsample = nn.Upsample(size=(512, 512), mode='bilinear', align_corners=False)
 
         # From https://github.com/mi2rl/CheSS/blob/main/upstream/main_moco_ori.py#L104
         self.normalize = torchvision.transforms.Normalize(0.658, 0.221)
 
         
-    def transform_from_xrv(x):
+    def transform_from_xrv(self, x):
         
-        x = x.repeat(1, 3, 1, 1)
         x = self.upsample(x)
         
         # XRV -> 01
@@ -64,17 +62,17 @@ class CheSS(nn.Module):
         
         x = self.transform_from_xrv(x)
         
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
+        x = self.model.conv1(x)
+        x = self.model.bn1(x)
+        x = self.model.relu(x)
+        x = self.model.maxpool(x)
         
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
+        x = self.model.layer1(x)
+        x = self.model.layer2(x)
+        x = self.model.layer3(x)
+        x = self.model.layer4(x)
 
-        x = self.avgpool(x)
+        x = self.model.avgpool(x)
         x = torch.flatten(x, 1)
         return x
         
