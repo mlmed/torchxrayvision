@@ -43,18 +43,15 @@ class CheSS(nn.Module):
         
         self.upsample = nn.Upsample(size=(512, 512), mode='bilinear', align_corners=False)
 
-        # From https://github.com/mi2rl/CheSS/blob/main/upstream/main_moco_ori.py#L104
-        self.normalize = torchvision.transforms.Normalize(0.658, 0.221)
-
         
     def transform_from_xrv(self, x):
         
         x = self.upsample(x)
+
+        x -= x.min()
+        x /= (x.max() - x.min())
+        x *= 255
         
-        # XRV -> 01
-        x = (((x/1024)+1)/2)
-        
-        x = self.normalize(x)
         return x
         
         
