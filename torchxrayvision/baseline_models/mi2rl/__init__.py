@@ -42,15 +42,19 @@ class CheSS(nn.Module):
             raise (e)
         
         self.upsample = nn.Upsample(size=(512, 512), mode='bilinear', align_corners=False)
+        
+        self.normalize = torchvision.transforms.Normalize(0.658, 0.221)
 
         
     def transform_from_xrv(self, x):
+        """Following https://github.com/mi2rl/CheSS/blob/main/downstream/classification/datasets.py"""
         
         x = self.upsample(x)
 
         x -= x.min()
         x /= (x.max() - x.min())
         x *= 255
+        x = self.normalize(x)
         
         return x
         
