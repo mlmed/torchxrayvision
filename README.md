@@ -115,6 +115,10 @@ model = xrv.baseline_models.jfhealthcare.DenseNet()
 # Official Stanford CheXpert model
 model = xrv.baseline_models.chexpert.DenseNet(weights_zip="chexpert_weights.zip")
 
+# CheSS: Chest X-Ray Pre-trained Model via Self-supervised Contrastive Learning
+# Outputs a 2048 dimensional feature vector
+model = xrv.baseline_models.mi2rl.CheSS()
+
 ```
 
 Benchmarks of the modes are here: [BENCHMARKS.md](BENCHMARKS.md) and the performance of some of the models can be seen in this paper [arxiv.org/abs/2002.02497](https://arxiv.org/abs/2002.02497). 
