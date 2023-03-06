@@ -3,4 +3,8 @@ Datasets
 ========
 
 .. automodule:: torchxrayvision.datasets
-   :members:
+    :members:
+    :exclude-members: Dataset
+    
+    .. autoclass:: Dataset
+  

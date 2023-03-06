@@ -77,6 +77,21 @@ model_urls['resnet50-res512-all'] = {
     "ppv80_thres": [0.690908, 0.720028, 0.7303882, 0.7235838, 0.6787441, 0.7304924, 0.73105824, 0.6839408, 0.7241559, 0.7219969, 0.6346738, 0.72764945, 0.7285066, 0.5735704, np.nan, 0.69684714, 0.7135549, np.nan]
 }
 
+# Just created for documentation
+class Model:
+    """asdasda s
+    """
+
+    @property
+    def targets(self):
+        """Each classifier provides a field `model.targets` which aligns to the list of predictions that the model makes. Depending on the weights loaded this list will change. The predictions can be aligned to pathology names as follows:"""
+        pass
+    
+    @property
+    def csv(self):
+        """A list of the targets that this model will predict"""
+        pass
+
 
 class _DenseLayer(nn.Sequential):
     def __init__(self, num_input_features, growth_rate, bn_size, drop_rate):
@@ -117,19 +132,13 @@ class _Transition(nn.Sequential):
 
 
 class DenseNet(nn.Module):
-    r"""Densenet-BC model class, based on
-    `"Densely Connected Convolutional Networks" <https://arxiv.org/pdf/1608.06993.pdf>`_
-
-    Modified from torchvision to have a variable number of input channels
-
-    Args:
-        growth_rate (int) - how many filters to add each layer (`k` in paper)
-        block_config (list of 4 ints) - how many layers in each pooling block
-        num_init_features (int) - the number of filters to learn in the first convolution layer
-        bn_size (int) - multiplicative factor for number of bottle neck layers
-          (i.e. bn_size * k features in the bottleneck layer)
-        drop_rate (float) - dropout rate after each dense layer
-        num_classes (int) - number of classification classes
+    """Based on 
+    `"Densely Connected Convolutional Networks" <https://arxiv.org/abs/1608.06993>`_
+    
+    :param weights: Specify a weight name to load pre-trained weights
+    :param op_threshs: Specify a weight name to load pre-trained weights 
+    :param apply_sigmoid: Apply a sigmoid 
+        
     """
 
     def __init__(self,
@@ -257,7 +266,16 @@ class DenseNet(nn.Module):
 
 ##########################
 class ResNet(nn.Module):
+    """
+    Based on `"Deep Residual Learning for Image Recognition" <https://arxiv.org/abs/1512.03385>`_
 
+
+
+    :param weights: Specify a weight name to load pre-trained weights
+    :param op_threshs: Specify a weight name to load pre-trained weights 
+    :param apply_sigmoid: Apply a sigmoid 
+
+    """
     def __init__(self, weights: str = None, apply_sigmoid: bool = False):
         super(ResNet, self).__init__()
 

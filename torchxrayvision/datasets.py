@@ -128,6 +128,8 @@ def relabel_dataset(pathologies, dataset, silent=False):
 
 
 class Dataset():
+    """The datasets in this library aim to fit a simple interface where the imgpath and csvpath are specified. Some datasets require more than one metadata file and for some the metadata files are packaged in the library so only the imgpath needs to be specified.
+    """
     def __init__(self):
         pass
 
