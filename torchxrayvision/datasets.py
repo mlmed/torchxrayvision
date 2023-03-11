@@ -49,7 +49,7 @@ _cache_dict = {}
 
 def normalize(img, maxval, reshape=False):
     """Scales images to be roughly [-1024 1024].
-    
+
     Call xrv.utils.normalize moving forward.
     """
     return xrv.utils.normalize(img, maxval, reshape)
