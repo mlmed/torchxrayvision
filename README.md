@@ -117,7 +117,7 @@ model = xrv.baseline_models.chexpert.DenseNet(weights_zip="chexpert_weights.zip"
 
 # Emory HITI lab Race prediction model
 model = xrv.baseline_models.emory_hiti.RaceModel()
-model.pathologies -> ["Asian", "Black", "White"]
+model.targets -> ["Asian", "Black", "White"]
 
 ```
 
