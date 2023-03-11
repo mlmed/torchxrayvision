@@ -8,7 +8,7 @@ TorchXRayVision is an open source software library for working with chest X-ray 
 - In the case of researchers addressing clinical questions it is a waste of time for them to train models from scratch. To address this, TorchXRayVision provides pre-trained models which are trained on large cohorts of data and enables 1) rapid analysis of large datasets 2) feature reuse for few-shot learning.
 - In the case of researchers developing algorithms it is important to robustly evaluate models using multiple external datasets. Metadata associated with each dataset can vary greatly which makes it difficult to apply methods to multiple datasets. TorchXRayVision provides access to many datasets in a uniform way so that they can be swapped out with a single line of code. These datasets can also be merged and filtered to construct specific distributional shifts for studying generalization.
 
-Twitter: [@torchxrayvision](https://twitter.com/torchxrayvision)
+Twitter: ![@torchxrayvision](https://twitter.com/torchxrayvision)
 
 .. _installation:
 
@@ -86,5 +86,4 @@ Contents
 
    models
    datasets
-   baseline_models
    
