@@ -115,6 +115,10 @@ model = xrv.baseline_models.jfhealthcare.DenseNet()
 # Official Stanford CheXpert model
 model = xrv.baseline_models.chexpert.DenseNet(weights_zip="chexpert_weights.zip")
 
+# Emory HITI lab Race prediction model
+model = xrv.baseline_models.emory_hiti.RaceModel()
+model.pathologies -> ["Asian", "Black", "White"]
+
 ```
 
 Benchmarks of the modes are here: [BENCHMARKS.md](BENCHMARKS.md) and the performance of some of the models can be seen in this paper [arxiv.org/abs/2002.02497](https://arxiv.org/abs/2002.02497). 

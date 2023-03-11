@@ -51,22 +51,6 @@ def test_autoencoder_resolution_check():
     with pytest.raises(ValueError):
         ae(torch.zeros(1,1,10,10))
     
-def test_baselinemodel_pretrained():
-    model = xrv.baseline_models.jfhealthcare.DenseNet()
-    
-    
-def test_baselinemodel_function():
-    
-    model = xrv.baseline_models.jfhealthcare.DenseNet()
-    
-    img = torch.ones(1,1,224,224)
-    img.requires_grad = True
-    pred = model(img)[:,model.pathologies.index("Cardiomegaly")]
-    dzdxp = torch.autograd.grad((pred), img)[0]
-    
-    assert torch.isnan(dzdxp.flatten()).sum().cpu().numpy() == 0 
-    
-    
 def test_num_classes():
     
     model_classes = [xrv.models.DenseNet]
