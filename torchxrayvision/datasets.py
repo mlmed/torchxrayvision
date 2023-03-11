@@ -17,7 +17,7 @@ import skimage.transform
 from skimage.io import imread
 import torch
 from torchvision import transforms
-from . import utils
+import torchxrayvision as xrv
 
 default_pathologies = [
     'Atelectasis',
@@ -48,24 +48,11 @@ _cache_dict = {}
 
 
 def normalize(img, maxval, reshape=False):
-    """Scales images to be roughly [-1024 1024]."""
-
-    if img.max() > maxval:
-        raise Exception("max image value ({}) higher than expected bound ({}).".format(img.max(), maxval))
-
-    img = (2 * (img.astype(np.float32) / maxval) - 1.) * 1024
-
-    if reshape:
-        # Check that images are 2D arrays
-        if len(img.shape) > 2:
-            img = img[:, :, 0]
-        if len(img.shape) < 2:
-            print("error, dimension lower than 2 for image")
-
-        # add color channel
-        img = img[None, :, :]
-
-    return img
+    """Scales images to be roughly [-1024 1024].
+    
+    Call xrv.utils.normalize moving forward.
+    """
+    return xrv.utils.normalize(img, maxval, reshape)
 
 
 def apply_transforms(sample, transform, seed=None) -> Dict:
