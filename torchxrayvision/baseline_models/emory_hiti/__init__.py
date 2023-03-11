@@ -1,27 +1,18 @@
 import sys, os
-thisfolder = os.path.dirname(__file__)
-sys.path.insert(0,thisfolder)
-import torch
-import csv
 import numpy as np
-from .model import classifier
-import json
-import argparse
-import urllib
 import pathlib
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import torchvision.transforms as transforms
+import torchvision
+import torchxrayvision as xrv
 
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 
 class RaceModel(nn.Module):
-    """
-    This model is from the work below and is trained to predict the patient race from a chest X-ray.
+    """This model is from the work below and is trained to predict the patient race from a chest X-ray.
+    
+    Public data from the MIMIC dataset is used to train this model.
+    
+    Images are scaled to a 320x320 resolution automatically.
     
     @article{Gichoya2022,
         title = {AI recognition of patient race in medical imaging: a modelling study},
@@ -39,14 +30,14 @@ class RaceModel(nn.Module):
         
         super(RaceModel, self).__init__()
         
-        self.model = torchvision.models.resnet34(pretrained=False)
+        self.model = torchvision.models.resnet34()
         n_classes = 3
         self.model.fc = nn.Sequential(
             nn.Linear(512, n_classes), nn.LogSoftmax(dim=1))
         
         self.model = nn.DataParallel(self.model)
         
-        url = 'https://github.com/mlmed/torchxrayvision/releases/download/v1/resnet_race_detection_val-loss_0.157.pt'
+        url = 'https://github.com/mlmed/torchxrayvision/releases/download/v1/resnet_race_detection_val-loss_0.157_mimic_public.pt'
         
         weights_filename = os.path.basename(url)
         weights_storage_folder = os.path.expanduser(os.path.join("~",".torchxrayvision","models_data"))
@@ -56,18 +47,19 @@ class RaceModel(nn.Module):
             print("Downloading weights...")
             print("If this fails you can run `wget {} -O {}`".format(url, self.weights_filename_local))
             pathlib.Path(weights_storage_folder).mkdir(parents=True, exist_ok=True)
-            download(url, self.weights_filename_local)
+            xrv.utils.download(url, self.weights_filename_local)
         
         try:
             ckpt = torch.load(self.weights_filename_local , map_location="cpu")
-            self.model.module.load_state_dict(ckpt)
+            self.model.load_state_dict(ckpt)
+            self.model = self.model.module
         except Exception as e:
             print("Loading failure. Check weights file:", self.weights_filename_local)
             raise(e)
         
         self.upsample = nn.Upsample(size=(320, 320), mode='bilinear', align_corners=False)
         
-        self.pathologies = ["Asian", "Black", "White"]
+        self.targets = ["Asian", "Black", "White"]
         
         self.mean = np.array([0.485, 0.456, 0.406])
         self.std = np.array([0.229, 0.224, 0.225])
@@ -83,36 +75,9 @@ class RaceModel(nn.Module):
         # Now between [0,1] for this model
         
         x = self.norm(x)
-        
         y = self.model(x)
             
         return y
 
     def __repr__(self):
         return "Emory-HITI-RaceModel-resnet34"
-
-
-    
-import sys
-import requests
-
-# from here https://sumit-ghosh.com/articles/python-download-progress-bar/
-def download(url, filename):
-    with open(filename, 'wb') as f:
-        response = requests.get(url, stream=True)
-        total = response.headers.get('content-length')
-
-        if total is None:
-            f.write(response.content)
-        else:
-            downloaded = 0
-            total = int(total)
-            for data in response.iter_content(chunk_size=max(int(total/1000), 1024*1024)):
-                downloaded += len(data)
-                f.write(data)
-                done = int(50*downloaded/total)
-                sys.stdout.write('\r[{}{}]'.format('█' * done, '.' * (50-done)))
-                sys.stdout.flush()
-    sys.stdout.write('\n')
-                                
-    
