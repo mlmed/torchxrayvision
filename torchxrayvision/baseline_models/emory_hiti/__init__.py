@@ -30,7 +30,7 @@ class RaceModel(nn.Module):
         
         super(RaceModel, self).__init__()
         
-        self.model = torchvision.models.resnet34()
+        self.model = torchvision.models.resnet34(pretrained=False)
         n_classes = 3
         self.model.fc = nn.Sequential(
             nn.Linear(512, n_classes), nn.LogSoftmax(dim=1))
@@ -53,6 +53,7 @@ class RaceModel(nn.Module):
             ckpt = torch.load(self.weights_filename_local , map_location="cpu")
             self.model.load_state_dict(ckpt)
             self.model = self.model.module
+            self.model = self.model.eval() # Must be in eval mode to work correctly
         except Exception as e:
             print("Loading failure. Check weights file:", self.weights_filename_local)
             raise(e)
