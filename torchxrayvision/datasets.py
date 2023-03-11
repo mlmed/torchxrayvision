@@ -123,7 +123,7 @@ class Dataset():
         return dict(zip(self.pathologies, counts))
 
     def __repr__(self):
-        if utils.in_notebook():
+        if xrv.utils.in_notebook():
             pprint.pprint(self.totals())
         return self.string()
 
