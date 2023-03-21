@@ -780,7 +780,7 @@ class PC_Dataset(Dataset):
 
         # offset_day_int
         dt = pd.to_datetime(self.csv["StudyDate_DICOM"], format="%Y%m%d")
-        self.csv["offset_day_int"] = dt.astype(int) // 10**9 // 86400
+        self.csv["offset_day_int"] = dt.astype(np.int64) // 10**9 // 86400
 
         # patientid
         self.csv["patientid"] = self.csv["PatientID"].astype(str)
@@ -1721,7 +1721,7 @@ class StonyBrookCOVID_Dataset(Dataset):
 
         date_col = self.csv["Exam_DateTime"].str.split("_", expand=True)[0]
         dt = pd.to_datetime(date_col, format="%Y%m%d")
-        self.csv["offset_day_int"] = dt.astype(int) // 10**9 // 86400
+        self.csv["offset_day_int"] = dt.astype(np.int64) // 10**9 // 86400
 
         # patientid
         self.csv["patientid"] = self.csv["Subject_ID"].astype(str)
