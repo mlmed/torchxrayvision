@@ -2,6 +2,15 @@ import sys
 import requests
 import numpy as np
 import skimage
+import pydicom
+from typing import (
+    BinaryIO, Union, Optional, List, Any, Callable, cast, MutableSequence,
+    Iterator, Dict, Type
+)
+from pydicom.filebase import DicomFileLike
+from pydicom.fileutil import PathType
+from numpy import ndarray
+import warnings
 
 
 def in_notebook():
@@ -73,3 +82,33 @@ def load_image(fname: str):
     img = img[None, :, :]
 
     return img
+
+def read_xray_dcm(path:Union[PathType, BinaryIO, DicomFileLike], voi_lut:bool=False, fix_monochrome:bool=True)->ndarray:
+    """read a dicom-like file and convert to numpy array 
+
+    Args:
+        path (Union[PathType, BinaryIO, DicomFileLike]): path to the dicom file
+        voi_lut (bool, optional): transform image to be human viewable. Defaults to False.
+        fix_monochrome (bool, optional): Convert dicom interpretation MONOCHROME1 to MONOCHROME2. Defaults to True.
+
+    Returns:
+        ndarray: 2D single array image for a dicom image
+    """
+
+    dicom = pydicom.dcmread(path)
+    
+    # LUT for human friendly view
+    if voi_lut:
+        data = pydicom.pixel_data_handlers.util.apply_voi_lut(dicom.pixel_array, dicom)
+    else:
+        data = dicom.pixel_array
+               
+    # `MONOCHROME1` have an inverted view; Bones are black; background is white
+    # https://web.archive.org/web/20150920230923/http://www.mccauslandcenter.sc.edu/mricro/dicom/index.html
+    if fix_monochrome and dicom.PhotometricInterpretation == "MONOCHROME1":
+        warnings.warn(f"Coverting MONOCHROME1 to MONOCHROME2 inpretation for file: {path}. Can be avoided by setting `fix_monochrome=False`")
+        data = np.amax(data) - data
+        
+    data = normalize(data, np.amax(data))
+    
+    return data
