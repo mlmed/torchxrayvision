@@ -95,20 +95,18 @@ def read_xray_dcm(path:Union[PathType, BinaryIO, DicomFileLike], voi_lut:bool=Fa
         ndarray: 2D single array image for a dicom image
     """
 
-    dicom = pydicom.dcmread(path)
+    ds = pydicom.dcmread(path, force=True)
+    data = ds.pixel_array
     
     # LUT for human friendly view
     if voi_lut:
-        data = pydicom.pixel_data_handlers.util.apply_voi_lut(dicom.pixel_array, dicom)
-    else:
-        data = dicom.pixel_array
+        data = pydicom.pixel_data_handlers.util.apply_voi_lut(data, ds, index=0)
+
                
     # `MONOCHROME1` have an inverted view; Bones are black; background is white
     # https://web.archive.org/web/20150920230923/http://www.mccauslandcenter.sc.edu/mricro/dicom/index.html
-    if fix_monochrome and dicom.PhotometricInterpretation == "MONOCHROME1":
-        warnings.warn(f"Coverting MONOCHROME1 to MONOCHROME2 inpretation for file: {path}. Can be avoided by setting `fix_monochrome=False`")
+    if fix_monochrome and ds.PhotometricInterpretation == "MONOCHROME1":
+        warnings.warn(f"Coverting MONOCHROME1 to MONOCHROME2 interpretation for file: {path}. Can be avoided by setting `fix_monochrome=False`")
         data = np.amax(data) - data
         
-    data = normalize(data, np.amax(data))
-    
     return data
