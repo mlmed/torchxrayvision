@@ -6,4 +6,3 @@ numpy>=1
 pandas>=1
 requests>=1
 pillow>=5.3.0
-pydicom>=2.3.1
