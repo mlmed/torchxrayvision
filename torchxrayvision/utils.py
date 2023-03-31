@@ -2,13 +2,8 @@ import sys
 import requests
 import numpy as np
 import skimage
-import pydicom
-from typing import (
-    BinaryIO, Union, Optional, List, Any, Callable, cast, MutableSequence,
-    Iterator, Dict, Type
-)
-from pydicom.filebase import DicomFileLike
-from pydicom.fileutil import PathType
+
+from os import PathLike
 from numpy import ndarray
 import warnings
 
@@ -83,21 +78,29 @@ def load_image(fname: str):
 
     return img
 
-def read_xray_dcm(path:Union[PathType, BinaryIO, DicomFileLike], voi_lut:bool=False, fix_monochrome:bool=True)->ndarray:
+def read_xray_dcm(path:PathLike, voi_lut:bool=False, fix_monochrome:bool=True)->ndarray:
     """read a dicom-like file and convert to numpy array 
 
     Args:
-        path (Union[PathType, BinaryIO, DicomFileLike]): path to the dicom file
+        path (PathLike): path to the dicom file
         voi_lut (bool, optional): transform image to be human viewable. Defaults to False.
         fix_monochrome (bool, optional): Convert dicom interpretation MONOCHROME1 to MONOCHROME2. Defaults to True.
 
     Returns:
         ndarray: 2D single array image for a dicom image
     """
+    try:
+        import pydicom
+    except ImportError:
+        raise Exception("Missing Package Pydicom. Try installing it by running `pip install pydicom`.")
 
+    # get the pixel array
     ds = pydicom.dcmread(path, force=True)
     data = ds.pixel_array
-    
+
+    # get the max possible pixel value from DCM header
+    max_possible_pixel_val = (2**ds.BitsStored - 1)
+
     # LUT for human friendly view
     if voi_lut:
         data = pydicom.pixel_data_handlers.util.apply_voi_lut(data, ds, index=0)
@@ -107,6 +110,8 @@ def read_xray_dcm(path:Union[PathType, BinaryIO, DicomFileLike], voi_lut:bool=Fa
     # https://web.archive.org/web/20150920230923/http://www.mccauslandcenter.sc.edu/mricro/dicom/index.html
     if fix_monochrome and ds.PhotometricInterpretation == "MONOCHROME1":
         warnings.warn(f"Coverting MONOCHROME1 to MONOCHROME2 interpretation for file: {path}. Can be avoided by setting `fix_monochrome=False`")
-        data = np.amax(data) - data
-        
+        data = max_possible_pixel_val - data
+
+    # normalize data to [-1024, 1024]    
+    data = normalize(data, max_possible_pixel_val)
     return data
