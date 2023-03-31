@@ -1244,17 +1244,19 @@ class COVID19_Dataset(Dataset):
     dataset_url = "https://github.com/ieee8023/covid-chestxray-dataset"
 
     def __init__(self,
-                 imgpath=os.path.join(thispath, "covid-chestxray-dataset", "images"),
-                 csvpath=os.path.join(thispath, "covid-chestxray-dataset", "metadata.csv"),
-                 semantic_masks_v7labs_lungs_path=os.path.join(datapath, "semantic_masks_v7labs_lungs.zip"),
+                 imgpath: str,
+                 csvpath: str,
                  views=["PA", "AP"],
                  transform=None,
                  data_aug=None,
-                 nrows=None,
-                 seed=0,
-                 unique_patients=True,
-                 semantic_masks=False
+                 seed: int = 0,
+                 semantic_masks=False,
                  ):
+        """
+        Args:
+            imgpath: Path to the directory containing images
+            csvpath: Path to the image directory
+        """
 
         super(COVID19_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
@@ -1263,14 +1265,14 @@ class COVID19_Dataset(Dataset):
         self.data_aug = data_aug
         self.views = views
         self.semantic_masks = semantic_masks
-        self.semantic_masks_v7labs_lungs_path = semantic_masks_v7labs_lungs_path
+        self.semantic_masks_v7labs_lungs_path = os.path.join(datapath, "semantic_masks_v7labs_lungs.zip")
 
         if not os.path.exists(csvpath):
             raise FileNotFoundError(f'The csvpath does not point to a valid metadata.csv file. Please download it from {self.dataset_url}')
 
         # Load data
         self.csvpath = csvpath
-        self.csv = pd.read_csv(self.csvpath, nrows=nrows)
+        self.csv = pd.read_csv(self.csvpath)
 
         # Keep only the selected views.
         self.limit_to_selected_views(views)

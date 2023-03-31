@@ -84,6 +84,7 @@ Contents
 
 .. toctree::
 
-   models
-   datasets
+    models
+    dataset_helpers
+    datasets
    
