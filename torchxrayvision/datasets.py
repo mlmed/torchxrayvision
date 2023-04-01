@@ -12,7 +12,7 @@ import imageio
 import numpy as np
 import pandas as pd
 import skimage
-from typing import Dict
+from typing import Dict, List
 import skimage.transform
 from skimage.io import imread
 import torch
@@ -39,6 +39,9 @@ default_pathologies = [
     'Lung Opacity',
     'Enlarged Cardiomediastinum'
 ]
+
+# Use a file that ships with the library
+USE_INCLUDED_FILE = "USE_INCLUDED_FILE"
 
 thispath = os.path.dirname(os.path.realpath(__file__))
 datapath = os.path.join(thispath, "data")
@@ -88,9 +91,14 @@ def apply_transforms(sample, transform, seed=None) -> Dict:
 
 
 def relabel_dataset(pathologies, dataset, silent=False):
-    """
-    Reorder, remove, or add (nans) to a dataset's labels.
-    Use this to align with the output of a network.
+    """This function will add, remove, and reorder the `.labels` field to
+have the same order as the pathologies argument passed to it. If a pathology is specified but doesn’t
+exist in the dataset then a NaN will be put in place of the label.
+
+    Args:
+        :pathologies: The list of pathologies that the dataset will be aligned.
+        :dataset: The dataset object that will be edited.
+        :silent: Set True to silence printing details of the alignment.
     """
     will_drop = set(dataset.pathologies).difference(pathologies)
     if will_drop != set():
@@ -114,17 +122,57 @@ def relabel_dataset(pathologies, dataset, silent=False):
     dataset.pathologies = pathologies
 
 
-class Dataset():
-    """The datasets in this library aim to fit a simple interface where the imgpath and csvpath are specified. Some datasets require more than one metadata file and for some the metadata files are packaged in the library so only the imgpath needs to be specified.
+class Dataset:
+    """The datasets in this library aim to fit a simple interface where the
+    imgpath and csvpath are specified. Some datasets require more than one
+    metadata file and for some the metadata files are packaged in the library
+    so only the imgpath needs to be specified.
     """
     def __init__(self):
         pass
 
+    pathologies: List[str]
+    """A list of strings identifying the pathologies contained in this 
+    dataset. This list corresponds to the columns of the `.labels` matrix. 
+    Although it is called pathologies, the contents do not have to be 
+    pathologies and may simply be attributes of the patient. """
+
+    labels: np.ndarray
+    """A NumPy array which contains a 1, 0, or NaN for each pathology. Each 
+    column is a pathology and each row corresponds to an item in the dataset. 
+    A 1 represents that the pathology is present, 0 represents the pathology 
+    is absent, and NaN represents no information. """
+
+    csv: pd.DataFrame
+    """A Pandas DataFrame of the metadata .csv file that is included with the 
+    data. For some datasets multiple metadata files have been merged 
+    together. It is largely a "catch-all" for associated data and the 
+    referenced publication should explain each field. Each row aligns with 
+    the elements of the dataset so indexing using .iloc will work. Alignment 
+    between the DataFrame and the dataset items will be maintained when using 
+    tools from this library. """
+
     def totals(self):
+        """Compute counts of pathologies.
+
+        Returns: A dict containing pathology name -> count
+        """
         counts = [dict(collections.Counter(items[~np.isnan(items)]).most_common()) for items in self.labels.T]
         return dict(zip(self.pathologies, counts))
 
     def __repr__(self):
+        """Returns the name and a description of the dataset such as:
+
+        >>> CheX_Dataset num_samples=191010 views=['PA', 'AP']
+
+        If in a jupyter notebook it will also print the counts of the pathologies
+
+        >>> {'Atelectasis': {0.0: 17621, 1.0: 29718},
+        >>> 'Cardiomegaly': {0.0: 22645, 1.0: 23384},
+        >>> 'Consolidation': {0.0: 30463, 1.0: 12982},
+        >>> ...}
+
+        """
         if xrv.utils.in_notebook():
             pprint.pprint(self.totals())
         return self.string()
@@ -154,6 +202,20 @@ class Dataset():
 
 
 class MergeDataset(Dataset):
+    """The class `MergeDataset` can be used to merge multiple datasets together into a
+    single dataset. This class takes in a list of dataset objects and assembles the datasets in order. This
+    class will correctly maintain the `.labels`, `.csv`, and `.pathologies` fields and offer pretty printing.
+
+    >>> dmerge = xrv.datasets.MergeDataset([dataset1, dataset2, ...])
+    >>> # Output:
+    >>> MergeDataset num_samples=261583
+    >>> - 0 PC_Dataset num_samples=94825 views=['PA', 'AP']
+    >>> - 1 RSNA_Pneumonia_Dataset num_samples=26684 views=['PA', 'AP']
+    >>> - 2 NIH_Dataset num_samples=112120 views=['PA', 'AP']
+    >>> - 3 SIIM_Pneumothorax_Dataset num_samples=12954
+    >>> - 4 VinBrain_Dataset num_samples=15000 views=['PA', 'AP']
+    """
+
     def __init__(self, datasets, seed=0, label_concat=False):
         super(MergeDataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
@@ -250,6 +312,26 @@ class FilterDataset(Dataset):
 
 
 class SubsetDataset(Dataset):
+    """When you only want a subset of a dataset the `SubsetDataset` class can
+    be used. A list of indexes can be passed in and only those indexes will
+    be present in the new dataset. This class will correctly maintain the
+    `.labels`, `.csv`, and `.pathologies` fields and offer pretty printing.
+
+    >>> dsubset = xrv.datasets.SubsetDataset(dataset, [0,5,60])
+    >>> # Output:
+    >>> SubsetDataset num_samples=3
+    >>> of PC_Dataset num_samples=94825 views=['PA', 'AP']
+
+    For example this class can be used to create a dataset of only female patients by selecting that column
+    of the csv file and using np.where to convert this boolean vector into a list of indexes.
+
+    >>> idxs = np.where(dataset.csv.PatientSex_DICOM=="F")[0]
+    >>> dsubset = xrv.datasets.SubsetDataset(dataset, idxs)
+    >>> # Output:
+    >>> SubsetDataset num_samples=48308
+    >>> - of PC_Dataset num_samples=94825 views=['PA', 'AP'] data_aug=None
+
+    """
     def __init__(self, dataset, idxs=None):
         super(SubsetDataset, self).__init__()
         self.dataset = dataset
@@ -282,7 +364,7 @@ class SubsetDataset(Dataset):
 
 
 class NIH_Dataset(Dataset):
-    """NIH ChestX-ray8 dataset
+    """NIH ChestX-ray14 dataset
 
     Dataset release website:
     https://www.nih.gov/news-events/news-releases/nih-clinical-center-provides-one-largest-publicly-available-chest-x-ray-datasets-scientific-community
@@ -296,12 +378,11 @@ class NIH_Dataset(Dataset):
 
     def __init__(self,
                  imgpath,
-                 csvpath=os.path.join(datapath, "Data_Entry_2017_v2020.csv.gz"),
-                 bbox_list_path=os.path.join(datapath, "BBox_List_2017.csv.gz"),
+                 csvpath=USE_INCLUDED_FILE,
+                 bbox_list_path=USE_INCLUDED_FILE,
                  views=["PA"],
                  transform=None,
                  data_aug=None,
-                 nrows=None,
                  seed=0,
                  unique_patients=True,
                  pathology_masks=False
@@ -310,7 +391,12 @@ class NIH_Dataset(Dataset):
 
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.imgpath = imgpath
-        self.csvpath = csvpath
+
+        if csvpath == USE_INCLUDED_FILE:
+            self.csvpath = os.path.join(datapath, "Data_Entry_2017_v2020.csv.gz")
+        else:
+            self.csvpath = csvpath
+
         self.transform = transform
         self.data_aug = data_aug
         self.pathology_masks = pathology_masks
@@ -324,7 +410,7 @@ class NIH_Dataset(Dataset):
 
         # Load data
         self.check_paths_exist()
-        self.csv = pd.read_csv(self.csvpath, nrows=nrows)
+        self.csv = pd.read_csv(self.csvpath)
 
         # Remove images with view position other than specified
         self.csv["view"] = self.csv['View Position']
@@ -337,9 +423,15 @@ class NIH_Dataset(Dataset):
 
         ####### pathology masks ########
         # load nih pathology masks
-        self.pathology_maskscsv = pd.read_csv(bbox_list_path,
-                                              names=["Image Index", "Finding Label", "x", "y", "w", "h", "_1", "_2", "_3"],
-                                              skiprows=1)
+        if bbox_list_path == USE_INCLUDED_FILE:
+            self.bbox_list_path = os.path.join(datapath, "BBox_List_2017.csv.gz")
+        else:
+            self.bbox_list_path = bbox_list_path
+        self.pathology_maskscsv = pd.read_csv(
+            self.bbox_list_path,
+            names=["Image Index", "Finding Label", "x", "y", "w", "h", "_1", "_2", "_3"],
+            skiprows=1
+        )
 
         # change label name to match
         self.pathology_maskscsv.loc[self.pathology_maskscsv["Finding Label"] == "Infiltrate", "Finding Label"] = "Infiltration"
@@ -441,8 +533,8 @@ class RSNA_Pneumonia_Dataset(Dataset):
 
     def __init__(self,
                  imgpath,
-                 csvpath=os.path.join(datapath, "kaggle_stage_2_train_labels.csv.zip"),
-                 dicomcsvpath=os.path.join(datapath, "kaggle_stage_2_train_images_dicom_headers.csv.gz"),
+                 csvpath=USE_INCLUDED_FILE,
+                 dicomcsvpath=USE_INCLUDED_FILE,
                  views=["PA"],
                  transform=None,
                  data_aug=None,
@@ -468,14 +560,21 @@ class RSNA_Pneumonia_Dataset(Dataset):
         self.use_pydicom = (extension == ".dcm")
 
         # Load data
-        self.csvpath = csvpath
+        if csvpath == USE_INCLUDED_FILE:
+            self.csvpath = os.path.join(datapath, "kaggle_stage_2_train_labels.csv.zip")
+        else:
+            self.csvpath = csvpath
         self.raw_csv = pd.read_csv(self.csvpath, nrows=nrows)
 
         # The labels have multiple instances for each mask
         # So we just need one to get the target label
         self.csv = self.raw_csv.groupby("patientId").first()
 
-        self.dicomcsvpath = dicomcsvpath
+        if dicomcsvpath == USE_INCLUDED_FILE:
+            self.dicomcsvpath = os.path.join(datapath, "kaggle_stage_2_train_images_dicom_headers.csv.gz")
+        else:
+            self.dicomcsvpath = dicomcsvpath
+
         self.dicomcsv = pd.read_csv(self.dicomcsvpath, nrows=nrows, index_col="PatientID")
 
         self.csv = self.csv.join(self.dicomcsv, on="patientId")
@@ -589,7 +688,7 @@ class NIH_Google_Dataset(Dataset):
 
     def __init__(self,
                  imgpath,
-                 csvpath=os.path.join(datapath, "google2019_nih-chest-xray-labels.csv.gz"),
+                 csvpath=USE_INCLUDED_FILE,
                  views=["PA"],
                  transform=None,
                  data_aug=None,
@@ -610,7 +709,10 @@ class NIH_Google_Dataset(Dataset):
         self.pathologies = sorted(self.pathologies)
 
         # Load data
-        self.csvpath = csvpath
+        if csvpath == USE_INCLUDED_FILE:
+            self.csvpath = os.path.join(datapath, "google2019_nih-chest-xray-labels.csv.gz")
+        else:
+            self.csvpath = csvpath
         self.csv = pd.read_csv(self.csvpath, nrows=nrows)
 
         # Remove images with view position other than specified
@@ -683,7 +785,7 @@ class PC_Dataset(Dataset):
 
     def __init__(self,
                  imgpath,
-                 csvpath=os.path.join(datapath, "PADCHEST_chest_x_ray_images_labels_160K_01.02.19.csv.gz"),
+                 csvpath=USE_INCLUDED_FILE,
                  views=["PA"],
                  transform=None,
                  data_aug=None,
@@ -730,7 +832,10 @@ class PC_Dataset(Dataset):
         self.transform = transform
         self.data_aug = data_aug
         self.flat_dir = flat_dir
-        self.csvpath = csvpath
+        if csvpath == USE_INCLUDED_FILE:
+            self.csvpath = os.path.join(datapath, "PADCHEST_chest_x_ray_images_labels_160K_01.02.19.csv.gz")
+        else:
+            self.csvpath = csvpath
 
         self.check_paths_exist()
         self.csv = pd.read_csv(self.csvpath, low_memory=False)
@@ -835,7 +940,7 @@ class CheX_Dataset(Dataset):
 
     def __init__(self,
                  imgpath,
-                 csvpath=os.path.join(datapath, "chexpert_train.csv.gz"),
+                 csvpath=USE_INCLUDED_FILE,
                  views=["PA"],
                  transform=None,
                  data_aug=None,
@@ -866,7 +971,10 @@ class CheX_Dataset(Dataset):
         self.imgpath = imgpath
         self.transform = transform
         self.data_aug = data_aug
-        self.csvpath = csvpath
+        if csvpath == USE_INCLUDED_FILE:
+            self.csvpath = os.path.join(datapath, "chexpert_train.csv.gz")
+        else:
+            self.csvpath = csvpath
         self.csv = pd.read_csv(self.csvpath)
         self.views = views
 
@@ -1084,9 +1192,9 @@ class Openi_Dataset(Dataset):
     """
 
     def __init__(self, imgpath,
-                 xmlpath=os.path.join(datapath, "NLMCXR_reports.tgz"),
-                 dicomcsv_path=os.path.join(datapath, "nlmcxr_dicom_metadata.csv.gz"),
-                 tsnepacsv_path=os.path.join(datapath, "nlmcxr_tsne_pa.csv.gz"),
+                 xmlpath=USE_INCLUDED_FILE,
+                 dicomcsv_path=USE_INCLUDED_FILE,
+                 tsnepacsv_path=USE_INCLUDED_FILE,
                  use_tsne_derived_view=False,
                  views=["PA"],
                  transform=None,
@@ -1119,7 +1227,10 @@ class Openi_Dataset(Dataset):
         mapping["Atelectasis"] = ["Atelectases"]
 
         # Load data
-        self.xmlpath = xmlpath
+        if xmlpath == USE_INCLUDED_FILE:
+            self.xmlpath = os.path.join(datapath, "NLMCXR_reports.tgz")
+        else:
+            self.xmlpath = xmlpath
 
         tarf = tarfile.open(xmlpath, 'r:gz')
 
@@ -1145,13 +1256,23 @@ class Openi_Dataset(Dataset):
 
         self.csv = pd.DataFrame(samples)
 
-        self.dicom_metadata = pd.read_csv(dicomcsv_path, index_col="imageid", low_memory=False)
+        if dicomcsv_path == USE_INCLUDED_FILE:
+            self.dicomcsv_path = os.path.join(datapath, "nlmcxr_dicom_metadata.csv.gz")
+        else:
+            self.dicomcsv_path = dicomcsv_path
+
+        self.dicom_metadata = pd.read_csv(self.dicomcsv_path, index_col="imageid", low_memory=False)
 
         # Merge in dicom metadata
         self.csv = self.csv.join(self.dicom_metadata, on="imageid")
 
+        if tsnepacsv_path == USE_INCLUDED_FILE:
+            self.tsnepacsv_path = os.path.join(datapath, "nlmcxr_tsne_pa.csv.gz")
+        else:
+            self.tsnepacsv_path = tsnepacsv_path
+
         # Attach view computed by tsne
-        tsne_pa = pd.read_csv(tsnepacsv_path, index_col="imageid")
+        tsne_pa = pd.read_csv(self.tsnepacsv_path, index_col="imageid")
         self.csv = self.csv.join(tsne_pa, on="imageid")
 
         if use_tsne_derived_view:
@@ -1214,6 +1335,21 @@ class Openi_Dataset(Dataset):
 
 class COVID19_Dataset(Dataset):
     """COVID-19 Image Data Collection
+
+    This dataset currently contains hundreds of frontal view X-rays and is
+    the largest public resource for COVID-19 image and prognostic data,
+    making it a necessary resource to develop and evaluate tools to aid in
+    the treatment of COVID-19. It was manually aggregated from publication
+    figures as well as various web based repositories into a machine learning
+    (ML) friendly format with accompanying dataloader code. We collected
+    frontal and lateral view imagery and metadata such as the time since
+    first symptoms, intensive care unit (ICU) status, survival status,
+    intubation status, or hospital location. We present multiple possible use
+    cases for the data such as predicting the need for the ICU, predicting
+    patient survival, and understanding a patient's trajectory during
+    treatment.
+
+    Citations:
 
     COVID-19 Image Data Collection: Prospective Predictions Are the Future
     Joseph Paul Cohen and Paul Morrison and Lan Dao and Karsten Roth and Tim Q Duong and Marzyeh Ghassemi
@@ -1428,7 +1564,7 @@ class SIIM_Pneumothorax_Dataset(Dataset):
 
     def __init__(self,
                  imgpath,
-                 csvpath=os.path.join(datapath, "siim-pneumothorax-train-rle.csv.gz"),
+                 csvpath=USE_INCLUDED_FILE,
                  transform=None,
                  data_aug=None,
                  seed=0,
@@ -1443,7 +1579,11 @@ class SIIM_Pneumothorax_Dataset(Dataset):
         self.pathology_masks = pathology_masks
 
         # Load data
-        self.csvpath = csvpath
+        if csvpath == USE_INCLUDED_FILE:
+            self.csvpath = os.path.join(datapath, "siim-pneumothorax-train-rle.csv.gz")
+        else:
+            self.csvpath = csvpath
+
         self.csv = pd.read_csv(self.csvpath)
 
         self.pathologies = ["Pneumothorax"]
@@ -1554,7 +1694,7 @@ class VinBrain_Dataset(Dataset):
 
     def __init__(self,
                  imgpath,
-                 csvpath=os.path.join(datapath, "vinbigdata-train.csv.gz"),
+                 csvpath=USE_INCLUDED_FILE,
                  views=None,
                  transform=None,
                  data_aug=None,
@@ -1565,7 +1705,12 @@ class VinBrain_Dataset(Dataset):
 
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.imgpath = imgpath
-        self.csvpath = csvpath
+
+        if csvpath == USE_INCLUDED_FILE:
+            self.csvpath = os.path.join(datapath, "vinbigdata-train.csv.gz")
+        else:
+            self.csvpath = csvpath
+
         self.transform = transform
         self.data_aug = data_aug
         self.pathology_masks = pathology_masks
@@ -1830,13 +1975,14 @@ class ToPILImage(object):
 
 
 class XRayResizer(object):
-    def __init__(self, size, engine="skimage"):
+    """Resize an image to a specific size"""
+    def __init__(self, size: int, engine="skimage"):
         self.size = size
         self.engine = engine
         if 'cv2' in sys.modules:
             print("Setting XRayResizer engine to cv2 could increase performance.")
 
-    def __call__(self, img):
+    def __call__(self, img: np.ndarray) -> np.ndarray:
         if self.engine == "skimage":
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
@@ -1852,20 +1998,60 @@ class XRayResizer(object):
 
 
 class XRayCenterCrop(object):
-    def crop_center(self, img):
+    """Perform a center crop on the long dimension of the input image"""
+    def crop_center(self, img: np.ndarray) -> np.ndarray:
         _, y, x = img.shape
         crop_size = np.min([y, x])
         startx = x // 2 - (crop_size // 2)
         starty = y // 2 - (crop_size // 2)
         return img[:, starty:starty + crop_size, startx:startx + crop_size]
 
-    def __call__(self, img):
+    def __call__(self, img: np.ndarray) -> np.ndarray:
         return self.crop_center(img)
 
 
 class CovariateDataset(Dataset):
-    """Dataset which will correlate the dataset with a specific label.
+    """A covariate shift between two data distributions arises when some extraneous variable confounds with
+    the variables of interest in the first dataset differently than in the second [Moreno-Torres et al., 2012].
+    Covariate shifts between the training and test distribution in a machine learning setting can lead to
+    models which generalize poorly, and this phenomenon is commonly observed in CXR models trained
+    on a small dataset and deployed on another one [Zhao et al., 2019; DeGrave et al., 2020]. We provide
+    tools to simulate covariate shifts in these datasets so researchers can evaluate the susceptibility of
+    their models to these shifts, or explore mitigation strategies.
 
+    >>> d = xrv.datasets.CovariateDataset(d1 = # dataset1 with a specific condition.
+    >>>         d1_target = # target label to predict.
+    >>>         d2 = # dataset2 with a specific condition.
+    >>>         d2_target = #target label to predict.
+    >>>         mode="train", # train, valid, or test.
+    >>>         ratio=0.75)
+
+    .. image:: _static/CovariateDataset-Diagram.png
+
+    The class xrv.datasets.CovariateDataset takes two datasets and two arrays representing the
+    labels. It returns samples for the output classes with a specified ratio of examples from each dataset,
+    thereby introducing a correlation between any dataset-specific nuisance features and the output label.
+    This simulates a covariate shift. The test split can be set up with a different ratio than the training
+    split; this setup has been shown to both decrease generalization performance and exacerbate incorrect
+    feature attribution [Viviano et al., 2020]. See Figure 4 for a visualization of the effect the ratio
+    parameter has on the mean class difference when correlating the view (each dataset) with the target
+    label. The effect seen with low ratios is due to the majority of the positive labels being drawn from
+    the first dataset, where in the high ratios, the majority of the positive labels are drawn from the
+    second dataset. With any ratio, the number of samples returned will be the same in order to provide
+    controlled experiments. The dataset has 3 modes, train sampled using the provided ratio and the valid
+    and test dataset are sampled using 1−ratio.
+
+    An example of the mean class difference drawn from the COVID-19 dataset at different
+    covariate ratios. Here, the first COVID-19 dataset consisted of only AP images, whereas the second
+    dataset consisted of only PA images. The third row shows, for each ratio, the difference in the
+    class means, demonstrating the effect of sampling images from the two views on the perceived class
+    difference. The fourth row shows the difference between each ratio’s difference image, and the
+    difference image with a ratio of 0.5 (balanced sampling from all views).
+
+    .. image:: _static/covariate.png
+
+    Citation:
+    
     Viviano et al. Saliency is a Possible Red Herring When Diagnosing Poor Generalization
     https://arxiv.org/abs/1910.00199
     """
