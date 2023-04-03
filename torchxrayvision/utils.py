@@ -87,7 +87,7 @@ def read_xray_dcm(path:PathLike, voi_lut:bool=False, fix_monochrome:bool=True)->
         fix_monochrome (bool, optional): Convert dicom interpretation MONOCHROME1 to MONOCHROME2. Defaults to True.
 
     Returns:
-        ndarray: 2D single array image for a dicom image
+        ndarray: 2D single array image for a dicom image scaled between -1024, 1024
     """
     try:
         import pydicom
