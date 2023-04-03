@@ -219,6 +219,17 @@ def ResNetAE101(**kwargs):
 
 
 def ResNetAE(weights=None):
+    """A ResNet based autoencoder.
+
+    Possible weights for this class include:
+
+    .. code-block:: python
+
+        ae = xrv.autoencoders.ResNetAE(weights="101-elastic") # trained on PadChest, NIH, CheXpert, and MIMIC
+        z = ae.encode(image)
+        image2 = ae.decode(z)
+
+    """
 
     if weights == None:
         return ResNetAE101()

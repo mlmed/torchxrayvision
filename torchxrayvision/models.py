@@ -79,19 +79,45 @@ model_urls['resnet50-res512-all'] = {
 
 # Just created for documentation
 class Model:
-    """asdasda s
+    """The library is composed of core and baseline classifiers. Core
+    classifiers are trained specifically for this library and baseline
+    classifiers come from other papers that have been adapted to provide the
+    same interface and work with the same input pixel scaling as our core
+    models. All models will automatically resize input images (higher or
+    lower using bilinear interpolation) to match the specified size they were
+    trained on. This allows them to be easily swapped out for experiments.
+    Pre-trained models are hosted on GitHub and automatically downloaded to
+    the user’s local `~/.torchxrayvision` directory.
+
+    Core pre-trained classifiers are provided as PyTorch Modules which are
+    fully differentiable in order to work seamlessly with other PyTorch code.
+
     """
 
     @property
     def targets(self):
-        """Each classifier provides a field `model.targets` which aligns to the list of predictions that the model makes. Depending on the weights loaded this list will change. The predictions can be aligned to pathology names as follows:"""
-        pass
-    
-    @property
-    def csv(self):
-        """A list of the targets that this model will predict"""
+        """Each classifier provides a field `model.targets` which aligns to
+        the list of predictions that the model makes. Depending on the
+        weights loaded this list will change. The predictions can be aligned
+        to pathology names as follows:
+        """
         pass
 
+    def features(self, x):
+        """The pre-trained models can also be used as features extractors for
+        semi-supervised training or transfer learning tasks. A feature vector
+        can be obtained for each image using the model.features function. The
+        resulting size will vary depending on the architecture and the input
+        image size. For some models there is a model.features2 method that
+        will extract features at a different point of the computation graph.
+        Example UMAP visualizations [McInnes et al., 2018] of the features
+        from different models is shown in Figure 1.
+
+        .. code-block:: python
+
+            feats = model.features(img)
+        """
+        pass
 
 class _DenseLayer(nn.Sequential):
     def __init__(self, num_input_features, growth_rate, bn_size, drop_rate):
@@ -134,6 +160,20 @@ class _Transition(nn.Sequential):
 class DenseNet(nn.Module):
     """Based on 
     `"Densely Connected Convolutional Networks" <https://arxiv.org/abs/1608.06993>`_
+
+    Possible weights for this class include:
+
+    .. code-block:: python
+
+        ## 224x224 models
+        model = xrv.models.DenseNet(weights="densenet121-res224-all")
+        model = xrv.models.DenseNet(weights="densenet121-res224-rsna") # RSNA Pneumonia Challenge
+        model = xrv.models.DenseNet(weights="densenet121-res224-nih") # NIH chest X-ray8
+        model = xrv.models.DenseNet(weights="densenet121-res224-pc") # PadChest (University of Alicante)
+        model = xrv.models.DenseNet(weights="densenet121-res224-chex") # CheXpert (Stanford)
+        model = xrv.models.DenseNet(weights="densenet121-res224-mimic_nb") # MIMIC-CXR (MIT)
+        model = xrv.models.DenseNet(weights="densenet121-res224-mimic_ch") # MIMIC-CXR (MIT)
+
     
     :param weights: Specify a weight name to load pre-trained weights
     :param op_threshs: Specify a weight name to load pre-trained weights 
@@ -269,7 +309,12 @@ class ResNet(nn.Module):
     """
     Based on `"Deep Residual Learning for Image Recognition" <https://arxiv.org/abs/1512.03385>`_
 
+    Possible weights for this class include:
 
+    .. code-block:: python
+
+        # 512x512 models
+        model = xrv.models.ResNet(weights="resnet50-res512-all")
 
     :param weights: Specify a weight name to load pre-trained weights
     :param op_threshs: Specify a weight name to load pre-trained weights 
