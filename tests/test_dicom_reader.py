@@ -41,6 +41,8 @@ def test_pydicom_end2end(path, lut_config, monochrome_config, expected_pixel_val
     out = xrv.utils.read_xray_dcm(path=path, voi_lut=lut_config, fix_monochrome=monochrome_config)
     obtained_pixel_value = float(out[60][2])
     assert obtained_pixel_value == pytest.approx(expected_pixel_value,0.001)
+    assert out.max() <= 1024
+    assert out.min() >= -1024
     if warn:
         with pytest.warns():
             xrv.utils.read_xray_dcm(path=path, voi_lut=lut_config, fix_monochrome=monochrome_config)
