@@ -1049,12 +1049,12 @@ class CheX_Dataset(Dataset):
         # offset_day_int
 
         # patientid
-        if 'train' in csvpath:
+        if 'train' in self.csvpath:
             patientid = self.csv.Path.str.split("train/", expand=True)[1]
-        elif 'valid' in csvpath:
+        elif 'valid' in self.csvpath:
             patientid = self.csv.Path.str.split("valid/", expand=True)[1]
         else:
-            raise NotImplemented
+            raise NotImplementedError
 
         patientid = patientid.str.split("/study", expand=True)[0]
         patientid = patientid.str.replace("patient", "")
@@ -1272,7 +1272,7 @@ class Openi_Dataset(Dataset):
         else:
             self.xmlpath = xmlpath
 
-        tarf = tarfile.open(xmlpath, 'r:gz')
+        tarf = tarfile.open(self.xmlpath, 'r:gz')
 
         samples = []
 
