@@ -3,6 +3,10 @@ import requests
 import numpy as np
 import skimage
 
+from os import PathLike
+from numpy import ndarray
+import warnings
+
 
 def in_notebook():
     try:
@@ -73,3 +77,44 @@ def load_image(fname: str):
     img = img[None, :, :]
 
     return img
+
+def read_xray_dcm(path:PathLike, voi_lut:bool=False, fix_monochrome:bool=True)->ndarray:
+    """read a dicom-like file and convert to numpy array 
+
+    Args:
+        path (PathLike): path to the dicom file
+        voi_lut (bool, optional): transform image to be human viewable. Defaults to False.
+        fix_monochrome (bool, optional): Convert dicom interpretation MONOCHROME1 to MONOCHROME2. Defaults to True.
+
+    Returns:
+        ndarray: 2D single array image for a dicom image scaled between -1024, 1024
+    """
+    try:
+        import pydicom
+    except ImportError:
+        raise Exception("Missing Package Pydicom. Try installing it by running `pip install pydicom`.")
+
+    # get the pixel array
+    ds = pydicom.dcmread(path, force=True)
+    data = ds.pixel_array
+
+    # we have not tested RGB, YBR_FULL, or YBR_FULL_422 yet.
+    if ds.PhotometricInterpretation  not in ['MONOCHROME1', 'MONOCHROME2']:
+        raise NotImplementedError(f'PhotometricInterpretation `{ds.PhotometricInterpretation}` is not yet supported.')
+    # get the max possible pixel value from DCM header
+    max_possible_pixel_val = (2**ds.BitsStored - 1)
+
+    # LUT for human friendly view
+    if voi_lut:
+        data = pydicom.pixel_data_handlers.util.apply_voi_lut(data, ds, index=0)
+
+               
+    # `MONOCHROME1` have an inverted view; Bones are black; background is white
+    # https://web.archive.org/web/20150920230923/http://www.mccauslandcenter.sc.edu/mricro/dicom/index.html
+    if fix_monochrome and ds.PhotometricInterpretation == "MONOCHROME1":
+        warnings.warn(f"Coverting MONOCHROME1 to MONOCHROME2 interpretation for file: {path}. Can be avoided by setting `fix_monochrome=False`")
+        data = max_possible_pixel_val - data
+
+    # normalize data to [-1024, 1024]    
+    data = normalize(data, max_possible_pixel_val)
+    return data
