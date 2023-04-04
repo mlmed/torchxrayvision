@@ -39,15 +39,22 @@ jobs:
     - uses: actions/checkout@v2
       
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
+    
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         echo "Installing requirements.txt"
         pip install -r requirements.txt
         python -m pip install pytest
+
+    - name: Install Dev dependencies
+      run: |
+        python -m pip install --upgrade pip
+        echo "Installing requirements-dev.txt"
+        pip install -r requirements-dev.txt
 
     - name: Install library
       run: |
