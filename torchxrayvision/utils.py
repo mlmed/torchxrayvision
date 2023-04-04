@@ -98,6 +98,9 @@ def read_xray_dcm(path:PathLike, voi_lut:bool=False, fix_monochrome:bool=True)->
     ds = pydicom.dcmread(path, force=True)
     data = ds.pixel_array
 
+    # we have not tested RGB, YBR_FULL, or YBR_FULL_422 yet.
+    if ds.PhotometricInterpretation  not in ['MONOCHROME1', 'MONOCHROME2']:
+        raise NotImplementedError(f'PhotometricInterpretation `{ds.PhotometricInterpretation}` is not yet supported.')
     # get the max possible pixel value from DCM header
     max_possible_pixel_val = (2**ds.BitsStored - 1)
 
