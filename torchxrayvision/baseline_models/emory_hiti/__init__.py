@@ -8,21 +8,24 @@ import torchxrayvision as xrv
 
 
 class RaceModel(nn.Module):
-    """This model is from the work below and is trained to predict the patient race from a chest X-ray.
+    """This model is from the work below and is trained to predict the
+    patient race from a chest X-ray.
 
     Public data from the MIMIC dataset is used to train this model.
 
     Images are scaled to a 320x320 resolution automatically.
 
-    @article{Gichoya2022,
-        title = {AI recognition of patient race in medical imaging: a modelling study},
-        author = {Gichoya, Judy Wawira and Banerjee, Imon and Bhimireddy, Ananth Reddy and Burns, John L and Celi, Leo Anthony and Chen, Li-Ching and Correa, Ramon and Dullerud, Natalie and Ghassemi, Marzyeh and Huang, Shih-Cheng and Kuo, Po-Chih and Lungren, Matthew P and Palmer, Lyle J and Price, Brandon J and Purkayastha, Saptarshi and Pyrros, Ayis T and Oakden-Rayner, Lauren and Okechukwu, Chima and Seyyed-Kalantari, Laleh and Trivedi, Hari and Wang, Ryan and Zaiman, Zachary and Zhang, Haoran},
-        doi = {10.1016/S2589-7500(22)00063-2},
-        journal = {The Lancet Digital Health},
-        pmid = {35568690},
-        url = {https://www.thelancet.com/journals/landig/article/PIIS2589-7500(22)00063-2/fulltext},
-        year = {2022}
-    }
+    .. code-block:: bibtex
+
+        @article{Gichoya2022,
+            title = {AI recognition of patient race in medical imaging: a modelling study},
+            author = {Gichoya, Judy Wawira and Banerjee, Imon and Bhimireddy, Ananth Reddy and Burns, John L and Celi, Leo Anthony and Chen, Li-Ching and Correa, Ramon and Dullerud, Natalie and Ghassemi, Marzyeh and Huang, Shih-Cheng and Kuo, Po-Chih and Lungren, Matthew P and Palmer, Lyle J and Price, Brandon J and Purkayastha, Saptarshi and Pyrros, Ayis T and Oakden-Rayner, Lauren and Okechukwu, Chima and Seyyed-Kalantari, Laleh and Trivedi, Hari and Wang, Ryan and Zaiman, Zachary and Zhang, Haoran},
+            doi = {10.1016/S2589-7500(22)00063-2},
+            journal = {The Lancet Digital Health},
+            pmid = {35568690},
+            url = {https://www.thelancet.com/journals/landig/article/PIIS2589-7500(22)00063-2/fulltext},
+            year = {2022}
+        }
 
     """
 

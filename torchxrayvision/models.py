@@ -1,3 +1,5 @@
+from typing import List
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -77,6 +79,58 @@ model_urls['resnet50-res512-all'] = {
     "ppv80_thres": [0.690908, 0.720028, 0.7303882, 0.7235838, 0.6787441, 0.7304924, 0.73105824, 0.6839408, 0.7241559, 0.7219969, 0.6346738, 0.72764945, 0.7285066, 0.5735704, np.nan, 0.69684714, 0.7135549, np.nan]
 }
 
+# Just created for documentation
+class Model:
+    """The library is composed of core and baseline classifiers. Core
+    classifiers are trained specifically for this library and baseline
+    classifiers come from other papers that have been adapted to provide the
+    same interface and work with the same input pixel scaling as our core
+    models. All models will automatically resize input images (higher or
+    lower using bilinear interpolation) to match the specified size they were
+    trained on. This allows them to be easily swapped out for experiments.
+    Pre-trained models are hosted on GitHub and automatically downloaded to
+    the user’s local `~/.torchxrayvision` directory.
+
+    Core pre-trained classifiers are provided as PyTorch Modules which are
+    fully differentiable in order to work seamlessly with other PyTorch code.
+
+    """
+
+    pathologies: List[str]
+    """Each classifier provides a field `model.pathologies` which aligns to
+    the list of predictions that the model makes. Depending on the
+    weights loaded this list will change. The predictions can be aligned
+    to pathology names as follows:
+    """
+
+    def features(self, x: torch.Tensor) -> torch.Tensor:
+        """The pre-trained models can also be used as features extractors for
+        semi-supervised training or transfer learning tasks. A feature vector
+        can be obtained for each image using the model.features function. The
+        resulting size will vary depending on the architecture and the input
+        image size. For some models there is a model.features2 method that
+        will extract features at a different point of the computation graph.
+
+        .. code-block:: python
+
+            feats = model.features(img)
+        """
+        pass
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """The model will output a tensor with the shape [batch, pathologies]
+        which is aligned to the order of the list `model.pathologies`.
+
+        .. code-block:: python
+
+            preds = model(img)
+            print(dict(zip(model.pathologies, preds.tolist()[0])))
+            # {'Atelectasis': 0.5583771,
+            #  'Consolidation': 0.5279943,
+            #  'Infiltration': 0.60061914,
+            #  ...
+        """
+        pass
 
 class _DenseLayer(nn.Sequential):
     def __init__(self, num_input_features, growth_rate, bn_size, drop_rate):
@@ -117,19 +171,27 @@ class _Transition(nn.Sequential):
 
 
 class DenseNet(nn.Module):
-    r"""Densenet-BC model class, based on
-    `"Densely Connected Convolutional Networks" <https://arxiv.org/pdf/1608.06993.pdf>`_
+    """Based on 
+    `"Densely Connected Convolutional Networks" <https://arxiv.org/abs/1608.06993>`_
 
-    Modified from torchvision to have a variable number of input channels
+    Possible weights for this class include:
 
-    Args:
-        growth_rate (int) - how many filters to add each layer (`k` in paper)
-        block_config (list of 4 ints) - how many layers in each pooling block
-        num_init_features (int) - the number of filters to learn in the first convolution layer
-        bn_size (int) - multiplicative factor for number of bottle neck layers
-          (i.e. bn_size * k features in the bottleneck layer)
-        drop_rate (float) - dropout rate after each dense layer
-        num_classes (int) - number of classification classes
+    .. code-block:: python
+
+        ## 224x224 models
+        model = xrv.models.DenseNet(weights="densenet121-res224-all")
+        model = xrv.models.DenseNet(weights="densenet121-res224-rsna") # RSNA Pneumonia Challenge
+        model = xrv.models.DenseNet(weights="densenet121-res224-nih") # NIH chest X-ray8
+        model = xrv.models.DenseNet(weights="densenet121-res224-pc") # PadChest (University of Alicante)
+        model = xrv.models.DenseNet(weights="densenet121-res224-chex") # CheXpert (Stanford)
+        model = xrv.models.DenseNet(weights="densenet121-res224-mimic_nb") # MIMIC-CXR (MIT)
+        model = xrv.models.DenseNet(weights="densenet121-res224-mimic_ch") # MIMIC-CXR (MIT)
+
+    
+    :param weights: Specify a weight name to load pre-trained weights
+    :param op_threshs: Specify a weight name to load pre-trained weights 
+    :param apply_sigmoid: Apply a sigmoid 
+        
     """
 
     def __init__(self,
@@ -257,7 +319,21 @@ class DenseNet(nn.Module):
 
 ##########################
 class ResNet(nn.Module):
+    """
+    Based on `"Deep Residual Learning for Image Recognition" <https://arxiv.org/abs/1512.03385>`_
 
+    Possible weights for this class include:
+
+    .. code-block:: python
+
+        # 512x512 models
+        model = xrv.models.ResNet(weights="resnet50-res512-all")
+
+    :param weights: Specify a weight name to load pre-trained weights
+    :param op_threshs: Specify a weight name to load pre-trained weights 
+    :param apply_sigmoid: Apply a sigmoid 
+
+    """
     def __init__(self, weights: str = None, apply_sigmoid: bool = False):
         super(ResNet, self).__init__()
 

@@ -26,16 +26,31 @@ def _convert_state_dict(state_dict):
 class PSPNet(nn.Module):
     """ChestX-Det Segmentation Model
 
+    You can load pretrained anatomical segmentation models. `Demo Notebook <https://github.com/mlmed/torchxrayvision/blob/master/scripts/segmentation.ipynb>`_
+
+    .. code-block:: python
+
+        seg_model = xrv.baseline_models.chestx_det.PSPNet()
+        output = seg_model(image)
+        output.shape # [1, 14, 512, 512]
+        seg_model.targets # ['Left Clavicle', 'Right Clavicle', 'Left Scapula', 'Right Scapula',
+                          #  'Left Lung', 'Right Lung', 'Left Hilus Pulmonis', 'Right Hilus Pulmonis',
+                          #  'Heart', 'Aorta', 'Facies Diaphragmatica', 'Mediastinum',  'Weasand', 'Spine']
+
+    .. image:: _static/segmentation-pspnet.png
+
     https://github.com/Deepwise-AILab/ChestX-Det-Dataset
 
-    @article{Lian2021,
-        title = {{A Structure-Aware Relation Network for Thoracic Diseases Detection and Segmentation}},
-        author = {Lian, Jie and Liu, Jingyu and Zhang, Shu and Gao, Kai and Liu, Xiaoqing and Zhang, Dingwen and Yu, Yizhou},
-        doi = {10.48550/arxiv.2104.10326},
-        journal = {IEEE Transactions on Medical Imaging},
-        url = {https://arxiv.org/abs/2104.10326},
-        year = {2021}
-    }
+    .. code-block:: bibtex
+
+        @article{Lian2021,
+            title = {{A Structure-Aware Relation Network for Thoracic Diseases Detection and Segmentation}},
+            author = {Lian, Jie and Liu, Jingyu and Zhang, Shu and Gao, Kai and Liu, Xiaoqing and Zhang, Dingwen and Yu, Yizhou},
+            doi = {10.48550/arxiv.2104.10326},
+            journal = {IEEE Transactions on Medical Imaging},
+            url = {https://arxiv.org/abs/2104.10326},
+            year = {2021}
+        }
     """
 
     def __init__(self):
