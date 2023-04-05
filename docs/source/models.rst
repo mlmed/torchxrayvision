@@ -2,20 +2,22 @@
 Models
 ======
 
-Classifiers
-+++++++++++
+Core Classifiers
+++++++++++++++++
 
 .. automodule:: torchxrayvision.models
 
-   .. autoclass:: Model
-      :members: 
+    .. autoclass:: Model
+        :members:
+
+        .. automethod:: forward
 
    .. autoclass:: DenseNet(weights=SPECIFY, op_threshs=None, apply_sigmoid=False)
    
    .. autoclass:: ResNet(weights=SPECIFY, op_threshs=None, apply_sigmoid=False)
 
-Autoencoders
-++++++++++++
+Core Autoencoders
++++++++++++++++++
 
 .. automodule:: torchxrayvision.autoencoders
 

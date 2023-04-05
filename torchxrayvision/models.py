@@ -1,3 +1,5 @@
+from typing import List
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -94,28 +96,39 @@ class Model:
 
     """
 
-    @property
-    def targets(self):
-        """Each classifier provides a field `model.targets` which aligns to
-        the list of predictions that the model makes. Depending on the
-        weights loaded this list will change. The predictions can be aligned
-        to pathology names as follows:
-        """
-        pass
+    pathologies: List[str]
+    """Each classifier provides a field `model.pathologies` which aligns to
+    the list of predictions that the model makes. Depending on the
+    weights loaded this list will change. The predictions can be aligned
+    to pathology names as follows:
+    """
 
-    def features(self, x):
+    def features(self, x: torch.Tensor) -> torch.Tensor:
         """The pre-trained models can also be used as features extractors for
         semi-supervised training or transfer learning tasks. A feature vector
         can be obtained for each image using the model.features function. The
         resulting size will vary depending on the architecture and the input
         image size. For some models there is a model.features2 method that
         will extract features at a different point of the computation graph.
-        Example UMAP visualizations [McInnes et al., 2018] of the features
-        from different models is shown in Figure 1.
 
         .. code-block:: python
 
             feats = model.features(img)
+        """
+        pass
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """The model will output a tensor with the shape [batch, pathologies]
+        which is aligned to the order of the list `model.pathologies`.
+
+        .. code-block:: python
+
+            preds = model(img)
+            print(dict(zip(model.pathologies, preds.tolist()[0])))
+            # {'Atelectasis': 0.5583771,
+            #  'Consolidation': 0.5279943,
+            #  'Infiltration': 0.60061914,
+            #  ...
         """
         pass
 
