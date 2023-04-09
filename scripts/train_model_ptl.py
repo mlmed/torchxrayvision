@@ -20,7 +20,8 @@ import dataset_utils
 import model_ptl
 import torchxrayvision as xrv
 
-from pytorch_lightning import Trainer
+import lightning as pl
+from lightning import Trainer
 
 
 parser = argparse.ArgumentParser()
@@ -109,14 +110,26 @@ print("test_dataset.labels.shape", test_dataset.labels.shape)
 print("train_dataset",train_dataset)
 print("test_dataset",test_dataset)
     
+    
+if args.taskweights:
+    task_weights = np.nansum(train_dataset.labels, axis=0)
+    task_weights = task_weights.max() - task_weights + task_weights.mean()
+    task_weights = task_weights/task_weights.max()
+    task_weights = torch.from_numpy(task_weights).float()
+    print("Task weights", dict(zip(train_dataset.pathologies, task_weights.tolist())))
+
 
 train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size)
 test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size)
 
-model = model_ptl.ClassificationModel(num_classes=len(train_dataset.pathologies))
+model = model_ptl.ClassificationModel(num_classes=len(train_dataset.pathologies), task_weights=task_weights)
 
 trainer = Trainer()
-trainer.fit(model, train_dataloader)
+trainer.fit(
+    model,
+    train_dataloader,
+    pl.pytorch.loggers.CSVLogger('logs'),
+)
 
 
 print("Done")

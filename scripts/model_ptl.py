@@ -10,18 +10,19 @@ from PIL import Image
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
 import torchxrayvision as xrv
-import pytorch_lightning as pl
+import lightning as pl
 
 
 class ClassificationModel(pl.LightningModule):
 
-    def __init__(self, num_classes=2):
+    def __init__(self, num_classes=2, task_weights=None):
         super().__init__()
 
         self.model = torchvision.models.resnet18(num_classes=num_classes, pretrained=False)
         self.model.conv1 = torch.nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
         
-        self.loss = torch.nn.BCEWithLogitsLoss()
+        self.loss = torch.nn.BCEWithLogitsLoss(reduction='none')
+        self.task_weights = task_weights
 
     def training_step(self, batch, batch_idx):
         x = batch['img']
@@ -29,6 +30,10 @@ class ClassificationModel(pl.LightningModule):
         
         logits = self.model(x)
         loss = self.loss(y[~y.isnan()], logits[~y.isnan()])
+        
+        weights = self.task_weights.repeat(x.shape[0])[~y.flatten().isnan()]
+        loss = (loss * weights).mean()
+        #import ipdb; ipdb.set_trace()
         self.log('train_loss', loss, prog_bar=True)
 
         return loss
