@@ -20,8 +20,7 @@ import dataset_utils
 import model_ptl
 import torchxrayvision as xrv
 
-import lightning as pl
-from lightning import Trainer
+import lightning.pytorch as pl
 
 
 parser = argparse.ArgumentParser()
@@ -68,9 +67,31 @@ transforms = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),xrv.d
 datas = dataset_utils.get_data(args.dataset, transform=transforms, merge=False)
 
 
+# generate age and sex labels
+for i, dataset in enumerate(datas):
+    
+    labels = []
+    pathos = []
+    for age in range(0, 100, 1):
+        labels.append((dataset.csv.age_years > age).values*1.0)
+        pathos.append(f'>{age}')
+
+    pathos.append('Male')
+    labels.append(dataset.csv.sex_male.values*1.0)  
+
+    pathos.append('Female')
+    labels.append(dataset.csv.sex_female.values*1.0)  
+
+    labels = np.array(labels)
+    
+    dataset.labels = labels.T
+    dataset.pathologies = pathos
+
+
+
 #cut out training sets
 train_datas = []
-test_datas = []
+val_datas = []
 for i, dataset in enumerate(datas):
     
     # give patientid if not exist
@@ -79,22 +100,22 @@ for i, dataset in enumerate(datas):
         
     gss = sklearn.model_selection.GroupShuffleSplit(train_size=0.8,test_size=0.2, random_state=args.seed)
     
-    train_inds, test_inds = next(gss.split(X=range(len(dataset)), groups=dataset.csv.patientid))
+    train_inds, val_inds = next(gss.split(X=range(len(dataset)), groups=dataset.csv.patientid))
     train_dataset = xrv.datasets.SubsetDataset(dataset, train_inds)
-    test_dataset = xrv.datasets.SubsetDataset(dataset, test_inds)
+    val_dataset = xrv.datasets.SubsetDataset(dataset, val_inds)
     
     train_datas.append(train_dataset)
-    test_datas.append(test_dataset)
+    val_datas.append(val_dataset)
     
 if len(datas) == 0:
     raise Exception("no dataset")
 elif len(datas) == 1:
     train_dataset = train_datas[0]
-    test_dataset = test_datas[0]
+    val_dataset = val_datas[0]
 else:
     print("merge datasets")
     train_dataset = xrv.datasets.MergeDataset(train_datas)
-    test_dataset = xrv.datasets.MergeDataset(test_datas)
+    val_dataset = xrv.datasets.MergeDataset(val_datas)
 
 
 # Setting the seed
@@ -106,9 +127,9 @@ if args.cuda:
 
 
 print("train_dataset.labels.shape", train_dataset.labels.shape)
-print("test_dataset.labels.shape", test_dataset.labels.shape)
+print("val_dataset.labels.shape", val_dataset.labels.shape)
 print("train_dataset",train_dataset)
-print("test_dataset",test_dataset)
+print("val_dataset",val_dataset)
     
     
 if args.taskweights:
@@ -120,15 +141,21 @@ if args.taskweights:
 
 
 train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size)
-test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size)
+val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size)
 
-model = model_ptl.ClassificationModel(num_classes=len(train_dataset.pathologies), task_weights=task_weights)
+model = model_ptl.SigmoidModel(num_classes=len(train_dataset.pathologies), task_weights=task_weights)
 
-trainer = Trainer()
+trainer = pl.Trainer(
+    # limit_train_batches=10,
+    # limit_val_batches=10,
+    logger=pl.loggers.CSVLogger('logs'),
+    callbacks=[pl.callbacks.early_stopping.EarlyStopping(monitor="val_loss", mode="min", patience=3)],
+)
+
 trainer.fit(
     model,
     train_dataloader,
-    pl.pytorch.loggers.CSVLogger('logs'),
+    val_dataloader
 )
 
 
