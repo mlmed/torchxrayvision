@@ -262,12 +262,12 @@ class MergeDataset(Dataset):
             print("Could not merge dataframes (.csv not available):", sys.exc_info()[0])
 
         self.csv = self.csv.reset_index(drop=True)
-
+        
     def __setattr__(self, name, value):
-        if name == "transform":
-            raise NotImplementedError("Cannot set transform on a merged dataset. Set the transforms directly on the dataset object. If it was to be set via this merged dataset it would have to modify the internal datasets which could have unexpected side effects")
-        if name == "data_aug":
-            raise NotImplementedError("Cannot set data_aug on a merged dataset. Set the transforms directly on the dataset object. If it was to be set via this merged dataset it would have to modify the internal datasets which could have unexpected side effects")
+        if hasattr(self, 'labels'):
+            # check only if have finished init, otherwise __init__ breaks
+            if name in ['transform', 'data_aug', 'labels', 'pathologies', 'targets']:
+                raise NotImplementedError(f'Cannot set {name} on a merged dataset. Set the transforms directly on the dataset object. If it was to be set via this merged dataset it would have to modify the internal dataset which could have unexpected side effects')
 
         object.__setattr__(self, name, value)
 
@@ -357,14 +357,15 @@ class SubsetDataset(Dataset):
         self.csv = self.csv.reset_index(drop=True)
 
         if hasattr(self.dataset, 'which_dataset'):
+            # keep information about the source dataset from a merged dataset
             self.which_dataset = self.dataset.which_dataset[self.idxs]
 
     def __setattr__(self, name, value):
-        if name == "transform":
-            raise NotImplementedError("Cannot set transform on a subset dataset. Set the transforms directly on the dataset object. If it was to be set via this subset dataset it would have to modify the internal dataset which could have unexpected side effects")
-        if name == "data_aug":
-            raise NotImplementedError("Cannot set data_aug on a subset dataset. Set the transforms directly on the dataset object. If it was to be set via this subset dataset it would have to modify the internal dataset which could have unexpected side effects")
-
+        if hasattr(self, 'labels'):
+            # check only if have finished init, otherwise __init__ breaks
+            if name in ['transform', 'data_aug', 'labels', 'pathologies', 'targets']:
+                raise NotImplementedError(f'Cannot set {name} on a subset dataset. Set the transforms directly on the dataset object. If it was to be set via this subset dataset it would have to modify the internal dataset which could have unexpected side effects')
+            
         object.__setattr__(self, name, value)
 
     def string(self):
