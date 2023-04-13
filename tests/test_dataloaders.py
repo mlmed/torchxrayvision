@@ -138,9 +138,16 @@ def test_dataloader_merging_incorrect_alignment():
     
     
     
+def test_dataloader_relabelling(create_test_images):
     
-def test_errors_when_doing_things_that_shouldnt_work():
+    d_nih = xrv.datasets.NIH_Dataset(imgpath=get_clazz_imgpath(xrv.datasets.NIH_Dataset))
+    xrv.datasets.relabel_dataset(['Mass'], d_nih)
     
+    assert d_nih[0]['lab'] == d_nih.labels[0]
+    
+    
+    
+def test_errors_when_doing_things_that_should_not_work():
     
     transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
                                                 xrv.datasets.XRayResizer(224)])
@@ -162,27 +169,29 @@ def test_errors_when_doing_things_that_shouldnt_work():
     merged_dataset = xrv.datasets.MergeDataset(datasets)
     
     with pytest.raises(NotImplementedError) as excinfo:
-        # Try to set the transforms on a merged dataset
         merged_dataset.transform = None
         
     with pytest.raises(NotImplementedError) as excinfo:
-        # Try to set the data_aug on a merged dataset
-        merged_dataset.transform = None
+        merged_dataset.data_aug = None
+        
+    with pytest.raises(NotImplementedError) as excinfo:
+        merged_dataset.labels = None
+        
+    with pytest.raises(NotImplementedError) as excinfo:
+        merged_dataset.pathologies = None
     
     
     subset_dataset = xrv.datasets.SubsetDataset(datasets[0], [0,1,2])
     
     with pytest.raises(NotImplementedError) as excinfo:
-        # Try to set the transforms on a subset dataset
         subset_dataset.transform = None
         
     with pytest.raises(NotImplementedError) as excinfo:
-        # Try to set the data_aug on a subset dataset
-        subset_dataset.transform = None
-    
-    
-    
-    
-    
-    
+        subset_dataset.data_aug = None
+        
+    with pytest.raises(NotImplementedError) as excinfo:
+        merged_dataset.labels = None
+        
+    with pytest.raises(NotImplementedError) as excinfo:
+        merged_dataset.pathologies = None
     
