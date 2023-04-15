@@ -26,26 +26,22 @@ import lightning.pytorch as pl
 parser = argparse.ArgumentParser()
 parser.add_argument('-f', type=str, default="", help='')
 parser.add_argument('-name', type=str)
-parser.add_argument('--output_dir', type=str, default="/scratch/users/joecohen/output/")
-parser.add_argument('--dataset', type=str, default="chex")
+parser.add_argument('--output_dir', type=str, default="/scratch/users/joecohen/output-ptl/")
+parser.add_argument('--dataset', type=str, default="nih-pc")
 parser.add_argument('--dataset_dir', type=str, default="/home/groups/akshaysc/joecohen/")
 parser.add_argument('--model', type=str, default="resnet50")
 parser.add_argument('--seed', type=int, default=0, help='')
-parser.add_argument('--cuda', type=bool, default=True, help='')
+parser.add_argument("--accelerator", default='cuda')
 parser.add_argument('--num_epochs', type=int, default=400, help='')
-parser.add_argument('--batch_size', type=int, default=32, help='')
+parser.add_argument('--batch_size', type=int, default=64, help='')
 parser.add_argument('--shuffle', type=bool, default=True, help='')
 parser.add_argument('--lr', type=float, default=0.001, help='')
-parser.add_argument('--threads', type=int, default=4, help='')
+parser.add_argument('--threads', type=int, default=8, help='')
 parser.add_argument('--taskweights', type=bool, default=True, help='')
-parser.add_argument('--featurereg', type=bool, default=False, help='')
-parser.add_argument('--weightreg', type=bool, default=False, help='')
 parser.add_argument('--data_aug', type=bool, default=True, help='')
 parser.add_argument('--data_aug_rot', type=int, default=45, help='')
 parser.add_argument('--data_aug_trans', type=float, default=0.15, help='')
 parser.add_argument('--data_aug_scale', type=float, default=0.15, help='')
-parser.add_argument('--label_concat', type=bool, default=False, help='')
-parser.add_argument('--label_concat_reg', type=bool, default=False, help='')
 parser.add_argument('--labelunion', type=bool, default=False, help='')
 
 args = parser.parse_args()
@@ -64,7 +60,7 @@ if args.data_aug:
 
 transforms = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),xrv.datasets.XRayResizer(64)])
 
-datas = dataset_utils.get_data(args.dataset, transform=transforms, merge=False)
+datas = dataset_utils.get_data(args.dataset, transform=transforms, data_aug=data_aug, merge=False)
 
 
 # generate age and sex labels
@@ -122,7 +118,7 @@ else:
 np.random.seed(args.seed)
 random.seed(args.seed)
 torch.manual_seed(args.seed)
-if args.cuda:
+if args.accelerator == 'cuda':
     torch.cuda.manual_seed_all(args.seed)
 
 
@@ -140,15 +136,30 @@ if args.taskweights:
     print("Task weights", dict(zip(train_dataset.pathologies, task_weights.tolist())))
 
 
-train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size)
-val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size)
+train_dataloader = torch.utils.data.DataLoader(
+    train_dataset, 
+    batch_size=args.batch_size,
+    num_workers=args.threads,
+    shuffle=args.shuffle,
+)
 
-model = model_ptl.SigmoidModel(num_classes=len(train_dataset.pathologies), task_weights=task_weights)
+val_dataloader = torch.utils.data.DataLoader(
+    val_dataset, 
+    batch_size=args.batch_size,
+    num_workers=args.threads,
+    shuffle=args.shuffle,
+)
+
+model = model_ptl.SigmoidModel(
+    num_classes=len(train_dataset.pathologies), 
+    task_weights=task_weights,
+)
 
 trainer = pl.Trainer(
+    accelerator=args.accelerator,
     # limit_train_batches=10,
     # limit_val_batches=10,
-    logger=pl.loggers.CSVLogger('logs'),
+    logger=pl.loggers.CSVLogger(args.output_dir),
     callbacks=[pl.callbacks.early_stopping.EarlyStopping(monitor="val_loss", mode="min", patience=3)],
 )
 

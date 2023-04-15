@@ -25,16 +25,18 @@ class SigmoidModel(pl.LightningModule):
         self.loss = torch.nn.BCEWithLogitsLoss(reduction='none')
         self.task_weights = task_weights
         
-        self.train_loss = torchmetrics.MeanMetric()
-        self.val_loss = torchmetrics.MeanMetric()
+        # self.train_auc = torchmetrics.AUROC(num_labels=num_classes, task='multilabel')
+        # self.val_auc = torchmetrics.AUROC(num_labels=num_classes, task='multilabel')
 
         
     def compute_loss(self, logits, y):
         
-        loss = self.loss(y[~y.isnan()], logits[~y.isnan()])
+        loss = self.loss(logits[~y.isnan()], y[~y.isnan()])
         
-        weights = self.task_weights.repeat(y.shape[0])[~y.flatten().isnan()]
-        loss = (loss * weights).mean()
+        if self.task_weights is not None:
+            self.task_weights = self.task_weights.to(self.device)
+            weights = self.task_weights.repeat(y.shape[0])[~y.flatten().isnan()]
+            loss = (loss * weights).mean()
         return loss
         
     def training_step(self, batch, batch_idx):
@@ -42,21 +44,29 @@ class SigmoidModel(pl.LightningModule):
         logits = self.model(batch['img'])
         loss = self.compute_loss(logits, batch['lab'])
         
-        self.train_loss.update(loss.detach())
-        self.log('train_loss', loss.detach(), prog_bar=True, on_epoch=True)
+        #self.train_auc.update(logits, batch['lab'])
+        self.log('train_loss', loss, prog_bar=True, on_epoch=True)
 
         return loss
+    
+    # def on_train_epoch_end(self):
+    #     self.log('train_auc', self.train_auc.compute())
+    #     self.train_auc.reset()
+        
     
     def validation_step(self, batch, batch_idx):
         
         with torch.no_grad():
             logits = self.model(batch['img'])
-            loss = self.compute_loss(logits, batch['lab'])
+            loss = self.compute_loss(logits, batch['lab']).mean()
         
-        self.val_loss.update(loss)            
+        #self.val_auc.update(logits, batch['lab'])         
         self.log("val_loss", loss, on_epoch=True)
+        
+    # def on_validation_epoch_end(self):
+    #     self.log('val_auc', self.val_auc.compute())
+    #     self.val_auc.reset()
 
         
     def configure_optimizers(self):
-        opt = torch.optim.Adam(self.model.parameters(),  lr=1e-06)
-        return opt
+        return torch.optim.Adam(self.model.parameters(),  lr=1e-06)
