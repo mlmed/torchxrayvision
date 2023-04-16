@@ -1,29 +1,45 @@
 import os
 import random
-from argparse import ArgumentParser, Namespace
 
 import numpy as np
 import torch
-import torch.nn.functional as F
 import torchvision
-from PIL import Image
-from torch import nn
-from torch.utils.data import DataLoader, Dataset
 import torchxrayvision as xrv
 import lightning as pl
 import torchmetrics
 
 
+class AEModel(torch.nn.Module):
+    def __init__(self, num_classes):
+        super().__init__()
+        self.model = xrv.autoencoders.ResNetAE(weights="101-elastic")
+        self.classifier = torch.nn.Linear(4608, num_classes)
+        
+    def forward(self, x):
+        feats = self.model.encode(x).flatten(1)
+        return self.classifier(feats)
+
 class SigmoidModel(pl.LightningModule):
 
-    def __init__(self, num_classes=2, task_weights=None):
+    def __init__(self, num_classes=2, task_weights=None, model_name='xrv_ae', finetune=False):
         super().__init__()
+        self.save_hyperparameters()
 
-        self.model = torchvision.models.resnet18(num_classes=num_classes, pretrained=False)
-        self.model.conv1 = torch.nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        self.finetune = finetune
+        if model_name == 'resnet18':
+            self.model = torchvision.models.resnet18(num_classes=num_classes, pretrained=False)
+            self.model.conv1 = torch.nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        elif model_name == 'resnet101':
+            self.model = torchvision.models.resnet101(num_classes=num_classes, pretrained=False)
+            self.model.conv1 = torch.nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        elif model_name == 'xrv_ae':
+            self.model = AEModel(num_classes)
+        else:
+            raise Exception()
         
         self.loss = torch.nn.BCEWithLogitsLoss(reduction='none')
         self.task_weights = task_weights
+        
         
         # self.train_auc = torchmetrics.AUROC(num_labels=num_classes, task='multilabel')
         # self.val_auc = torchmetrics.AUROC(num_labels=num_classes, task='multilabel')
@@ -34,7 +50,7 @@ class SigmoidModel(pl.LightningModule):
         loss = self.loss(logits[~y.isnan()], y[~y.isnan()])
         
         if self.task_weights is not None:
-            self.task_weights = self.task_weights.to(self.device)
+            self.task_weights = torch.tensor(self.task_weights).to(self.device)
             weights = self.task_weights.repeat(y.shape[0])[~y.flatten().isnan()]
             loss = (loss * weights).mean()
         return loss
@@ -69,4 +85,16 @@ class SigmoidModel(pl.LightningModule):
 
         
     def configure_optimizers(self):
-        return torch.optim.Adam(self.model.parameters(),  lr=1e-06)
+        
+        if self.finetune:
+            for param in self.parameters():
+                param.requires_grad = False
+
+            params_to_train = list(self.model.classifier.parameters())
+
+            for param in params_to_train:
+                param.requires_grad = True
+        else:
+             params_to_train = list(self.model.parameters())
+        
+        return torch.optim.Adam(params_to_train,  lr=1e-06)

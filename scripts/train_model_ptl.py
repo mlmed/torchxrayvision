@@ -27,9 +27,12 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-f', type=str, default="", help='')
 parser.add_argument('-name', type=str)
 parser.add_argument('--output_dir', type=str, default="/scratch/users/joecohen/output-ptl/")
-parser.add_argument('--dataset', type=str, default="nih-pc")
-parser.add_argument('--dataset_dir', type=str, default="/home/groups/akshaysc/joecohen/")
-parser.add_argument('--model', type=str, default="resnet50")
+parser.add_argument('--dataset', type=str, default="nih")
+parser.add_argument('--dataset_dir', type=str, default="/home/users/joecohen/scratch/data/")
+parser.add_argument('--model', type=str, default="xrv_ae")
+parser.add_argument('--finetune', type=bool, default=False)
+parser.add_argument('--note', type=str, default="v2")
+parser.add_argument('--resolution', type=int, default=224)
 parser.add_argument('--seed', type=int, default=0, help='')
 parser.add_argument("--accelerator", default='cuda')
 parser.add_argument('--num_epochs', type=int, default=400, help='')
@@ -58,7 +61,7 @@ if args.data_aug:
     ])
     print(data_aug)
 
-transforms = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),xrv.datasets.XRayResizer(64)])
+transforms = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),xrv.datasets.XRayResizer(args.resolution)])
 
 datas = dataset_utils.get_data(args.dataset, transform=transforms, data_aug=data_aug, merge=False)
 
@@ -69,14 +72,15 @@ for i, dataset in enumerate(datas):
     labels = []
     pathos = []
     for age in range(0, 100, 1):
-        labels.append((dataset.csv.age_years > age).values*1.0)
+        labels.append((dataset.csv.age_years < age).values*1.0)
+        #labels.append((dataset.csv.age_years == age).values*1.0)
         pathos.append(f'>{age}')
 
-    pathos.append('Male')
-    labels.append(dataset.csv.sex_male.values*1.0)  
+#     pathos.append('Male')
+#     labels.append(dataset.csv.sex_male.values*1.0)  
 
-    pathos.append('Female')
-    labels.append(dataset.csv.sex_female.values*1.0)  
+#     pathos.append('Female')
+#     labels.append(dataset.csv.sex_female.values*1.0)  
 
     labels = np.array(labels)
     
@@ -126,7 +130,7 @@ print("train_dataset.labels.shape", train_dataset.labels.shape)
 print("val_dataset.labels.shape", val_dataset.labels.shape)
 print("train_dataset",train_dataset)
 print("val_dataset",val_dataset)
-    
+
     
 if args.taskweights:
     task_weights = np.nansum(train_dataset.labels, axis=0)
@@ -152,14 +156,16 @@ val_dataloader = torch.utils.data.DataLoader(
 
 model = model_ptl.SigmoidModel(
     num_classes=len(train_dataset.pathologies), 
-    task_weights=task_weights,
+    task_weights=task_weights.tolist(),
+    model_name=args.model,
+    finetune=args.finetune,
 )
 
 trainer = pl.Trainer(
     accelerator=args.accelerator,
     # limit_train_batches=10,
     # limit_val_batches=10,
-    logger=pl.loggers.CSVLogger(args.output_dir),
+    logger=pl.loggers.CSVLogger(args.output_dir, name=f'{args.dataset}-{args.note}'),
     callbacks=[pl.callbacks.early_stopping.EarlyStopping(monitor="val_loss", mode="min", patience=3)],
 )
 
