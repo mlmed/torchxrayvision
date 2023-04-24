@@ -27,11 +27,12 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-f', type=str, default="", help='')
 parser.add_argument('-name', type=str)
 parser.add_argument('--output_dir', type=str, default="/scratch/users/joecohen/output-ptl/")
-parser.add_argument('--dataset', type=str, default="nih")
+parser.add_argument('--dataset', type=str, default="nih-pc-chex")
 parser.add_argument('--dataset_dir', type=str, default="/home/users/joecohen/scratch/data/")
 parser.add_argument('--model', type=str, default="xrv_ae")
 parser.add_argument('--finetune', type=bool, default=False)
-parser.add_argument('--note', type=str, default="v2")
+parser.add_argument('--note', type=str, default="xloss")
+parser.add_argument('--checkpoint', type=str, default=None)
 parser.add_argument('--resolution', type=int, default=224)
 parser.add_argument('--seed', type=int, default=0, help='')
 parser.add_argument("--accelerator", default='cuda')
@@ -72,7 +73,7 @@ for i, dataset in enumerate(datas):
     labels = []
     pathos = []
     for age in range(0, 100, 1):
-        labels.append((dataset.csv.age_years < age).values*1.0)
+        labels.append((dataset.csv.age_years <= age).values*1.0)
         #labels.append((dataset.csv.age_years == age).values*1.0)
         pathos.append(f'>{age}')
 
@@ -81,6 +82,10 @@ for i, dataset in enumerate(datas):
 
 #     pathos.append('Female')
 #     labels.append(dataset.csv.sex_female.values*1.0)  
+
+
+    # labels.append(dataset.csv.age_years.values*1.0)
+    # pathos.append('Age')
 
     labels = np.array(labels)
     
@@ -161,18 +166,24 @@ model = model_ptl.SigmoidModel(
     finetune=args.finetune,
 )
 
+# model = model_ptl.RegModel(
+#     model_name=args.model,
+#     finetune=args.finetune,
+# )
+
 trainer = pl.Trainer(
     accelerator=args.accelerator,
     # limit_train_batches=10,
     # limit_val_batches=10,
     logger=pl.loggers.CSVLogger(args.output_dir, name=f'{args.dataset}-{args.note}'),
-    callbacks=[pl.callbacks.early_stopping.EarlyStopping(monitor="val_loss", mode="min", patience=3)],
+    callbacks=[pl.callbacks.early_stopping.EarlyStopping(monitor="val_loss", mode="min", patience=5)],
 )
 
 trainer.fit(
     model,
     train_dataloader,
-    val_dataloader
+    val_dataloader,
+    ckpt_path=args.checkpoint,
 )
 
 
