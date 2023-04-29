@@ -61,12 +61,12 @@ jobs:
     - name: Install library
       run: |
         echo "Installing library"
-        python -m pip install -e .
+        python3 -m pip install -e .
 
     - name: Install torch version
       run: |
         echo "Installing torch ${{ matrix.torch-version }}"
-        python -m pip install torch==${{ matrix.torch-version }} torchvision
+        python3 -m pip install torch==${{ matrix.torch-version }} torchvision
 
     - name: Run tests
       run: pytest
