@@ -81,13 +81,13 @@ class SigmoidModel(pl.LightningModule):
             slope_loss = self.compute_slope_loss(logits)
             slope_loss = (slope_loss * self.slope_loss)
             self.log('slope_loss', slope_loss, prog_bar=True, on_epoch=True)
-            loss += slope_loss
+            loss *= (slope_loss+1)
             
         if self.mid_loss > 0:
             mid_loss = self.compute_mid_loss(logits, batch['lab'])
             mid_loss = (mid_loss * self.mid_loss)
             self.log('mid_loss', mid_loss, prog_bar=True, on_epoch=True)
-            loss += mid_loss
+            loss *= (mid_loss+1)
         
         #self.train_auc.update(logits, batch['lab'])
         self.log('train_loss', loss, prog_bar=True, on_epoch=True)
@@ -109,14 +109,12 @@ class SigmoidModel(pl.LightningModule):
         if self.slope_loss > 0:
             slope_loss = self.compute_slope_loss(logits)
             slope_loss = (slope_loss * self.slope_loss)
-            self.log('slope_loss', slope_loss, prog_bar=True, on_epoch=True)
-            loss += slope_loss
+            loss *= (slope_loss+1)
             
         if self.mid_loss > 0:
             mid_loss = self.compute_mid_loss(logits, batch['lab'])
             mid_loss = (mid_loss * self.mid_loss)
-            self.log('mid_loss', mid_loss, prog_bar=True, on_epoch=True)
-            loss += mid_loss
+            loss *= (mid_loss+1)
         
         #self.val_auc.update(logits, batch['lab'])         
         self.log("val_loss", loss, on_epoch=True)
