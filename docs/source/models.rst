@@ -24,26 +24,32 @@ Core Autoencoders
     .. autoclass:: ResNetAE(weights=SPECIFY)
 
 
-CheXpert
-++++++++
+CheXpert Pathologies
+++++++++++++++++++++
 
 .. automodule:: torchxrayvision.baseline_models.chexpert
    :members:
 
-JF Healthcare
-+++++++++++++
+JF Healthcare Pathologies
++++++++++++++++++++++++++
 
 .. automodule:: torchxrayvision.baseline_models.jfhealthcare
    :members:
 
-ChestX-Det
-++++++++++
+ChestX-Det Segmentation
++++++++++++++++++++++++
 
 .. automodule:: torchxrayvision.baseline_models.chestx_det
    :members:
    
-Emory HITI
-++++++++++
+Emory HITI Race
++++++++++++++++
 
 .. automodule:: torchxrayvision.baseline_models.emory_hiti
+   :members:
+   
+Riken Age Model
++++++++++++++++
+
+.. automodule:: torchxrayvision.baseline_models.riken
    :members:
