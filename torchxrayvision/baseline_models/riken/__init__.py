@@ -12,7 +12,10 @@ import torchvision.transforms as transforms
 
 
 class AgeModel(nn.Module):
-    """
+    """This model predicts age. It is trained on the NIH dataset. The publication reports 
+    a mean absolute error (MAE) between the estimated age and chronological age of 3.67 years.
+
+    Images are scaled to a 320x320 resolution automatically.
 
     https://github.com/pirocv/xray_age
 
@@ -27,10 +30,8 @@ class AgeModel(nn.Module):
             url = {https://www.nature.com/articles/s43856-022-00220-6},
             year = {2022}
         }
-
-
+        
     """
-
     
     def __init__(self):
         
@@ -39,7 +40,7 @@ class AgeModel(nn.Module):
         self.targets = ['Age']
         
         url = "https://github.com/mlmed/torchxrayvision/releases/download/v1/baseline_models_riken_xray_age_every_model_age_senet154_v2_tl_26_ft_7_fp32.pt"
-
+        
         weights_filename = os.path.basename(url)
         weights_storage_folder = os.path.expanduser(os.path.join("~", ".torchxrayvision", "models_data"))
         self.weights_filename_local = os.path.expanduser(os.path.join(weights_storage_folder, weights_filename))
@@ -51,7 +52,7 @@ class AgeModel(nn.Module):
             xrv.utils.download(url, self.weights_filename_local)
 
         try:
-            self.model = torch.load(self.weights_filename_local, map_location="cpu")
+            self.model = torch.jit.load(self.weights_filename_local)
         except Exception as e:
             print("Loading failure. Check weights file:", self.weights_filename_local)
             raise (e)
