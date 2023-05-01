@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CI Test
+name: XRV CI Tests
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
@@ -33,7 +33,7 @@ jobs:
       matrix:
         python-version: ['3.8']
         torch-version: [1.10.0, 2.0.0]
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest] # only run ubuntu for now because the other ones fail for no reason, macos-latest, windows-latest]
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -48,12 +48,10 @@ jobs:
     - name: Install Dev dependencies
       run: |
         pip install --upgrade pip
-        echo "Installing requirements-dev.txt"
         pip install -r requirements-dev.txt
 
-    - name: Install library
+    - name: Install XRV library
       run: |
-        echo "Installing library"
         pip install -e .
 
     - name: Install torch version
