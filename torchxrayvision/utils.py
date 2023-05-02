@@ -2,10 +2,12 @@ import sys
 import requests
 import numpy as np
 import skimage
+import torch
 
 from os import PathLike
 from numpy import ndarray
 import warnings
+from tqdm.autonotebook import tqdm
 
 
 def in_notebook():
@@ -118,3 +120,22 @@ def read_xray_dcm(path:PathLike, voi_lut:bool=False, fix_monochrome:bool=True)->
     # normalize data to [-1024, 1024]    
     data = normalize(data, max_possible_pixel_val)
     return data
+
+
+def infer(model: torch.nn.Module, dataset: torch.utils.data.Dataset, threads=4, device='cpu'):
+
+    dl = torch.utils.data.DataLoader(
+        dataset,
+        batch_size=threads,
+        num_workers=threads,
+    )
+    
+    preds = []
+    with torch.inference_mode():
+        for i, batch in enumerate(tqdm(dl)):
+            output = model(batch["img"].to(device))
+            
+            output = output.detach().cpu().numpy()
+            preds.append(output)
+            
+    return np.concatenate(preds)
