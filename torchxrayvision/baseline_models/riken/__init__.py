@@ -1,14 +1,9 @@
-import sys, os
-thisfolder = os.path.dirname(__file__)
-sys.path.insert(0,thisfolder)
 import os
-import argparse
-import torch
 import torch
 import torch.nn as nn
-import torch.backends.cudnn as cudnn
 import torchvision
-import torchvision.transforms as transforms
+import pathlib
+import torchxrayvision as xrv
 
 
 class AgeModel(nn.Module):
@@ -55,31 +50,29 @@ class AgeModel(nn.Module):
             self.model = torch.jit.load(self.weights_filename_local)
         except Exception as e:
             print("Loading failure. Check weights file:", self.weights_filename_local)
-            raise (e)
-        
-        
-        self.upsample = nn.Upsample(size=(320, 320), mode='bilinear', align_corners=False)
+            raise e
+
+        self.upsample = nn.Upsample(
+            size=(320, 320),
+            mode='bilinear',
+            align_corners=False,
+        )
 
         self.norm = torchvision.transforms.Normalize(
             [0.485, 0.456, 0.406],
             [0.229, 0.224, 0.225],
         )
-
     
     def forward(self, x):
         x = x.repeat(1, 3, 1, 1)
         x = self.upsample(x)
         
-        #expecting values between [-1024,1024]
+        # expecting values between [-1024,1024]
         x = (x + 1024) / (2048)
-        #now between [0,1]
+        # now between [0,1]
         
         x = self.norm(x)
         return self.model(x)
     
     def __repr__(self):
         return "riken-age-prediction"
-    
-    
-    
-    
