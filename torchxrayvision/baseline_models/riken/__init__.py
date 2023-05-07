@@ -7,12 +7,28 @@ import torchxrayvision as xrv
 
 
 class AgeModel(nn.Module):
-    """This model predicts age. It is trained on the NIH dataset. The publication reports 
-    a mean absolute error (MAE) between the estimated age and chronological age of 3.67 years.
+    """This model predicts age. It is trained on the NIH dataset. The
+    publication reports a mean absolute error (MAE) between the estimated age
+    and chronological age of 3.67 years.
 
-    Images are scaled to a 320x320 resolution automatically.
+    The native resolution of the model is 320x320. Images are scaled
+    automatically.
 
-    https://github.com/pirocv/xray_age
+    `Demo notebook <https://github.com/mlmed/torchxrayvision/blob/master/scripts/cxr_age_prediction.ipynb>`_
+
+    .. code-block:: python
+
+        model = xrv.baseline_models.riken.AgeModel()
+
+        image = xrv.utils.load_image('00027426_000.png')
+        image = torch.from_numpy(image)[None,...]
+
+        pred = model(image)
+        # tensor([[50.4033]], grad_fn=<AddmmBackward0>)
+
+
+
+    Source: https://github.com/pirocv/xray_age
 
     .. code-block:: bibtex
 
