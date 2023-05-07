@@ -9,11 +9,23 @@ import torchxrayvision as xrv
 
 class RaceModel(nn.Module):
     """This model is from the work below and is trained to predict the
-    patient race from a chest X-ray.
+    patient race from a chest X-ray. Public data from the MIMIC dataset is used
+    to train this model. The native resolution of the model is 320x320. Images
+    are scaled automatically.
 
-    Public data from the MIMIC dataset is used to train this model.
+    `Demo notebook <https://github.com/mlmed/torchxrayvision/blob/master/scripts/race_prediction.ipynb>`_
 
-    Images are scaled to a 320x320 resolution automatically.
+    .. code-block:: python
+
+        model = xrv.baseline_models.emory_hiti.RaceModel()
+
+        image = xrv.utils.load_image('00027426_000.png')
+        image = torch.from_numpy(image)[None,...]
+
+        pred = model(image)
+
+        model.targets[torch.argmax(pred)]
+        # 'White'
 
     .. code-block:: bibtex
 
@@ -75,7 +87,7 @@ class RaceModel(nn.Module):
         x = self.upsample(x)
 
         # Expecting values between [-1024,1024]
-        x = (x + 1024) / (2048)
+        x = (x + 1024) / 2048
         # Now between [0,1] for this model
 
         x = self.norm(x)
