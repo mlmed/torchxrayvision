@@ -87,7 +87,7 @@ class RaceModel(nn.Module):
         x = self.upsample(x)
 
         # Expecting values between [-1024,1024]
-        x = (x + 1024) / (2048)
+        x = (x + 1024) / 2048
         # Now between [0,1] for this model
 
         x = self.norm(x)

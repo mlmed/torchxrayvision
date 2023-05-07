@@ -84,7 +84,7 @@ class AgeModel(nn.Module):
         x = self.upsample(x)
         
         # expecting values between [-1024,1024]
-        x = (x + 1024) / (2048)
+        x = (x + 1024) / 2048
         # now between [0,1]
         
         x = self.norm(x)
