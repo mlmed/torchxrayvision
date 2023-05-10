@@ -96,8 +96,8 @@ class Model:
 
     """
 
-    pathologies: List[str]
-    """Each classifier provides a field `model.pathologies` which aligns to
+    targets: List[str]
+    """Each classifier provides a field `model.targets` which aligns to
     the list of predictions that the model makes. Depending on the
     weights loaded this list will change. The predictions can be aligned
     to pathology names as follows:
@@ -124,7 +124,7 @@ class Model:
         .. code-block:: python
 
             preds = model(img)
-            print(dict(zip(model.pathologies, preds.tolist()[0])))
+            print(dict(zip(model.targets, preds.tolist()[0])))
             # {'Atelectasis': 0.5583771,
             #  'Consolidation': 0.5279943,
             #  'Infiltration': 0.60061914,
@@ -187,12 +187,33 @@ class DenseNet(nn.Module):
         model = xrv.models.DenseNet(weights="densenet121-res224-mimic_nb") # MIMIC-CXR (MIT)
         model = xrv.models.DenseNet(weights="densenet121-res224-mimic_ch") # MIMIC-CXR (MIT)
 
-    
     :param weights: Specify a weight name to load pre-trained weights
     :param op_threshs: Specify a weight name to load pre-trained weights 
     :param apply_sigmoid: Apply a sigmoid 
         
     """
+
+    targets: List[str] = [
+        'Atelectasis',
+        'Consolidation',
+        'Infiltration',
+        'Pneumothorax',
+        'Edema',
+        'Emphysema',
+        'Fibrosis',
+        'Effusion',
+        'Pneumonia',
+        'Pleural_Thickening',
+        'Cardiomegaly',
+        'Nodule',
+        'Mass',
+        'Hernia',
+        'Lung Lesion',
+        'Fracture',
+        'Lung Opacity',
+        'Enlarged Cardiomediastinum',
+    ]
+    """"""
 
     def __init__(self,
                  growth_rate=32,
@@ -218,7 +239,8 @@ class DenseNet(nn.Module):
                 raise Exception("Weights value must be in {}".format(possible_weights))
 
             # set to be what this model is trained to predict
-            self.pathologies = model_urls[weights]["labels"]
+            self.targets = model_urls[weights]["labels"]
+            self.pathologies = self.targets  # keep to be backward compatible
 
             # if different from default number of classes
             if num_classes != len(datasets.default_pathologies):
@@ -334,6 +356,30 @@ class ResNet(nn.Module):
     :param apply_sigmoid: Apply a sigmoid 
 
     """
+
+    targets: List[str] = [
+        'Atelectasis',
+        'Consolidation',
+        'Infiltration',
+        'Pneumothorax',
+        'Edema',
+        'Emphysema',
+        'Fibrosis',
+        'Effusion',
+        'Pneumonia',
+        'Pleural_Thickening',
+        'Cardiomegaly',
+        'Nodule',
+        'Mass',
+        'Hernia',
+        'Lung Lesion',
+        'Fracture',
+        'Lung Opacity',
+        'Enlarged Cardiomediastinum',
+    ]
+    """"""
+
+
     def __init__(self, weights: str = None, apply_sigmoid: bool = False):
         super(ResNet, self).__init__()
 
@@ -346,7 +392,8 @@ class ResNet(nn.Module):
 
         self.weights_filename_local = get_weights(weights)
         self.weights_dict = model_urls[weights]
-        self.pathologies = model_urls[weights]["labels"]
+        self.targets = model_urls[weights]["labels"]
+        self.pathologies = self.targets  # keep to be backward compatible
 
         if self.weights.startswith("resnet101"):
             self.model = torchvision.models.resnet101(num_classes=len(self.weights_dict["labels"]), pretrained=False)

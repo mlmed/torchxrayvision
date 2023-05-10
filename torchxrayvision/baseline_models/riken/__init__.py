@@ -1,4 +1,6 @@
 import os
+from typing import List
+
 import torch
 import torch.nn as nn
 import torchvision
@@ -14,7 +16,7 @@ class AgeModel(nn.Module):
     The native resolution of the model is 320x320. Images are scaled
     automatically.
 
-    `Demo notebook <https://github.com/mlmed/torchxrayvision/blob/master/scripts/cxr_age_prediction.ipynb>`_
+    `Demo notebook <https://github.com/mlmed/torchxrayvision/blob/master/scripts/cxr_age_prediction.ipynb>`__
 
     .. code-block:: python
 
@@ -43,12 +45,13 @@ class AgeModel(nn.Module):
         }
         
     """
+
+    targets: List[str] = ["Age"]
+    """"""
     
     def __init__(self):
         
         super(AgeModel, self).__init__()
-        
-        self.targets = ['Age']
         
         url = "https://github.com/mlmed/torchxrayvision/releases/download/v1/baseline_models_riken_xray_age_every_model_age_senet154_v2_tl_26_ft_7_fp32.pt"
         

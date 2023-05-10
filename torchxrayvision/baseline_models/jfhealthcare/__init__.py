@@ -1,4 +1,7 @@
 import sys, os
+from typing import List
+import torchxrayvision as xrv
+
 thisfolder = os.path.dirname(__file__)
 sys.path.insert(0, thisfolder)
 from .model import classifier
@@ -10,7 +13,6 @@ import torch.nn as nn
 
 class DenseNet(nn.Module):
     """A model trained on the CheXpert data
-
 
     https://github.com/jfhealthcare/Chexpert
     Apache-2.0 License
@@ -27,6 +29,15 @@ class DenseNet(nn.Module):
         }
 
     """
+
+    targets: List[str] = [
+        'Cardiomegaly',
+        'Edema',
+        'Consolidation',
+        'Atelectasis',
+        'Effusion',
+    ]
+    """"""
 
     def __init__(self, apply_sigmoid=True):
 
@@ -55,7 +66,7 @@ class DenseNet(nn.Module):
             print("Downloading weights...")
             print("If this fails you can run `wget {} -O {}`".format(url, self.weights_filename_local))
             pathlib.Path(weights_storage_folder).mkdir(parents=True, exist_ok=True)
-            download(url, self.weights_filename_local)
+            xrv.utils.download(url, self.weights_filename_local)
 
         try:
             ckpt = torch.load(self.weights_filename_local, map_location="cpu")
@@ -67,7 +78,7 @@ class DenseNet(nn.Module):
         self.model = model
         self.upsample = nn.Upsample(size=(512, 512), mode='bilinear', align_corners=False)
 
-        self.pathologies = ["Cardiomegaly", 'Edema', 'Consolidation', 'Atelectasis', 'Effusion']
+        self.pathologies = self.targets
 
     def forward(self, x):
         x = x.repeat(1, 3, 1, 1)
@@ -87,29 +98,3 @@ class DenseNet(nn.Module):
 
     def __repr__(self):
         return "jfhealthcare-DenseNet121"
-
-
-import sys
-import requests
-
-# from here https://sumit-ghosh.com/articles/python-download-progress-bar/
-
-
-def download(url, filename):
-    with open(filename, 'wb') as f:
-        response = requests.get(url, stream=True)
-        total = response.headers.get('content-length')
-
-        if total is None:
-            f.write(response.content)
-        else:
-            downloaded = 0
-            total = int(total)
-            for data in response.iter_content(chunk_size=max(int(total / 1000), 1024 * 1024)):
-                downloaded += len(data)
-                f.write(data)
-                done = int(50 * downloaded / total)
-                sys.stdout.write('\r[{}{}]'.format('█' * done, '.' * (50 - done)))
-                sys.stdout.flush()
-    sys.stdout.write('\n')
-
