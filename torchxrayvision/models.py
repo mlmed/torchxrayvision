@@ -96,8 +96,8 @@ class Model:
 
     """
 
-    pathologies: List[str]
-    """Each classifier provides a field `model.pathologies` which aligns to
+    targets: List[str]
+    """Each classifier provides a field `model.targets` which aligns to
     the list of predictions that the model makes. Depending on the
     weights loaded this list will change. The predictions can be aligned
     to pathology names as follows:
@@ -124,7 +124,7 @@ class Model:
         .. code-block:: python
 
             preds = model(img)
-            print(dict(zip(model.pathologies, preds.tolist()[0])))
+            print(dict(zip(model.targets, preds.tolist()[0])))
             # {'Atelectasis': 0.5583771,
             #  'Consolidation': 0.5279943,
             #  'Infiltration': 0.60061914,
@@ -239,7 +239,8 @@ class DenseNet(nn.Module):
                 raise Exception("Weights value must be in {}".format(possible_weights))
 
             # set to be what this model is trained to predict
-            self.pathologies = model_urls[weights]["labels"]
+            self.targets = model_urls[weights]["labels"]
+            self.pathologies = self.targets  # keep to be backward compatible
 
             # if different from default number of classes
             if num_classes != len(datasets.default_pathologies):
@@ -391,7 +392,8 @@ class ResNet(nn.Module):
 
         self.weights_filename_local = get_weights(weights)
         self.weights_dict = model_urls[weights]
-        self.pathologies = model_urls[weights]["labels"]
+        self.targets = model_urls[weights]["labels"]
+        self.pathologies = self.targets  # keep to be backward compatible
 
         if self.weights.startswith("resnet101"):
             self.model = torchvision.models.resnet101(num_classes=len(self.weights_dict["labels"]), pretrained=False)
