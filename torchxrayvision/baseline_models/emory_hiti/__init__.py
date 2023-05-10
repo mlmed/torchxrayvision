@@ -1,4 +1,6 @@
 import sys, os
+from typing import List
+
 import numpy as np
 import pathlib
 import torch
@@ -13,7 +15,7 @@ class RaceModel(nn.Module):
     to train this model. The native resolution of the model is 320x320. Images
     are scaled automatically.
 
-    `Demo notebook <https://github.com/mlmed/torchxrayvision/blob/master/scripts/race_prediction.ipynb>`_
+    `Demo notebook <https://github.com/mlmed/torchxrayvision/blob/master/scripts/race_prediction.ipynb>`__
 
     .. code-block:: python
 
@@ -40,6 +42,9 @@ class RaceModel(nn.Module):
         }
 
     """
+
+    targets: List[str] = ["Asian", "Black", "White"]
+    """"""
 
     def __init__(self):
 
@@ -71,9 +76,13 @@ class RaceModel(nn.Module):
             self.model = self.model.eval()  # Must be in eval mode to work correctly
         except Exception as e:
             print("Loading failure. Check weights file:", self.weights_filename_local)
-            raise (e)
+            raise e
 
-        self.upsample = nn.Upsample(size=(320, 320), mode='bilinear', align_corners=False)
+        self.upsample = nn.Upsample(
+            size=(320, 320),
+            mode='bilinear',
+            align_corners=False,
+        )
 
         self.targets = ["Asian", "Black", "White"]
 

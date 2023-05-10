@@ -1,9 +1,9 @@
 import os
 import pathlib
-import sys
 from collections import OrderedDict
+from typing import List
 
-import requests
+import torchxrayvision as xrv
 import torch
 import torch.nn as nn
 import torchvision
@@ -53,6 +53,15 @@ class PSPNet(nn.Module):
         }
     """
 
+    targets: List[str] = [
+        'Left Clavicle', 'Right Clavicle', 'Left Scapula',
+        'Right Scapula', 'Left Lung', 'Right Lung',
+        'Left Hilus Pulmonis', 'Right Hilus Pulmonis',
+        'Heart', 'Aorta', 'Facies Diaphragmatica',
+        'Mediastinum', 'Weasand', 'Spine',
+    ]
+    """"""
+
     def __init__(self):
 
         super(PSPNet, self).__init__()
@@ -63,10 +72,6 @@ class PSPNet(nn.Module):
                 [0.229, 0.224, 0.225]
             )
         ])
-
-        self._targets = ['Left Clavicle', 'Right Clavicle', 'Left Scapula', 'Right Scapula',
-                         'Left Lung', 'Right Lung', 'Left Hilus Pulmonis', 'Right Hilus Pulmonis',
-                         'Heart', 'Aorta', 'Facies Diaphragmatica', 'Mediastinum', 'Weasand', 'Spine']
 
         model = pspnet(len(self.targets))
 
@@ -80,7 +85,7 @@ class PSPNet(nn.Module):
             print("Downloading weights...")
             print("If this fails you can run `wget {} -O {}`".format(url, self.weights_filename_local))
             pathlib.Path(weights_storage_folder).mkdir(parents=True, exist_ok=True)
-            download(url, self.weights_filename_local)
+            xrv.utils.download(url, self.weights_filename_local)
 
         try:
             ckpt = torch.load(self.weights_filename_local, map_location="cpu")
@@ -88,16 +93,15 @@ class PSPNet(nn.Module):
             model.load_state_dict(ckpt)
         except Exception as e:
             print("Loading failure. Check weights file:", self.weights_filename_local)
-            raise (e)
+            raise e
 
         model.eval()
         self.model = model
-        self.upsample = nn.Upsample(size=(512, 512), mode='bilinear', align_corners=False)
-
-    @property
-    def targets(self):
-        """A list of the targets that this model will predict"""
-        return self._targets
+        self.upsample = nn.Upsample(
+            size=(512, 512),
+            mode='bilinear',
+            align_corners=False,
+        )
 
     def forward(self, x):
         x = x.repeat(1, 3, 1, 1)
@@ -114,23 +118,3 @@ class PSPNet(nn.Module):
 
     def __repr__(self):
         return "chestx-det-pspnet"
-
-
-# from here https://sumit-ghosh.com/articles/python-download-progress-bar/
-def download(url, filename):
-    with open(filename, 'wb') as f:
-        response = requests.get(url, stream=True)
-        total = response.headers.get('content-length')
-
-        if total is None:
-            f.write(response.content)
-        else:
-            downloaded = 0
-            total = int(total)
-            for data in response.iter_content(chunk_size=max(int(total / 1000), 1024 * 1024)):
-                downloaded += len(data)
-                f.write(data)
-                done = int(50 * downloaded / total)
-                sys.stdout.write('\r[{}{}]'.format('█' * done, '.' * (50 - done)))
-                sys.stdout.flush()
-    sys.stdout.write('\n')

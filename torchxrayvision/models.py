@@ -187,12 +187,33 @@ class DenseNet(nn.Module):
         model = xrv.models.DenseNet(weights="densenet121-res224-mimic_nb") # MIMIC-CXR (MIT)
         model = xrv.models.DenseNet(weights="densenet121-res224-mimic_ch") # MIMIC-CXR (MIT)
 
-    
     :param weights: Specify a weight name to load pre-trained weights
     :param op_threshs: Specify a weight name to load pre-trained weights 
     :param apply_sigmoid: Apply a sigmoid 
         
     """
+
+    targets: List[str] = [
+        'Atelectasis',
+        'Consolidation',
+        'Infiltration',
+        'Pneumothorax',
+        'Edema',
+        'Emphysema',
+        'Fibrosis',
+        'Effusion',
+        'Pneumonia',
+        'Pleural_Thickening',
+        'Cardiomegaly',
+        'Nodule',
+        'Mass',
+        'Hernia',
+        'Lung Lesion',
+        'Fracture',
+        'Lung Opacity',
+        'Enlarged Cardiomediastinum',
+    ]
+    """"""
 
     def __init__(self,
                  growth_rate=32,
@@ -334,6 +355,30 @@ class ResNet(nn.Module):
     :param apply_sigmoid: Apply a sigmoid 
 
     """
+
+    targets: List[str] = [
+        'Atelectasis',
+        'Consolidation',
+        'Infiltration',
+        'Pneumothorax',
+        'Edema',
+        'Emphysema',
+        'Fibrosis',
+        'Effusion',
+        'Pneumonia',
+        'Pleural_Thickening',
+        'Cardiomegaly',
+        'Nodule',
+        'Mass',
+        'Hernia',
+        'Lung Lesion',
+        'Fracture',
+        'Lung Opacity',
+        'Enlarged Cardiomediastinum',
+    ]
+    """"""
+
+
     def __init__(self, weights: str = None, apply_sigmoid: bool = False):
         super(ResNet, self).__init__()
 

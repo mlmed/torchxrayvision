@@ -12,9 +12,11 @@ Core Classifiers
 
         .. automethod:: forward
 
-   .. autoclass:: DenseNet(weights=SPECIFY, op_threshs=None, apply_sigmoid=False)
+    .. autoclass:: DenseNet(weights=SPECIFY, op_threshs=None, apply_sigmoid=False)
+        :members:
    
-   .. autoclass:: ResNet(weights=SPECIFY, op_threshs=None, apply_sigmoid=False)
+    .. autoclass:: ResNet(weights=SPECIFY, op_threshs=None, apply_sigmoid=False)
+        :members:
 
 Core Autoencoders
 +++++++++++++++++

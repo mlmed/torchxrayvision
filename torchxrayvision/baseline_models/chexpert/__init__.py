@@ -1,4 +1,6 @@
 import sys, os
+from typing import List
+
 thisfolder = os.path.dirname(__file__)
 sys.path.insert(0, thisfolder)
 import torch
@@ -7,21 +9,29 @@ from .model import Tasks2Models
 
 
 class DenseNet(nn.Module):
-    """
-    Irvin, J., et al (2019). 
-    CheXpert: A Large Chest Radiograph Dataset with Uncertainty Labels and Expert Comparison. 
+    """CheXpert: A Large Chest Radiograph Dataset with Uncertainty Labels and Expert Comparison.
+    Irvin, J., et al (2019).
     AAAI Conference on Artificial Intelligence. 
     http://arxiv.org/abs/1901.07031
 
     Setting num_models less than 30 will load a subset of the ensemble.
 
-    Modified for torchxrayvision to maintain the pytorch gradient tape 
+    Modified for TorchXRayVision to maintain the pytorch gradient tape
     and also to provide the features() argument.
 
     Weights can be found: 
     https://academictorrents.com/details/5c7ee21e6770308f2d2b4bd829e896dbd9d3ee87
     https://archive.org/download/torchxrayvision_chexpert_weights/chexpert_weights.zip
     """
+
+    targets: List[str] = [
+        "Atelectasis",
+        "Cardiomegaly",
+        "Consolidation",
+        "Edema",
+        "Effusion",
+    ]
+    """"""
 
     def __init__(self, weights_zip="", num_models=30):
 
@@ -44,7 +54,7 @@ class DenseNet(nn.Module):
 
         self.upsample = nn.Upsample(size=(320, 320), mode='bilinear', align_corners=False)
 
-        self.pathologies = ["Atelectasis", "Cardiomegaly", "Consolidation", "Edema", "Effusion"]
+        self.pathologies = self.targets
 
     def forward(self, x):
         x = x.repeat(1, 3, 1, 1)
