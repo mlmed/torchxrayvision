@@ -1,6 +1,6 @@
 This file contains benchmark AUC performance for predicting each pathlogy on 20% of each dataset.
 
-To reproduce these results use the script `scripts/model_calibrate.py`. This script will take a long time so it will cache the results so you can work with them after the compute is done. The script also calculates the calibration for a model but those outputs can be ignored for this benchmarking. Below is an example of running different models on the `nih` dataset and writing the output as markdown.
+To reproduce these results use the script `scripts/model_calibrate.py`. This script will take a long time so it will cache the results so you can work with them after the compute is done. The script also calculates the calibration for a model but those outputs can be ignored for this benchmarking. Below is an example of running different models on the PadChest `pc` dataset and writing the output as markdown.
 
 ```
 python model_calibrate.py pc resnet50-res512-all -mdtable
