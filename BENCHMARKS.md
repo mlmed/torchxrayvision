@@ -9,7 +9,7 @@ python model_calibrate.py pc jfhealthcare -mdtable
 python model_calibrate.py pc densenet121-res224-all -mdtable
 ```
 
-Results updated: 06/27/2021
+Results updated: 07/23/2023
 
 ## NIH ChestX-ray14
 
