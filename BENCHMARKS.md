@@ -15,9 +15,10 @@ Results updated: 07/23/2023
 
 |Model Name|Atelectasis|Cardiomegaly|Consolidation|Edema|Effusion|Emphysema|Fibrosis|Hernia|Infiltration|Mass|Nodule|Pleural_Thickening|Pneumonia|Pneumothorax|
 |---|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
-|XRV-ResNet-resnet50-res512-all        |0.78|0.9|0.78|0.89|0.86|0.88|0.76|0.92|0.69|0.82|0.76|0.76|0.71|0.84|
-|XRV-DenseNet121-densenet121-res224-all|0.76|0.88|0.77|0.85|0.85|0.73|0.72|0.91|0.68|0.8|0.69|0.74|0.71|0.75|
+|XRV-ResNet-resnet50-res512-all        |0.78|0.90|0.78|0.89|0.86|0.88|0.76|0.92|0.69|0.82|0.76|0.76|0.71|0.84|
+|XRV-DenseNet121-densenet121-res224-all|0.76|0.88|0.77|0.85|0.85|0.73|0.72|0.91|0.68|0.80|0.69|0.74|0.71|0.75|
 |jfhealthcare-DenseNet121              |0.76|0.85|0.78|0.87|0.87|-|-|-|-|-|-|-|-|-|
+|CheXpert-DenseNet121-ensemble         |0.80|0.88|0.79|0.88|0.87|-|-|-|-|-|-|-|-|-|
 
 ## Google
 |Model Name|# Params|Lung Opacity|Fracture|Nodule or mass|Pneumothorax|
