@@ -55,3 +55,9 @@ Riken Age Model
 
 .. automodule:: torchxrayvision.baseline_models.riken
    :members:
+
+Xinario View Model
++++++++++++++++
+
+.. automodule:: torchxrayvision.baseline_models.xinario
+   :members:
