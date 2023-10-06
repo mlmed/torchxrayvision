@@ -70,6 +70,6 @@ Results updated: 07/23/2023
 |Model Name|Atelectasis|Cardiomegaly|Consolidation|Edema|Enlarged Cardiomediastinum|Fracture|Lung Lesion|Lung Opacity|Effusion|Pleural Other|Pneumonia|Pneumothorax|Support Devices|
 |---|-|-|-|-|-|-|-|-|-|-|-|-|-|
 |XRV-DenseNet121-densenet121-res224-all|0.88|0.88|0.91|0.92|0.84|0.74|0.82|0.86|0.92|-|0.82|0.81|-|
-|XRV-ResNet-resnet50-res512-all|0.77|0.78|0.88|0.87|0.5|0.66|0.5|0.77|0.9|-|0.77|0.72|-|
-|jfhealthcare-DenseNet121|0.9|0.82|0.93|0.93|-|-|-|-|0.94|-|-|-|-|
-
+|XRV-ResNet-resnet50-res512-all|0.77|0.78|0.88|0.87|0.50|0.66|0.5|0.77|0.9|-|0.77|0.72|-|
+|jfhealthcare-DenseNet121|0.90|0.82|0.93|0.93|-|-|-|-|0.94|-|-|-|-|
+|CheXpert-DenseNet121-ensemble|0.88|0.84|0.93|0.93|-|-|-|-|0.94|-|-|-|-|
