@@ -128,6 +128,7 @@ class Dataset:
     metadata file and for some the metadata files are packaged in the library
     so only the imgpath needs to be specified.
     """
+
     def __init__(self):
         pass
 
@@ -262,7 +263,7 @@ class MergeDataset(Dataset):
             print("Could not merge dataframes (.csv not available):", sys.exc_info()[0])
 
         self.csv = self.csv.reset_index(drop=True)
-        
+
     def __setattr__(self, name, value):
         if hasattr(self, 'labels'):
             # check only if have finished init, otherwise __init__ breaks
@@ -346,6 +347,7 @@ class SubsetDataset(Dataset):
         - of PC_Dataset num_samples=94825 views=['PA', 'AP'] data_aug=None
 
     """
+
     def __init__(self, dataset, idxs=None):
         super(SubsetDataset, self).__init__()
         self.dataset = dataset
@@ -365,7 +367,7 @@ class SubsetDataset(Dataset):
             # check only if have finished init, otherwise __init__ breaks
             if name in ['transform', 'data_aug', 'labels', 'pathologies', 'targets']:
                 raise NotImplementedError(f'Cannot set {name} on a subset dataset. Set the transforms directly on the dataset object. If it was to be set via this subset dataset it would have to modify the internal dataset which could have unexpected side effects')
-            
+
         object.__setattr__(self, name, value)
 
     def string(self):
@@ -895,17 +897,17 @@ class PC_Dataset(Dataset):
                    "216840111366964012373310883942009170084120009_00-097-074.png",
                    "216840111366964012819207061112010315104455352_04-024-184.png",
                    "216840111366964012819207061112010306085429121_04-020-102.png",
-                   "216840111366964012989926673512011083134050913_00-168-009.png", # broken PNG file (chunk b'\x00\x00\x00\x00')
-                   "216840111366964012373310883942009152114636712_00-102-045.png", # "OSError: image file is truncated"
-                   "216840111366964012819207061112010281134410801_00-129-131.png", # "OSError: image file is truncated"
-                   "216840111366964012487858717522009280135853083_00-075-001.png", # "OSError: image file is truncated"
-                   "216840111366964012989926673512011151082430686_00-157-045.png", # broken PNG file (chunk b'\x00\x00\x00\x00')
-                   "216840111366964013686042548532013208193054515_02-026-007.png", # "OSError: image file is truncated"
-                   "216840111366964013590140476722013058110301622_02-056-111.png", # "OSError: image file is truncated"
-                   "216840111366964013590140476722013043111952381_02-065-198.png", # "OSError: image file is truncated"
-                   "216840111366964013829543166512013353113303615_02-092-190.png", # "OSError: image file is truncated"
-                   "216840111366964013962490064942014134093945580_01-178-104.png", # "OSError: image file is truncated"
-                  ]
+                   "216840111366964012989926673512011083134050913_00-168-009.png",  # broken PNG file (chunk b'\x00\x00\x00\x00')
+                   "216840111366964012373310883942009152114636712_00-102-045.png",  # "OSError: image file is truncated"
+                   "216840111366964012819207061112010281134410801_00-129-131.png",  # "OSError: image file is truncated"
+                   "216840111366964012487858717522009280135853083_00-075-001.png",  # "OSError: image file is truncated"
+                   "216840111366964012989926673512011151082430686_00-157-045.png",  # broken PNG file (chunk b'\x00\x00\x00\x00')
+                   "216840111366964013686042548532013208193054515_02-026-007.png",  # "OSError: image file is truncated"
+                   "216840111366964013590140476722013058110301622_02-056-111.png",  # "OSError: image file is truncated"
+                   "216840111366964013590140476722013043111952381_02-065-198.png",  # "OSError: image file is truncated"
+                   "216840111366964013829543166512013353113303615_02-092-190.png",  # "OSError: image file is truncated"
+                   "216840111366964013962490064942014134093945580_01-178-104.png",  # "OSError: image file is truncated"
+                   ]
         self.csv = self.csv[~self.csv["ImageID"].isin(missing)]
 
         if unique_patients:
@@ -920,7 +922,7 @@ class PC_Dataset(Dataset):
             mask = self.csv["Labels"].str.contains(pathology.lower())
             if pathology in mapping:
                 for syn in mapping[pathology]:
-                    #print("mapping", syn)
+                    # print("mapping", syn)
                     mask |= self.csv["Labels"].str.contains(syn.lower())
             labels.append(mask.values)
         self.labels = np.asarray(labels).T
@@ -1094,7 +1096,7 @@ class CheX_Dataset(Dataset):
         sample["lab"] = self.labels[idx]
 
         imgid = self.csv['Path'].iloc[idx]
-        #clean up path in csv so the user can specify the path
+        # clean up path in csv so the user can specify the path
         imgid = imgid.replace("CheXpert-v1.0-small/", "").replace("CheXpert-v1.0/", "")
         img_path = os.path.join(self.imgpath, imgid)
         img = imread(img_path)
@@ -1344,7 +1346,7 @@ class Openi_Dataset(Dataset):
             mask = self.csv["labels_automatic"].str.contains(pathology.lower())
             if pathology in mapping:
                 for syn in mapping[pathology]:
-                    #print("mapping", syn)
+                    # print("mapping", syn)
                     mask |= self.csv["labels_automatic"].str.contains(syn.lower())
             labels.append(mask.values)
 
@@ -1994,7 +1996,7 @@ class ObjectCXR_Dataset(Dataset):
                  transform=None,
                  data_aug=None,
                  seed=0
-        ):
+                 ):
         super(ObjectCXR_Dataset, self).__init__()
 
         np.random.seed(seed)  # Reset the seed so all runs are the same.
@@ -2053,6 +2055,7 @@ class ToPILImage(object):
 
 class XRayResizer(object):
     """Resize an image to a specific size"""
+
     def __init__(self, size: int, engine="skimage"):
         self.size = size
         self.engine = engine
@@ -2076,6 +2079,7 @@ class XRayResizer(object):
 
 class XRayCenterCrop(object):
     """Perform a center crop on the long dimension of the input image"""
+
     def crop_center(self, img: np.ndarray) -> np.ndarray:
         _, y, x = img.shape
         crop_size = np.min([y, x])

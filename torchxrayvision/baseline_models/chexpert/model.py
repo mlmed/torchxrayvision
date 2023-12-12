@@ -79,7 +79,7 @@ class Model(nn.Module):
         for task in tasks:
 
             idx = self.task_sequence[task]
-            #task_prob = probs.detach().cpu().numpy()[idx]
+            # task_prob = probs.detach().cpu().numpy()[idx]
             task_prob = probs[idx]
             task2results[task] = task_prob
 
@@ -226,7 +226,7 @@ class Tasks2Models(object):
                 else:
                     task2ensemble_results[task].append(individual_task2results[task])
 
-        assert all([task in task2ensemble_results for task in tasks]),\
+        assert all([task in task2ensemble_results for task in tasks]), \
             "Not all tasks in task2ensemble_results"
 
         task2results = {}

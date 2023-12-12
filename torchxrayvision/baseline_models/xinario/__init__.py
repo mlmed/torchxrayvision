@@ -10,7 +10,7 @@ import torchxrayvision as xrv
 
 class ViewModel(nn.Module):
     """
-    
+
 
     The native resolution of the model is 320x320. Images are scaled
     automatically.
@@ -26,7 +26,7 @@ class ViewModel(nn.Module):
 
         pred = model(image)
         # tensor([[17.3186, 26.7156]]), grad_fn=<AddmmBackward0>)
-        
+
         model.targets[pred.argmax()]
         # Lateral
 
@@ -37,13 +37,13 @@ class ViewModel(nn.Module):
 
     targets: List[str] = ['Frontal', 'Lateral']
     """"""
-    
+
     def __init__(self):
-        
+
         super(ViewModel, self).__init__()
-        
+
         url = "https://github.com/mlmed/torchxrayvision/releases/download/v1/xinario_chestViewSplit_resnet-50.pt"
-        
+
         weights_filename = os.path.basename(url)
         weights_storage_folder = os.path.expanduser(os.path.join("~", ".torchxrayvision", "models_data"))
         self.weights_filename_local = os.path.expanduser(os.path.join(weights_storage_folder, weights_filename))
@@ -54,7 +54,6 @@ class ViewModel(nn.Module):
             pathlib.Path(weights_storage_folder).mkdir(parents=True, exist_ok=True)
             xrv.utils.download(url, self.weights_filename_local)
 
-        
         self.model = torchvision.models.resnet.resnet50()
         try:
             weights = torch.load(self.weights_filename_local)
@@ -74,17 +73,17 @@ class ViewModel(nn.Module):
             [0.485, 0.456, 0.406],
             [0.229, 0.224, 0.225],
         )
-    
+
     def forward(self, x):
         x = x.repeat(1, 3, 1, 1)
         x = self.upsample(x)
-        
+
         # expecting values between [-1024,1024]
         x = (x + 1024) / 2048
         # now between [0,1]
-        
+
         x = self.norm(x)
-        return self.model(x)[:,:2] # cut off the rest of the outputs
-    
+        return self.model(x)[:, :2]  # cut off the rest of the outputs
+
     def __repr__(self):
         return "xinario-view-prediction"
