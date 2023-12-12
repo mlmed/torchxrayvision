@@ -32,8 +32,8 @@ jobs:
       max-parallel: 2
       matrix:
         python-version: ['3.9']
-        torch-version: [1.10.0, 2.0.0]
-        os: [ubuntu-latest, macos-latest, windows-latest] # only run ubuntu for now because the other ones fail for no reason, macos-latest, windows-latest]
+        torch-version: ['--upgrade']
+        os: [ubuntu-latest] # only run ubuntu for now because the other ones fail for no reason, macos-latest, windows-latest]
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -52,7 +52,7 @@ jobs:
 
     - name: Install XRV library
       run: |
-        pip install -e $GITHUB_WORKSPACE --no-build-isolation
+        pip install -e $GITHUB_WORKSPACE
 
     - name: Install torch version
       run: |
