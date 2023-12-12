@@ -80,6 +80,8 @@ model_urls['resnet50-res512-all'] = {
 }
 
 # Just created for documentation
+
+
 class Model:
     """The library is composed of core and baseline classifiers. Core
     classifiers are trained specifically for this library and baseline
@@ -131,6 +133,7 @@ class Model:
             #  ...
         """
         pass
+
 
 class _DenseLayer(nn.Sequential):
     def __init__(self, num_input_features, growth_rate, bn_size, drop_rate):
@@ -190,7 +193,7 @@ class DenseNet(nn.Module):
     :param weights: Specify a weight name to load pre-trained weights
     :param op_threshs: Specify a weight name to load pre-trained weights 
     :param apply_sigmoid: Apply a sigmoid 
-        
+
     """
 
     targets: List[str] = [
@@ -378,7 +381,6 @@ class ResNet(nn.Module):
         'Enlarged Cardiomediastinum',
     ]
     """"""
-
 
     def __init__(self, weights: str = None, apply_sigmoid: bool = False):
         super(ResNet, self).__init__()

@@ -43,18 +43,18 @@ class AgeModel(nn.Module):
             url = {https://www.nature.com/articles/s43856-022-00220-6},
             year = {2022}
         }
-        
+
     """
 
     targets: List[str] = ["Age"]
     """"""
-    
+
     def __init__(self):
-        
+
         super(AgeModel, self).__init__()
-        
+
         url = "https://github.com/mlmed/torchxrayvision/releases/download/v1/baseline_models_riken_xray_age_every_model_age_senet154_v2_tl_26_ft_7_fp32.pt"
-        
+
         weights_filename = os.path.basename(url)
         weights_storage_folder = os.path.expanduser(os.path.join("~", ".torchxrayvision", "models_data"))
         self.weights_filename_local = os.path.expanduser(os.path.join(weights_storage_folder, weights_filename))
@@ -81,17 +81,17 @@ class AgeModel(nn.Module):
             [0.485, 0.456, 0.406],
             [0.229, 0.224, 0.225],
         )
-    
+
     def forward(self, x):
         x = x.repeat(1, 3, 1, 1)
         x = self.upsample(x)
-        
+
         # expecting values between [-1024,1024]
         x = (x + 1024) / 2048
         # now between [0,1]
-        
+
         x = self.norm(x)
         return self.model(x)
-    
+
     def __repr__(self):
         return "riken-age-prediction"

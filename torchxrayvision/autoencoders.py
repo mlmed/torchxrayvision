@@ -222,7 +222,7 @@ def ResNetAE(weights=None):
     """A ResNet based autoencoder.
 
     Possible weights for this class include:
-    
+
     - "101-elastic" trained on PadChest, NIH, CheXpert, and MIMIC. From the paper https://arxiv.org/abs/2102.09475
 
     .. code-block:: python

@@ -80,7 +80,8 @@ def load_image(fname: str):
 
     return img
 
-def read_xray_dcm(path:PathLike, voi_lut:bool=False, fix_monochrome:bool=True)->ndarray:
+
+def read_xray_dcm(path: PathLike, voi_lut: bool = False, fix_monochrome: bool = True) -> ndarray:
     """read a dicom-like file and convert to numpy array 
 
     Args:
@@ -98,26 +99,26 @@ def read_xray_dcm(path:PathLike, voi_lut:bool=False, fix_monochrome:bool=True)->
 
     # get the pixel array
     ds = pydicom.dcmread(path, force=True)
-    data = ds.pixel_array
 
     # we have not tested RGB, YBR_FULL, or YBR_FULL_422 yet.
-    if ds.PhotometricInterpretation  not in ['MONOCHROME1', 'MONOCHROME2']:
+    if ds.PhotometricInterpretation not in ['MONOCHROME1', 'MONOCHROME2']:
         raise NotImplementedError(f'PhotometricInterpretation `{ds.PhotometricInterpretation}` is not yet supported.')
     # get the max possible pixel value from DCM header
     max_possible_pixel_val = (2**ds.BitsStored - 1)
 
+    data = ds.pixel_array
+    
     # LUT for human friendly view
     if voi_lut:
         data = pydicom.pixel_data_handlers.util.apply_voi_lut(data, ds, index=0)
 
-               
     # `MONOCHROME1` have an inverted view; Bones are black; background is white
     # https://web.archive.org/web/20150920230923/http://www.mccauslandcenter.sc.edu/mricro/dicom/index.html
     if fix_monochrome and ds.PhotometricInterpretation == "MONOCHROME1":
         warnings.warn(f"Coverting MONOCHROME1 to MONOCHROME2 interpretation for file: {path}. Can be avoided by setting `fix_monochrome=False`")
         data = max_possible_pixel_val - data
 
-    # normalize data to [-1024, 1024]    
+    # normalize data to [-1024, 1024]
     data = normalize(data, max_possible_pixel_val)
     return data
 
@@ -129,13 +130,13 @@ def infer(model: torch.nn.Module, dataset: torch.utils.data.Dataset, threads=4, 
         batch_size=threads,
         num_workers=threads,
     )
-    
+
     preds = []
     with torch.inference_mode():
         for i, batch in enumerate(tqdm(dl)):
             output = model(batch["img"].to(device))
-            
+
             output = output.detach().cpu().numpy()
             preds.append(output)
-            
+
     return np.concatenate(preds)
