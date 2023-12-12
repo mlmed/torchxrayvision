@@ -99,7 +99,6 @@ def read_xray_dcm(path: PathLike, voi_lut: bool = False, fix_monochrome: bool = 
 
     # get the pixel array
     ds = pydicom.dcmread(path, force=True)
-    data = ds.pixel_array
 
     # we have not tested RGB, YBR_FULL, or YBR_FULL_422 yet.
     if ds.PhotometricInterpretation not in ['MONOCHROME1', 'MONOCHROME2']:
@@ -107,6 +106,8 @@ def read_xray_dcm(path: PathLike, voi_lut: bool = False, fix_monochrome: bool = 
     # get the max possible pixel value from DCM header
     max_possible_pixel_val = (2**ds.BitsStored - 1)
 
+    data = ds.pixel_array
+    
     # LUT for human friendly view
     if voi_lut:
         data = pydicom.pixel_data_handlers.util.apply_voi_lut(data, ds, index=0)
