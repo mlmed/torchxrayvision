@@ -48,11 +48,11 @@ jobs:
     - name: Install Dev dependencies
       run: |
         pip install --upgrade pip
-        pip install -r requirements-dev.txt --no-build-isolation
+        pip install -r requirements-dev.txt
 
     - name: Install XRV library
       run: |
-        pip install -e $GITHUB_WORKSPACE
+        pip install -e $GITHUB_WORKSPACE --no-build-isolation
 
     - name: Install torch version
       run: |
