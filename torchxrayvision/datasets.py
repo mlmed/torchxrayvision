@@ -1882,7 +1882,7 @@ class VinBrain_Dataset(Dataset):
 
         for i, pathology in enumerate(self.pathologies):
             for group_name, df_group in rows.groupby("class_name"):
-                if (group_name == pathology) or ((pathology in self.mapping) and (group_name in self.mapping[pathology])):
+                if (group_name.lower() == pathology.lower()) or ((pathology in self.mapping) and (group_name in self.mapping[pathology])):
 
                     mask = np.zeros([h, w])
                     for idx, row in df_group.iterrows():
