@@ -9,6 +9,7 @@ import torch.nn as nn
 import torchvision
 
 from .ptsemseg.pspnet import pspnet
+from ... import utils
 
 
 def _convert_state_dict(state_dict):
@@ -51,6 +52,10 @@ class PSPNet(nn.Module):
             url = {https://arxiv.org/abs/2104.10326},
             year = {2021}
         }
+
+    params:
+        cache_dir (str): Override directory used to store cached weights (default: ~/.torchxrayvision/)
+
     """
 
     targets: List[str] = [
@@ -62,7 +67,7 @@ class PSPNet(nn.Module):
     ]
     """"""
 
-    def __init__(self):
+    def __init__(self, cache_dir:str = None):
 
         super(PSPNet, self).__init__()
 
@@ -78,7 +83,10 @@ class PSPNet(nn.Module):
         url = "https://github.com/mlmed/torchxrayvision/releases/download/v1/pspnet_chestxray_best_model_4.pth"
 
         weights_filename = os.path.basename(url)
-        weights_storage_folder = os.path.expanduser(os.path.join("~", ".torchxrayvision", "models_data"))
+        if cache_dir is None:
+            weights_storage_folder = utils.get_cache_dir()
+        else:
+            weights_storage_folder = cache_dir
         self.weights_filename_local = os.path.expanduser(os.path.join(weights_storage_folder, weights_filename))
 
         if not os.path.isfile(self.weights_filename_local):
