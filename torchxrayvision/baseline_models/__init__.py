@@ -4,3 +4,4 @@ from . import chestx_det
 from . import emory_hiti
 from . import riken
 from . import xinario
+from . import medical_mae
