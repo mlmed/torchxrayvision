@@ -4,6 +4,7 @@ import pathlib
 import os
 import sys
 import requests
+from . import utils
 
 
 model_urls = {}
@@ -218,7 +219,7 @@ def ResNetAE101(**kwargs):
     return _ResNetAE(Bottleneck, DeconvBottleneck, [3, 4, 23, 2], 1, **kwargs)
 
 
-def ResNetAE(weights=None):
+def ResNetAE(weights=None, cache_dir=None):
     """A ResNet based autoencoder.
 
     Possible weights for this class include:
@@ -230,6 +231,11 @@ def ResNetAE(weights=None):
         ae = xrv.autoencoders.ResNetAE(weights="101-elastic") # trained on PadChest, NIH, CheXpert, and MIMIC
         z = ae.encode(image)
         image2 = ae.decode(z)
+
+
+    params:
+        weights (str): Weights to use. See above for options.
+        cache_dir (str): Override directory used to store cached weights (default: ~/.torchxrayvision/)
 
     """
 
@@ -245,14 +251,17 @@ def ResNetAE(weights=None):
     # load pretrained models
     url = model_urls[weights]["weights_url"]
     weights_filename = os.path.basename(url)
-    weights_storage_folder = os.path.expanduser(os.path.join("~", ".torchxrayvision", "models_data"))
+    if cache_dir is None:
+        weights_storage_folder = utils.get_cache_dir()
+    else:
+        weights_storage_folder = cache_dir
     weights_filename_local = os.path.expanduser(os.path.join(weights_storage_folder, weights_filename))
 
     if not os.path.isfile(weights_filename_local):
         print("Downloading weights...")
         print("If this fails you can run `wget {} -O {}`".format(url, weights_filename_local))
         pathlib.Path(weights_storage_folder).mkdir(parents=True, exist_ok=True)
-        download(url, weights_filename_local)
+        utils.download(url, weights_filename_local)
 
     try:
         state_dict = torch.load(weights_filename_local, map_location='cpu')
@@ -268,23 +277,3 @@ def ResNetAE(weights=None):
     ae.description = model_urls[weights]["description"]
 
     return ae
-
-
-# from here https://sumit-ghosh.com/articles/python-download-progress-bar/
-def download(url, filename):
-    with open(filename, 'wb') as f:
-        response = requests.get(url, stream=True)
-        total = response.headers.get('content-length')
-
-        if total is None:
-            f.write(response.content)
-        else:
-            downloaded = 0
-            total = int(total)
-            for data in response.iter_content(chunk_size=max(int(total / 1000), 1024 * 1024)):
-                downloaded += len(data)
-                f.write(data)
-                done = int(50 * downloaded / total)
-                sys.stdout.write('\r[{}{}]'.format('█' * done, '.' * (50 - done)))
-                sys.stdout.flush()
-    sys.stdout.write('\n')

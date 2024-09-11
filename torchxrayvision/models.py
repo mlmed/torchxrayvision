@@ -11,6 +11,7 @@ import requests
 import numpy as np
 from collections import OrderedDict
 from . import datasets
+from . import utils
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -191,6 +192,7 @@ class DenseNet(nn.Module):
         model = xrv.models.DenseNet(weights="densenet121-res224-mimic_ch") # MIMIC-CXR (MIT)
 
     :param weights: Specify a weight name to load pre-trained weights
+    :param cache_dir: Override where the weights will be stored (default is ~/.torchxrayvision/)
     :param op_threshs: Specify a weight name to load pre-trained weights 
     :param apply_sigmoid: Apply a sigmoid 
 
@@ -227,6 +229,7 @@ class DenseNet(nn.Module):
                  num_classes=len(datasets.default_pathologies),
                  in_channels=1,
                  weights=None,
+                 cache_dir=None,
                  op_threshs=None,
                  apply_sigmoid=False
                  ):
@@ -291,7 +294,7 @@ class DenseNet(nn.Module):
         self.register_buffer('op_threshs', op_threshs)
 
         if self.weights != None:
-            self.weights_filename_local = get_weights(weights)
+            self.weights_filename_local = get_weights(weights, cache_dir)
 
             try:
                 savedmodel = torch.load(self.weights_filename_local, map_location='cpu')
@@ -355,6 +358,7 @@ class ResNet(nn.Module):
         model = xrv.models.ResNet(weights="resnet50-res512-all")
 
     :param weights: Specify a weight name to load pre-trained weights
+    :param cache_dir: Override where the weights will be stored (default is ~/.torchxrayvision/)
     :param op_threshs: Specify a weight name to load pre-trained weights 
     :param apply_sigmoid: Apply a sigmoid 
 
@@ -382,7 +386,7 @@ class ResNet(nn.Module):
     ]
     """"""
 
-    def __init__(self, weights: str = None, apply_sigmoid: bool = False):
+    def __init__(self, weights: str = None, apply_sigmoid: bool = False, cache_dir: str = None):
         super(ResNet, self).__init__()
 
         self.weights = weights
@@ -392,7 +396,7 @@ class ResNet(nn.Module):
             possible_weights = [k for k in model_urls.keys() if k.startswith("resnet")]
             raise Exception("Weights value must be in {}".format(possible_weights))
 
-        self.weights_filename_local = get_weights(weights)
+        self.weights_filename_local = get_weights(weights, cache_dir=cache_dir)
         self.weights_dict = model_urls[weights]
         self.targets = model_urls[weights]["labels"]
         self.pathologies = self.targets  # keep to be backward compatible
@@ -546,39 +550,22 @@ def get_model(weights: str, **kwargs):
         raise Exception("Unknown model")
 
 
-def get_weights(weights: str):
+def get_weights(weights: str, cache_dir:str = None):
     if not weights in model_urls:
         raise Exception("Weights not found. Valid options: {}".format(list(model_urls.keys())))
 
     url = model_urls[weights]["weights_url"]
     weights_filename = os.path.basename(url)
-    weights_storage_folder = os.path.expanduser(os.path.join("~", ".torchxrayvision", "models_data"))
+    if cache_dir is None:
+        weights_storage_folder = utils.get_cache_dir()
+    else:
+        weights_storage_folder = cache_dir
     weights_filename_local = os.path.expanduser(os.path.join(weights_storage_folder, weights_filename))
 
     if not os.path.isfile(weights_filename_local):
         print("Downloading weights...")
         print("If this fails you can run `wget {} -O {}`".format(url, weights_filename_local))
         pathlib.Path(weights_storage_folder).mkdir(parents=True, exist_ok=True)
-        download(url, weights_filename_local)
+        utils.download(url, weights_filename_local)
 
     return weights_filename_local
-
-
-# from here https://sumit-ghosh.com/articles/python-download-progress-bar/
-def download(url: str, filename: str):
-    with open(filename, 'wb') as f:
-        response = requests.get(url, stream=True)
-        total = response.headers.get('content-length')
-
-        if total is None:
-            f.write(response.content)
-        else:
-            downloaded = 0
-            total = int(total)
-            for data in response.iter_content(chunk_size=max(int(total / 1000), 1024 * 1024)):
-                downloaded += len(data)
-                f.write(data)
-                done = int(50 * downloaded / total)
-                sys.stdout.write('\r[{}{}]'.format('█' * done, '.' * (50 - done)))
-                sys.stdout.flush()
-    sys.stdout.write('\n')

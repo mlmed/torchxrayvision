@@ -3,12 +3,16 @@ import requests
 import numpy as np
 import skimage
 import torch
+import os
 
 from os import PathLike
 from numpy import ndarray
 import warnings
 from tqdm.autonotebook import tqdm
 
+
+def get_cache_dir():
+    return os.path.expanduser(os.path.join("~", ".torchxrayvision", "models_data/"))
 
 def in_notebook():
     try:
