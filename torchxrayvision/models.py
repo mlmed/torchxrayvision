@@ -313,8 +313,6 @@ class DenseNet(nn.Module):
             if "op_threshs" in model_urls[weights]:
                 self.op_threshs = torch.tensor(model_urls[weights]["op_threshs"])
 
-            self.upsample = nn.Upsample(size=(224, 224), mode='bilinear', align_corners=False)
-
     def __repr__(self):
         if self.weights is not None:
             return "XRV-DenseNet121-{}".format(self.weights)
@@ -420,8 +418,6 @@ class ResNet(nn.Module):
 
         if "op_threshs" in model_urls[weights]:
             self.register_buffer('op_threshs', torch.tensor(model_urls[weights]["op_threshs"]))
-
-        self.upsample = nn.Upsample(size=(512, 512), mode='bilinear', align_corners=False)
 
         self.eval()
 
