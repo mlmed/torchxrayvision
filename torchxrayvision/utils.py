@@ -144,3 +144,36 @@ def infer(model: torch.nn.Module, dataset: torch.utils.data.Dataset, threads=4, 
             preds.append(output)
 
     return np.concatenate(preds)
+
+
+warning_log = {}
+
+def fix_resolution(x, resolution: int, model):
+    """Check resolution of input and resize to match requested."""
+
+    if (x.shape[2] != resolution) | (x.shape[3] != resolution):
+        if not hash(model) in warning_log:
+            print("Warning: Input size ({}x{}) is not the native resolution ({}x{}) for this model. A resize will be performed but this could impact performance.".format(x.shape[2], x.shape[3], resolution, resolution))
+            warning_log[hash(model)] = True
+        return torch.nn.functional.interpolate(x, size=(resolution, resolution), mode='bilinear', antialias=True)
+    return x
+
+
+def warn_normalization(x):
+    """Check normalization of input and warn if possibly wrong. When 
+    processing an image that may likely not have the correct 
+    normalization we can issue a warning. But running min and max on 
+    every image/batch is costly so we only do it on the first image/batch.
+    """
+
+    # Only run this check on the first image so we don't hurt performance.
+    if not "norm_check" in warning_log:
+        x_min = x.min()
+        x_max = x.max()
+        if torch.logical_or(-255 < x_min, x_max < 255) or torch.logical_or(x_min < -1024, 1024 < x_max):
+            print(f'Warning: Input image does not appear to be normalized correctly. The input image has the range [{x_min:.2f},{x_max:.2f}] which doesn\'t seem to be in the [-1024,1024] range. This warning may be wrong though. Only the first image is tested and we are only using a heuristic in an attempt to save a user from using the wrong normalization.')
+            warning_log["norm_correct"] = False
+        else:
+            warning_log["norm_correct"] = True
+
+        warning_log["norm_check"] = True

@@ -105,15 +105,13 @@ class PSPNet(nn.Module):
 
         model.eval()
         self.model = model
-        self.upsample = nn.Upsample(
-            size=(512, 512),
-            mode='bilinear',
-            align_corners=False,
-        )
 
     def forward(self, x):
+        
         x = x.repeat(1, 3, 1, 1)
-        x = self.upsample(x)
+        
+        x = utils.fix_resolution(x, 512, self)
+        utils.warn_normalization(x)
 
         # expecting values between [-1024,1024]
         x = (x + 1024) / 2048

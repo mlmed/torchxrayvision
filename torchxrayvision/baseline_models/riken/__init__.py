@@ -6,6 +6,7 @@ import torch.nn as nn
 import torchvision
 import pathlib
 import torchxrayvision as xrv
+from ... import utils
 
 
 class AgeModel(nn.Module):
@@ -71,12 +72,6 @@ class AgeModel(nn.Module):
             print("Loading failure. Check weights file:", self.weights_filename_local)
             raise e
 
-        self.upsample = nn.Upsample(
-            size=(320, 320),
-            mode='bilinear',
-            align_corners=False,
-        )
-
         self.norm = torchvision.transforms.Normalize(
             [0.485, 0.456, 0.406],
             [0.229, 0.224, 0.225],
@@ -84,7 +79,9 @@ class AgeModel(nn.Module):
 
     def forward(self, x):
         x = x.repeat(1, 3, 1, 1)
-        x = self.upsample(x)
+        
+        x = utils.fix_resolution(x, 320, self)
+        utils.warn_normalization(x)
 
         # expecting values between [-1024,1024]
         x = (x + 1024) / 2048

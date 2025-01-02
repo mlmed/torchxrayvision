@@ -6,6 +6,7 @@ sys.path.insert(0, thisfolder)
 import torch
 import torch.nn as nn
 from .model import Tasks2Models
+from ... import utils
 
 
 class DenseNet(nn.Module):
@@ -52,8 +53,6 @@ class DenseNet(nn.Module):
                                   dynamic=False,
                                   use_gpu=self.use_gpu)
 
-        self.upsample = nn.Upsample(size=(320, 320), mode='bilinear', align_corners=False)
-
         self.pathologies = self.targets
 
     def forward(self, x):
@@ -80,7 +79,8 @@ class DenseNet(nn.Module):
 
     def features(self, x):
         x = x.repeat(1, 3, 1, 1)
-        x = self.upsample(x)
+        x = utils.fix_resolution(x, 320, self)
+        utils.warn_normalization(x)
 
         # expecting values between [-1024,1024]
         x = x / 512
