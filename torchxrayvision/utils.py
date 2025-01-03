@@ -151,8 +151,12 @@ warning_log = {}
 def fix_resolution(x, resolution: int, model):
     """Check resolution of input and resize to match requested."""
 
+    if len(x.shape) == 3:
+        # Extend to be 4D
+        x = x[None,...]
+
     if x.shape[2] != x.shape[3]:
-        raise Exception(f"Height and width of the image must match {x.shape[2]} != {x.shape[3]}. Perform a center crop first.")
+        raise Exception(f"Height and width of the image must be the same. Input: {x.shape[2]} != {x.shape[3]}. Perform a center crop first.")
     
     if (x.shape[2] != resolution) | (x.shape[3] != resolution):
         if not hash(model) in warning_log:
@@ -173,7 +177,7 @@ def warn_normalization(x):
     if not "norm_check" in warning_log:
         x_min = x.min()
         x_max = x.max()
-        if torch.logical_or(-255 < x_min, x_max < 255) or torch.logical_or(x_min < -1024, 1024 < x_max):
+        if torch.logical_or(-255 < x_min, x_max < 255) or torch.logical_or(x_min < -1025, 1025 < x_max):
             print(f'Warning: Input image does not appear to be normalized correctly. The input image has the range [{x_min:.2f},{x_max:.2f}] which doesn\'t seem to be in the [-1024,1024] range. This warning may be wrong though. Only the first image is tested and we are only using a heuristic in an attempt to save a user from using the wrong normalization.')
             warning_log["norm_correct"] = False
         else:
