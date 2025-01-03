@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torchvision
 import torchxrayvision as xrv
-
+from ... import utils
 
 class RaceModel(nn.Module):
     """This model is from the work below and is trained to predict the
@@ -78,12 +78,6 @@ class RaceModel(nn.Module):
             print("Loading failure. Check weights file:", self.weights_filename_local)
             raise e
 
-        self.upsample = nn.Upsample(
-            size=(320, 320),
-            mode='bilinear',
-            align_corners=False,
-        )
-
         self.targets = ["Asian", "Black", "White"]
 
         self.mean = np.array([0.485, 0.456, 0.406])
@@ -93,7 +87,9 @@ class RaceModel(nn.Module):
 
     def forward(self, x):
         x = x.repeat(1, 3, 1, 1)
-        x = self.upsample(x)
+        
+        x = utils.fix_resolution(x, 320, self)
+        utils.warn_normalization(x)
 
         # Expecting values between [-1024,1024]
         x = (x + 1024) / 2048

@@ -297,7 +297,7 @@ class DenseNet(nn.Module):
             self.weights_filename_local = get_weights(weights, cache_dir)
 
             try:
-                savedmodel = torch.load(self.weights_filename_local, map_location='cpu')
+                savedmodel = torch.load(self.weights_filename_local, map_location='cpu', weights_only=False)
                 # patch to load old models https://github.com/pytorch/pytorch/issues/42242
                 for mod in savedmodel.modules():
                     if not hasattr(mod, "_non_persistent_buffers_set"):
@@ -313,8 +313,6 @@ class DenseNet(nn.Module):
             if "op_threshs" in model_urls[weights]:
                 self.op_threshs = torch.tensor(model_urls[weights]["op_threshs"])
 
-            self.upsample = nn.Upsample(size=(224, 224), mode='bilinear', align_corners=False)
-
     def __repr__(self):
         if self.weights is not None:
             return "XRV-DenseNet121-{}".format(self.weights)
@@ -322,8 +320,8 @@ class DenseNet(nn.Module):
             return "XRV-DenseNet"
 
     def features2(self, x):
-        x = fix_resolution(x, 224, self)
-        warn_normalization(x)
+        x = utils.fix_resolution(x, 224, self)
+        utils.warn_normalization(x)
 
         features = self.features(x)
         out = F.relu(features, inplace=True)
@@ -331,7 +329,8 @@ class DenseNet(nn.Module):
         return out
 
     def forward(self, x):
-        x = fix_resolution(x, 224, self)
+        x = utils.fix_resolution(x, 224, self)
+        utils.warn_normalization(x)
 
         features = self.features2(x)
         out = self.classifier(features)
@@ -412,15 +411,13 @@ class ResNet(nn.Module):
             self.model.conv1 = torch.nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
 
         try:
-            self.model.load_state_dict(torch.load(self.weights_filename_local))
+            self.model.load_state_dict(torch.load(self.weights_filename_local, map_location='cpu', weights_only=False))
         except Exception as e:
             print("Loading failure. Check weights file:", self.weights_filename_local)
             raise e
 
         if "op_threshs" in model_urls[weights]:
             self.register_buffer('op_threshs', torch.tensor(model_urls[weights]["op_threshs"]))
-
-        self.upsample = nn.Upsample(size=(512, 512), mode='bilinear', align_corners=False)
 
         self.eval()
 
@@ -431,8 +428,8 @@ class ResNet(nn.Module):
             return "XRV-ResNet"
 
     def features(self, x):
-        x = fix_resolution(x, 512, self)
-        warn_normalization(x)
+        x = utils.fix_resolution(x, 512, self)
+        utils.warn_normalization(x)
 
         x = self.model.conv1(x)
         x = self.model.bn1(x)
@@ -449,8 +446,8 @@ class ResNet(nn.Module):
         return x
 
     def forward(self, x):
-        x = fix_resolution(x, 512, self)
-        warn_normalization(x)
+        x = utils.fix_resolution(x, 512, self)
+        utils.warn_normalization(x)
 
         out = self.model(x)
 
@@ -461,44 +458,6 @@ class ResNet(nn.Module):
             out = torch.sigmoid(out)
             out = op_norm(out, self.op_threshs)
         return out
-
-
-warning_log = {}
-
-
-def fix_resolution(x, resolution: int, model: nn.Module):
-    """Check resolution of input and resize to match requested."""
-
-    # just skip it if upsample was removed somehow
-    if not hasattr(model, 'upsample') or (model.upsample == None):
-        return x
-
-    if (x.shape[2] != resolution) | (x.shape[3] != resolution):
-        if not hash(model) in warning_log:
-            print("Warning: Input size ({}x{}) is not the native resolution ({}x{}) for this model. A resize will be performed but this could impact performance.".format(x.shape[2], x.shape[3], resolution, resolution))
-            warning_log[hash(model)] = True
-        return model.upsample(x)
-    return x
-
-
-def warn_normalization(x):
-    """Check normalization of input and warn if possibly wrong. When 
-    processing an image that may likely not have the correct 
-    normalization we can issue a warning. But running min and max on 
-    every image/batch is costly so we only do it on the first image/batch.
-    """
-
-    # Only run this check on the first image so we don't hurt performance.
-    if not "norm_check" in warning_log:
-        x_min = x.min()
-        x_max = x.max()
-        if torch.logical_or(-255 < x_min, x_max < 255) or torch.logical_or(x_min < -1024, 1024 < x_max):
-            print(f'Warning: Input image does not appear to be normalized correctly. The input image has the range [{x_min:.2f},{x_max:.2f}] which doesn\'t seem to be in the [-1024,1024] range. This warning may be wrong though. Only the first image is tested and we are only using a heuristic in an attempt to save a user from using the wrong normalization.')
-            warning_log["norm_correct"] = False
-        else:
-            warning_log["norm_correct"] = True
-
-        warning_log["norm_check"] = True
 
 
 def op_norm(outputs, op_threshs):
