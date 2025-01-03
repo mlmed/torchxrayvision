@@ -70,25 +70,25 @@ dict(zip(model.pathologies,outputs[0].detach().numpy()))
 A sample script to process images usings pretrained models is [process_image.py](https://github.com/mlmed/torchxrayvision/blob/master/scripts/process_image.py)
 
 ```
-$ python3 process_image.py ../tests/00000001_000.png
-{'preds': {'Atelectasis': 0.50500506,
-           'Cardiomegaly': 0.6600903,
-           'Consolidation': 0.30575264,
-           'Edema': 0.274184,
-           'Effusion': 0.4026162,
-           'Emphysema': 0.5036339,
-           'Enlarged Cardiomediastinum': 0.40989172,
-           'Fibrosis': 0.53293407,
-           'Fracture': 0.32376793,
-           'Hernia': 0.011924741,
-           'Infiltration': 0.5154413,
-           'Lung Lesion': 0.22231922,
-           'Lung Opacity': 0.2772148,
-           'Mass': 0.32237658,
-           'Nodule': 0.5091847,
-           'Pleural_Thickening': 0.5102617,
-           'Pneumonia': 0.30947986,
-           'Pneumothorax': 0.24847917}}
+$ python3 process_image.py ../tests/00000001_000.png -resize
+{'preds': {'Atelectasis': 0.50577986,
+           'Cardiomegaly': 0.62151504,
+           'Consolidation': 0.3124331,
+           'Edema': 0.21286564,
+           'Effusion': 0.39427388,
+           'Emphysema': 0.503361,
+           'Enlarged Cardiomediastinum': 0.4313866,
+           'Fibrosis': 0.5401596,
+           'Fracture': 0.28907478,
+           'Hernia': 0.012677962,
+           'Infiltration': 0.5220189,
+           'Lung Lesion': 0.21828467,
+           'Lung Opacity': 0.36826086,
+           'Mass': 0.4104132,
+           'Nodule': 0.5091791,
+           'Pleural_Thickening': 0.5104176,
+           'Pneumonia': 0.18006423,
+           'Pneumothorax': 0.30677897}}
 
 ```
 
