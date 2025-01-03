@@ -57,7 +57,9 @@ class DenseNet(nn.Module):
 
     def forward(self, x):
         x = x.repeat(1, 3, 1, 1)
-        x = self.upsample(x)
+        
+        x = utils.fix_resolution(x, 320, self)
+        utils.warn_normalization(x)
 
         # expecting values between [-1024,1024]
         x = x / 512
@@ -79,6 +81,7 @@ class DenseNet(nn.Module):
 
     def features(self, x):
         x = x.repeat(1, 3, 1, 1)
+        
         x = utils.fix_resolution(x, 320, self)
         utils.warn_normalization(x)
 
