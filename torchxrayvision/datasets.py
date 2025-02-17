@@ -2059,8 +2059,6 @@ class XRayResizer(object):
     def __init__(self, size: int, engine="skimage"):
         self.size = size
         self.engine = engine
-        if 'cv2' in sys.modules:
-            print("Setting XRayResizer engine to cv2 could increase performance.")
 
     def __call__(self, img: np.ndarray) -> np.ndarray:
         if self.engine == "skimage":
