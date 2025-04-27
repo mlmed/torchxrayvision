@@ -433,7 +433,7 @@ class ResNet(nn.Module):
         if "op_threshs" in model_urls[weights]:
             self.register_buffer('op_threshs', torch.tensor(model_urls[weights]["op_threshs"]))
 
-        if "resolution" in model_urls[weights]:
+        if "input_resolution" in model_urls[weights]:
             self.input_resolution = model_urls[weights]["input_resolution"]
 
         self.eval()
