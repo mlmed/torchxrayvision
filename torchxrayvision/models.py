@@ -331,10 +331,9 @@ class DenseNet(nn.Module):
             return "XRV-DenseNet"
 
     def features2(self, x):
-        if hasattr(self, 'input_resolution') and self.resolution:
-            x = utils.fix_resolution(x, self.resolution, self)
+        if hasattr(self, 'input_resolution'):
+            x = utils.fix_resolution(x, self.input_resolution, self)
             utils.warn_normalization(x)
-        utils.warn_normalization(x)
 
         features = self.features(x)
         out = F.relu(features, inplace=True)
