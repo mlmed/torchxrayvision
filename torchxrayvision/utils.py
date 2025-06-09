@@ -54,7 +54,7 @@ def normalize(img, maxval, reshape=False):
     """Scales images to be roughly [-1024 1024]."""
 
     if img.max() > maxval:
-        raise Exception(
+        raise ValueError(
             "max image value ({}) higher than expected bound ({}).".format(
                 img.max(), maxval
             )
