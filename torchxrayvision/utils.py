@@ -116,7 +116,7 @@ def read_xray_dcm(
     try:
         import pydicom
     except ImportError:
-        raise Exception(
+        raise ImportError(
             "Missing Package Pydicom. Try installing it by running `pip install pydicom`."
         )
 
@@ -186,7 +186,7 @@ def fix_resolution(x, resolution: int, model):
             f"Height and width of the image must be the same. Input: {x.shape[2]} != {x.shape[3]}. Perform a center crop first."
         )
 
-    if (x.shape[2] != resolution) | (x.shape[3] != resolution):
+    if (x.shape[2] != resolution) or (x.shape[3] != resolution):
         if not hash(model) in warning_log:
             print(
                 "Warning: Input size ({}x{}) is not the native resolution ({}x{}) for this model. A resize will be performed but this could impact performance.".format(
