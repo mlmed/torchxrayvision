@@ -141,7 +141,7 @@ def read_xray_dcm(
     # https://web.archive.org/web/20150920230923/http://www.mccauslandcenter.sc.edu/mricro/dicom/index.html
     if fix_monochrome and ds.PhotometricInterpretation == "MONOCHROME1":
         warnings.warn(
-            f"Coverting MONOCHROME1 to MONOCHROME2 interpretation for file: {path}. Can be avoided by setting `fix_monochrome=False`"
+            f"Converting MONOCHROME1 to MONOCHROME2 interpretation for file: {path}. Can be avoided by setting `fix_monochrome=False`"
         )
         data = max_possible_pixel_val - data
 
