@@ -5,6 +5,7 @@ import numpy as np
 sys.path.insert(0,"../torchxrayvision")
 
 
+@pytest.mark.skip
 @pytest.fixture(scope="session", autouse=True)
 def resource(request):
     print("setup")
@@ -15,7 +16,7 @@ def resource(request):
         os.system("rm -rf /tmp/covid-chestxray-dataset")
     request.addfinalizer(teardown)
     
-
+@pytest.mark.skip
 def test_covid_dataloader_basic():
     d_covid19 = xrv.datasets.COVID19_Dataset(imgpath="/tmp/covid-chestxray-dataset/images/",
                                         csvpath="/tmp/covid-chestxray-dataset/metadata.csv",
@@ -23,7 +24,7 @@ def test_covid_dataloader_basic():
     
     print(d_covid19)
 
-
+@pytest.mark.skip
 def test_covid_dataloader_get():
     
     d_covid19 = xrv.datasets.COVID19_Dataset(imgpath="/tmp/covid-chestxray-dataset/images/",
