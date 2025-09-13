@@ -109,12 +109,6 @@ class SexModel(nn.Module):
         # Define targets - order matters and should match training
         self.targets = ["Male" ,"Female"]  # 0: Male, 1: Female
 
-        # ImageNet normalization (as used in original ResNet training)
-        self.mean = np.array([0.485, 0.456, 0.406])
-        self.std = np.array([0.229, 0.224, 0.225])
-
-        self.norm = torchvision.transforms.Normalize(self.mean, self.std)
-
     def forward(self, x):
         # Convert single channel to RGB (pseudo-RGB as in original implementation)
         x = x.repeat(1, 3, 1, 1)

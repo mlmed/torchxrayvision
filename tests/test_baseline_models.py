@@ -8,7 +8,7 @@ sys.path.insert(0, "../torchxrayvision/")
 def test_baselinemodels_load():
     model = xrv.baseline_models.jfhealthcare.DenseNet()
     model = xrv.baseline_models.emory_hiti.RaceModel()
-    model = xrv.baseline_models.mira.SexModel(weights=False)  # Test without weights
+    model = xrv.baseline_models.mira.SexModel()
     
     
 def test_baselinemodel_jfhealthcare_function():
