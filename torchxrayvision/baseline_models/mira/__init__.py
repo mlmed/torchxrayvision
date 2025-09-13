@@ -49,7 +49,6 @@ class SexModel(nn.Module):
         super(SexModel, self).__init__()
 
         # Use ResNet34 architecture as in the original MIRA implementation
-        # The weights filename suggests this is a ResNet model
         self.model = torchvision.models.resnet34(weights=None)
         n_classes = 2  # Male/Female
         
@@ -58,10 +57,7 @@ class SexModel(nn.Module):
         self.model.fc = nn.Linear(num_features, n_classes)
 
         if weights:
-            # Note: The original model uses pytorch_lightning, but we'll adapt it to regular PyTorch
             
-            # URL for the weights file - you'll need to host this somewhere accessible
-            # For now, using a placeholder URL that you'll need to replace with actual hosted weights
             url = 'https://github.com/mlmed/torchxrayvision/releases/download/v1/mira_sex_resnet-all_epoch_13-step_7125.ckpt'
 
             weights_filename = "mira_sex_resnet-all_epoch_13-step_7125.ckpt"
@@ -80,7 +76,6 @@ class SexModel(nn.Module):
                     raise e
 
             try:
-                # Load PyTorch Lightning checkpoint
                 ckpt = torch.load(self.weights_filename_local, map_location="cpu")
                 
                 # Extract state dict from PyTorch Lightning checkpoint
@@ -118,10 +113,9 @@ class SexModel(nn.Module):
         utils.warn_normalization(x)
 
         # Convert from torchxrayvision range [-1024, 1024] to [0, 1] 
-        # This matches the preprocessing expected by the MIRA model
         x = (x + 1024) / 2048
 
-        x = x*255  # Scale to [0, 255] as expected by ImageNet models
+        x = x*255  # Scale to [0, 255]
         
         # Forward pass through ResNet
         y = self.model(x)
