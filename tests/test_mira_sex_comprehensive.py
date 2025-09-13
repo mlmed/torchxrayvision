@@ -65,9 +65,3 @@ def test_mira_sex_model_comprehensive():
     assert all(isinstance(v, float) for v in prediction_dict.values()), 'All values should be floats'
     assert all(0 <= v <= 1 for v in prediction_dict.values()), 'All probabilities should be between 0 and 1'
     assert abs(sum(prediction_dict.values()) - 1.0) < 1e-6, 'Probabilities should sum to 1'
-    
-    print("All tests passed! The interface works as expected.")
-    print(f"Example prediction: {prediction_dict}")
-
-if __name__ == "__main__":
-    test_mira_sex_model_comprehensive()
