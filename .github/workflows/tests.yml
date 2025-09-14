@@ -55,6 +55,7 @@ jobs:
         pip install -e .
 
     - name: Install torch version
+      shell: bash
       run: |
         if [ "${{ matrix.torch-version }}" = "latest" ]; then
           pip install --upgrade torch torchvision
