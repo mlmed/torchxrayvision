@@ -32,7 +32,7 @@ jobs:
       max-parallel: 2
       matrix:
         python-version: ['3.11']
-        torch-version: [2.4.1]
+        torch-version: [1.13.1, latest]
         os: [ubuntu-latest, macos-latest, windows-latest] # only run ubuntu for now because the other ones fail for no reason, macos-latest, windows-latest]
 
     # Steps represent a sequence of tasks that will be executed as part of the job
@@ -56,8 +56,11 @@ jobs:
 
     - name: Install torch version
       run: |
-        echo "Installing torch ${{ matrix.torch-version }}"
-        python -m pip install torch==${{ matrix.torch-version }} torchvision
+        if [ "${{ matrix.torch-version }}" = "latest" ]; then
+          pip install --upgrade torch torchvision
+        else
+          pip install torch==${{ matrix.torch-version }} torchvision
+        fi
 
     - name: Run tests
       run: pytest
