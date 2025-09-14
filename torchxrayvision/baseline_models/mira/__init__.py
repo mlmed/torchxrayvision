@@ -17,6 +17,10 @@ class SexModel(nn.Module):
 
     `Demo notebook <https://github.com/mlmed/torchxrayvision/blob/main/scripts/sex_prediction.ipynb>`__
 
+    Publication: `Algorithmic encoding of protected characteristics in chest X-ray disease detection models <https://www.thelancet.com/journals/ebiom/article/PIIS2352-3964(23)00032-4/fulltext>`__  
+    B. Glocker, C. Jones, M. Bernhardt, S. Winzeck  
+    eBioMedicine. Volume 89, 104467, 2023.         
+
     .. code-block:: python
 
         model = xrv.baseline_models.mira.SexModel()
@@ -27,7 +31,7 @@ class SexModel(nn.Module):
         pred = model(image)
 
         model.targets[torch.argmax(pred)]
-        # 'Male' or 'Female'
+        # 'Male' or 'Female'  
 
     .. code-block:: bibtex
 
