@@ -45,7 +45,7 @@ class SexModel(nn.Module):
 
     """
 
-    targets: List[str] = ["Male" ,"Female"]
+    targets: List[str] = ["Male", "Female"]
     """"""
 
     def __init__(self, weights=True):
