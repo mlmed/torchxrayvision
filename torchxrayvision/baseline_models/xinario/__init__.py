@@ -16,7 +16,7 @@ class ViewModel(nn.Module):
     The native resolution of the model is 320x320. Images are scaled
     automatically.
 
-    `Demo notebook <https://github.com/mlmed/torchxrayvision/blob/master/scripts/view_classifier.ipynb>`__
+    `Demo notebook <https://github.com/mlmed/torchxrayvision/blob/main/scripts/view_classifier.ipynb>`__
 
     .. code-block:: python
 

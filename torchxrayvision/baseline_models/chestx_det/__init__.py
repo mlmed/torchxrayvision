@@ -27,7 +27,7 @@ def _convert_state_dict(state_dict):
 class PSPNet(nn.Module):
     """ChestX-Det Segmentation Model
 
-    You can load pretrained anatomical segmentation models. `Demo Notebook <https://github.com/mlmed/torchxrayvision/blob/master/scripts/segmentation.ipynb>`_
+    You can load pretrained anatomical segmentation models. `Demo Notebook <https://github.com/mlmed/torchxrayvision/blob/main/scripts/segmentation.ipynb>`_
 
     .. code-block:: python
 
