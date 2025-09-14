@@ -32,7 +32,7 @@ jobs:
       max-parallel: 2
       matrix:
         python-version: ['3.11']
-        torch-version: [1.13.1, latest]
+        torch-version: [latest]
         os: [ubuntu-latest, macos-latest, windows-latest] # only run ubuntu for now because the other ones fail for no reason, macos-latest, windows-latest]
 
     # Steps represent a sequence of tasks that will be executed as part of the job
