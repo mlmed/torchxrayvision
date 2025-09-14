@@ -87,7 +87,7 @@ html_context = {
     "display_github": True,
     "github_user": "mlmed",  # Username
     "github_repo": "torchxrayvision",  # Repo name
-    "github_version": "master",  # Version
+    "github_version": "main",  # Version
     "conf_py_path": "/docs/source/",  # Path in the checkout to the docs root
     "last_updated": True,
     # "commit": False,

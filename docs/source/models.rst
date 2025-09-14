@@ -2,7 +2,7 @@
 Models
 ======
 
-Model benchmarks for classifiers are `here <https://github.com/mlmed/torchxrayvision/blob/master/BENCHMARKS.md>`_
+Model benchmarks for classifiers are `here <https://github.com/mlmed/torchxrayvision/blob/main/BENCHMARKS.md>`_
 
 
 Model Interface
@@ -67,4 +67,10 @@ Xinario View Model
 ++++++++++++++++++
 
 .. automodule:: torchxrayvision.baseline_models.xinario
+   :members:
+
+Mira Sex Model
+++++++++++++++++++
+
+.. automodule:: torchxrayvision.baseline_models.mira
    :members:

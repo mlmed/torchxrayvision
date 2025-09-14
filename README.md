@@ -4,7 +4,7 @@
 
 # TorchXRayVision 
 
-| <img src="https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/torchxrayvision-logo.png" width="300px"/>  |  ([🎬 promo video](https://www.youtube.com/watch?v=Rl7xz0uULGQ)) <br>[<img src="http://img.youtube.com/vi/Rl7xz0uULGQ/0.jpg" width="400px"/>)](http://www.youtube.com/watch?v=Rl7xz0uULGQ "Video Title") |
+| <img src="https://raw.githubusercontent.com/mlmed/torchxrayvision/main/docs/torchxrayvision-logo.png" width="300px"/>  |  ([🎬 promo video](https://www.youtube.com/watch?v=Rl7xz0uULGQ)) <br>[<img src="http://img.youtube.com/vi/Rl7xz0uULGQ/0.jpg" width="400px"/>)](http://www.youtube.com/watch?v=Rl7xz0uULGQ "Video Title") |
 |---|---|
 
 # What is it?
@@ -67,7 +67,7 @@ dict(zip(model.pathologies,outputs[0].detach().numpy()))
 
 ```
 
-A sample script to process images usings pretrained models is [process_image.py](https://github.com/mlmed/torchxrayvision/blob/master/scripts/process_image.py)
+A sample script to process images usings pretrained models is [process_image.py](https://github.com/mlmed/torchxrayvision/blob/main/scripts/process_image.py)
 
 ```
 $ python3 process_image.py ../tests/00000001_000.png -resize
@@ -92,7 +92,7 @@ $ python3 process_image.py ../tests/00000001_000.png -resize
 
 ```
 
-## Models ([demo notebook](https://github.com/mlmed/torchxrayvision/blob/master/scripts/xray_models.ipynb))
+## Models ([demo notebook](https://github.com/mlmed/torchxrayvision/blob/main/scripts/xray_models.ipynb))
 
 Specify weights for pretrained models (currently all DenseNet121)
 Note: Each pretrained model has 18 outputs. The `all` model has every output trained. However, for the other weights some targets are not trained and will predict randomly becuase they do not exist in the training dataset. The only valid outputs are listed in the field `{dataset}.pathologies` on the dataset that corresponds to the weights. 
@@ -153,7 +153,7 @@ seg_model.targets # ['Left Clavicle', 'Right Clavicle', 'Left Scapula', 'Right S
 ![](docs/segmentation-pspnet.png)
 
 ## Datasets 
-[View docstrings for more detail on each dataset](https://github.com/mlmed/torchxrayvision/blob/master/torchxrayvision/datasets.py) and [Demo notebook](https://github.com/mlmed/torchxrayvision/blob/master/scripts/xray_datasets.ipynb) and [Example loading script](https://github.com/mlmed/torchxrayvision/blob/master/scripts/dataset_utils.py)
+[View docstrings for more detail on each dataset](https://github.com/mlmed/torchxrayvision/blob/main/torchxrayvision/datasets.py) and [Demo notebook](https://github.com/mlmed/torchxrayvision/blob/main/scripts/xray_datasets.ipynb) and [Example loading script](https://github.com/mlmed/torchxrayvision/blob/main/scripts/dataset_utils.py)
 
 ```python3
 transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
@@ -222,7 +222,7 @@ relabel_dataset will align labels to have the same order as the pathologies argu
 xrv.datasets.relabel_dataset(xrv.datasets.default_pathologies , d_nih) # has side effects
 ```
 
-specify a subset of views ([demo notebook](https://github.com/mlmed/torchxrayvision/blob/master/scripts/xray_datasets_views.ipynb))
+specify a subset of views ([demo notebook](https://github.com/mlmed/torchxrayvision/blob/main/scripts/xray_datasets_views.ipynb))
 ```python3
 d_kaggle = xrv.datasets.RSNA_Pneumonia_Dataset(imgpath="...",
                                                views=["PA","AP","AP Supine"])
@@ -256,7 +256,7 @@ CheX_Dataset num_samples=191010 views=['PA', 'AP']
  'Support Devices': {0.0: 21757, 1.0: 99747}}
 ```
 
-## Pathology masks ([demo notebook](https://github.com/mlmed/torchxrayvision/blob/master/scripts/xray_masks.ipynb))
+## Pathology masks ([demo notebook](https://github.com/mlmed/torchxrayvision/blob/main/scripts/xray_masks.ipynb))
 
 Masks are available in the following datasets:
 ```python3
@@ -282,14 +282,14 @@ True      6012
 # There may be more than one mask per sample. But only one per pathology.
 sample["pathology_masks"][d_rsna.pathologies.index("Lung Opacity")]
 ```
-![](https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/pathology-mask-rsna2.png)
-![](https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/pathology-mask-rsna3.png)
+![](https://raw.githubusercontent.com/mlmed/torchxrayvision/main/docs/pathology-mask-rsna2.png)
+![](https://raw.githubusercontent.com/mlmed/torchxrayvision/main/docs/pathology-mask-rsna3.png)
 
 it also works with data_augmentation if you pass in `data_aug=data_transforms` to the dataloader. The random seed is matched to align calls for the image and the mask.
 
-![](https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/pathology-mask-rsna614-da.png)
+![](https://raw.githubusercontent.com/mlmed/torchxrayvision/main/docs/pathology-mask-rsna614-da.png)
 
-## Distribution shift tools ([demo notebook](https://github.com/mlmed/torchxrayvision/blob/master/scripts/xray_datasets-CovariateShift.ipynb))
+## Distribution shift tools ([demo notebook](https://github.com/mlmed/torchxrayvision/blob/main/scripts/xray_datasets-CovariateShift.ipynb))
 
 The class `xrv.datasets.CovariateDataset` takes two datasets and two 
 arrays representing the labels. The samples will be returned with the 
@@ -353,9 +353,9 @@ Medical Imaging with Deep Learning 2020 (Online: https://arxiv.org/abs/2002.0249
 ## Supporters/Sponsors
 
 
-| <a href="https://cifar.ca/"><img width="300px" src="https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/cifar-logo.png" /></a><br> CIFAR (Canadian Institute for Advanced Research)  |  <a href="https://mila.quebec/"><img width="300px" src="https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/mila-logo.png" /></a><br> Mila, Quebec AI Institute, University of Montreal |
+| <a href="https://cifar.ca/"><img width="300px" src="https://raw.githubusercontent.com/mlmed/torchxrayvision/main/docs/cifar-logo.png" /></a><br> CIFAR (Canadian Institute for Advanced Research)  |  <a href="https://mila.quebec/"><img width="300px" src="https://raw.githubusercontent.com/mlmed/torchxrayvision/main/docs/mila-logo.png" /></a><br> Mila, Quebec AI Institute, University of Montreal |
 |:---:|:---:|
-| <a href="http://aimi.stanford.edu/"><img width="300px" src="https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/AIMI-stanford.jpg" /></a> <br><b>Stanford University's Center for <br>Artificial Intelligence in Medicine & Imaging</b>  | <a href="http://www.carestream.com/"><img width="300px" src="https://raw.githubusercontent.com/mlmed/torchxrayvision/master/docs/carestream-logo.png" /></a> <br><b>Carestream Health</b>  |
+| <a href="http://aimi.stanford.edu/"><img width="300px" src="https://raw.githubusercontent.com/mlmed/torchxrayvision/main/docs/AIMI-stanford.jpg" /></a> <br><b>Stanford University's Center for <br>Artificial Intelligence in Medicine & Imaging</b>  | <a href="http://www.carestream.com/"><img width="300px" src="https://raw.githubusercontent.com/mlmed/torchxrayvision/main/docs/carestream-logo.png" /></a> <br><b>Carestream Health</b>  |
 
 
 
