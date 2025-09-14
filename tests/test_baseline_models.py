@@ -8,6 +8,7 @@ sys.path.insert(0, "../torchxrayvision/")
 def test_baselinemodels_load():
     model = xrv.baseline_models.jfhealthcare.DenseNet()
     model = xrv.baseline_models.emory_hiti.RaceModel()
+    model = xrv.baseline_models.mira.SexModel()
     
     
 def test_baselinemodel_jfhealthcare_function():
@@ -69,3 +70,25 @@ def test_baselinemodel_xinario_function():
     assert dzdxp.shape == torch.Size([1, 1, 224, 224]), 'check grads are the correct size'
     
     assert torch.isnan(dzdxp.flatten()).sum().cpu().numpy() == 0 
+
+
+def test_baselinemodel_mira_sex_function():
+    
+    model = xrv.baseline_models.mira.SexModel()
+    
+    img = torch.ones(1, 1, 224, 224)
+    img.requires_grad = True
+    pred = model(img)[:,model.targets.index("Male")]
+    assert pred.shape == torch.Size([1]), 'check output is correct shape'
+        
+    dzdxp = torch.autograd.grad((pred), img)[0]
+    assert dzdxp.shape == torch.Size([1, 1, 224, 224]), 'check grads are the correct size'
+    
+    assert torch.isnan(dzdxp.flatten()).sum().cpu().numpy() == 0 
+    
+    # Test that targets are correct
+    assert model.targets == ["Male", "Female"], 'check targets are correct'
+    
+    # Test that output has correct number of classes
+    pred_full = model(img)
+    assert pred_full.shape == torch.Size([1, 2]), 'check full output is correct shape' 
