@@ -195,3 +195,9 @@ def test_errors_when_doing_things_that_should_not_work():
     with pytest.raises(NotImplementedError) as excinfo:
         merged_dataset.pathologies = None
     
+def test_lesion_label_unified():
+    """Ensure 'Lung Lesion' is used instead of raw 'Lesion' in default_pathologies"""
+    assert "Lesion" not in xrv.datasets.default_pathologies, \
+        "Raw 'Lesion' found in default_pathologies. Use 'Lung Lesion' for consistency."
+    assert "Lung Lesion" in xrv.datasets.default_pathologies, \
+        "'Lung Lesion' missing from default_pathologies."
