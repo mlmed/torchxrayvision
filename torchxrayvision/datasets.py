@@ -11,8 +11,10 @@ import zipfile
 import imageio
 import numpy as np
 import pandas as pd
+import json
 import skimage
 from typing import Dict, List
+from collections import defaultdict
 import skimage.transform
 from skimage.io import imread
 import torch
@@ -1416,7 +1418,7 @@ class COVID19_Dataset(Dataset):
 
     Dataset: https://github.com/ieee8023/covid-chestxray-dataset
 
-    Paper: https://arxiv.org/abs/2003.11597
+    Paper: https://arxiv.org/abs/2003.11597 
     """
 
     dataset_url = "https://github.com/ieee8023/covid-chestxray-dataset"
@@ -1607,7 +1609,98 @@ class NLMTB_Dataset(Dataset):
 
         return sample
 
+class TBX11K_Dataset(Dataset):
+    """Tuberculosis X-ray 11K
 
+    TBX11k contains 11200 X-ray images with corresponding bounding boxes
+    annotations for tuberculosis (TB) areas. Images are across five categories:
+    Healthy, Sick but Non-TB, Active TB, Latent TB, and Uncertain TB.
+
+    Note that this dataset includes images from the Montgomery and Shenzhen
+    datasets, which are also available via NLMTB_Dataset. Users should avoid
+    training on NLMTB_Dataset and evaluating on TBX11k (or vice versa) as this
+    may result in data leakage.
+
+    This dataset incorporates images from four TB datasets:
+        - DA dataset (156 images, CC BY 4.0)
+        - DB dataset (150 images, CC BY 4.0)
+        - Montgomery County X-ray Set (138 images, public domain, NLM)
+        - Shenzhen X-ray Set (662 images, public domain, NLM)
+
+    Citation:
+
+    Y. Liu, Y. -H. Wu, Y. Ban, H. Wang and M. -M. Cheng. Rethinking Computer-Aided
+    Tuberculosis Diagnosis. 2020 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR).
+    Seattle, WA, USA, 2020, pp. 2643-2652, doi: 10.1109/CVPR42600.2020.00272.
+
+
+    Dataset: https://github.com/yun-liu/Tuberculosis
+    Paper: https://ieeexplore.ieee.org/document/9156613
+    License: CC BY-NC-SA 2.0
+    https://creativecommons.org/licenses/by-nc-sa/2.0/
+
+    """
+
+    def __init__(self,
+                imgpath,
+                split="train",
+                transform=None,
+                data_aug=None,
+                seed=0
+                ):
+        split_to_json = {
+            "train": "TBX11K_train.json",
+            "val": "TBX11K_val.json",
+            "trainval": "TBX11K_trainval.json",
+        }
+
+        super(TBX11K_Dataset, self).__init__()
+        np.random.seed(seed)
+        self.imgpath = imgpath
+        self.transform = transform
+        self.data_aug = data_aug
+
+        if split not in split_to_json:
+            raise ValueError(f"Split must be one of {list(split_to_json.keys())}, got '{split}'")
+
+        with open(os.path.join(self.imgpath, "annotations", "json", split_to_json[split])) as f:
+            data = json.load(f)
+        
+        self.csv = pd.DataFrame(data["images"])
+        ann_dict = defaultdict(list)
+        for ann in data["annotations"]:
+            ann_dict[ann["image_id"]].append({"category_id" : ann["category_id"], "bbox" : ann["bbox"]})
+        self.csv['category_id'] = self.csv['id'].map(lambda x: [a["category_id"] for a in ann_dict[x]])
+        self.csv['bbox'] = self.csv['id'].map(lambda x: [a["bbox"] for a in ann_dict[x]])
+
+        self.pathologies = []
+        self.pathologies = [cat["name"] for cat in data["categories"]]
+        cat_map = {cat["name"]: cat["id"] for cat in data["categories"]}
+        self.csv["ActiveTuberculosis"] = self.csv["id"].map(lambda x: float(any(a["category_id"] == cat_map["ActiveTuberculosis"] for a in ann_dict[x])))
+        self.csv["ObsoletePulmonaryTuberculosis"] = self.csv["id"].map(lambda x: float(any(a["category_id"] == cat_map["ObsoletePulmonaryTuberculosis"] for a in ann_dict[x])))
+        self.csv["PulmonaryTuberculosis"] = self.csv["id"].map(lambda x: float(any(a["category_id"] == cat_map["PulmonaryTuberculosis"] for a in ann_dict[x])))
+
+        self.labels = self.csv[self.pathologies].values
+
+    def string(self):
+        return self.__class__.__name__ + " num_samples={} data_aug={}".format(len(self),self.data_aug)
+
+    def __len__(self):
+        return len(self.labels)
+    
+    def __getitem__(self, idx):
+        sample = {}
+        sample["idx"] = idx
+        sample["lab"] = self.labels[idx]
+        sample["bbox"] = self.csv['bbox'].iloc[idx]
+        imgid = self.csv['file_name'].iloc[idx]
+        img_path = os.path.join(self.imgpath, "imgs", imgid)
+        img = imread(img_path)
+        sample["img"] = normalize(img, maxval=255, reshape=True)
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
+        return sample
+    
 class SIIM_Pneumothorax_Dataset(Dataset):
     """SIIM Pneumothorax Dataset
 
