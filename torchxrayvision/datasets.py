@@ -1418,7 +1418,7 @@ class COVID19_Dataset(Dataset):
 
     Dataset: https://github.com/ieee8023/covid-chestxray-dataset
 
-    Paper: https://arxiv.org/abs/2003.11597 
+    Paper: https://arxiv.org/abs/2003.11597
     """
 
     dataset_url = "https://github.com/ieee8023/covid-chestxray-dataset"
@@ -1673,9 +1673,14 @@ class TBX11K_Dataset(Dataset):
         self.csv['category_id'] = self.csv['id'].map(lambda x: [a["category_id"] for a in ann_dict[x]])
         self.csv['bbox'] = self.csv['id'].map(lambda x: [a["bbox"] for a in ann_dict[x]])
 
-        self.pathologies = []
+        # Create pathologies list by pulling every category dictionary and extracting the "name" value.
+        # The pathology names define the label columns and their order
         self.pathologies = [cat["name"] for cat in data["categories"]]
+        # Map each category name to its numeric ID from the JSON
         cat_map = {cat["name"]: cat["id"] for cat in data["categories"]}
+        # For each pathology, mark an image positive (1.0) if ANY of its annotations
+        # match that category's ID. Using any() handles images with multiple bounding
+        # boxes, including boxes of different categories on the same image.
         self.csv["ActiveTuberculosis"] = self.csv["id"].map(lambda x: float(any(a["category_id"] == cat_map["ActiveTuberculosis"] for a in ann_dict[x])))
         self.csv["ObsoletePulmonaryTuberculosis"] = self.csv["id"].map(lambda x: float(any(a["category_id"] == cat_map["ObsoletePulmonaryTuberculosis"] for a in ann_dict[x])))
         self.csv["PulmonaryTuberculosis"] = self.csv["id"].map(lambda x: float(any(a["category_id"] == cat_map["PulmonaryTuberculosis"] for a in ann_dict[x])))
@@ -1917,7 +1922,7 @@ class VinBrain_Dataset(Dataset):
         self.labels = self.labels.astype(np.float32)
 
         self.csv = self.csv.reset_index()
-
+x
     def string(self):
         return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
 
