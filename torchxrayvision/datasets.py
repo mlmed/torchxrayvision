@@ -1621,6 +1621,20 @@ class TBX11K_Dataset(Dataset):
     training on NLMTB_Dataset and evaluating on TBX11k (or vice versa) as this
     may result in data leakage.
 
+    The dataset annotations distinguish between different tuberculosis findings,
+    which map to the following labels:
+
+        - ActiveTuberculosis: currently active, contagious TB, typically shown
+          by infiltrates, consolidation, or cavities on the X-ray.
+        - ObsoletePulmonaryTuberculosis: old, healed/inactive TB lesions from a
+          prior infection, no longer active.
+        - PulmonaryTuberculosis: a general pulmonary TB category defined in the
+          dataset. Note: this category does not appear in the train/val/trainval
+          annotations, so its label column is always 0.
+        - Tuberculosis: a superclass label that is positive if the image has any
+          of the above TB findings. Users who only need TB vs. non-TB can use
+          this column and drop the more granular ones.
+
     This dataset incorporates images from four TB datasets:
         - DA dataset (156 images, CC BY 4.0)
         - DB dataset (150 images, CC BY 4.0)
@@ -1675,6 +1689,7 @@ class TBX11K_Dataset(Dataset):
         # Create pathologies list by pulling every category dictionary and extracting the "name" value.
         # The pathology names define the label columns and their order
         self.pathologies = [cat["name"] for cat in data["categories"]]
+        self.pathologies.append("Tuberculosis")
         # Map each category name to its numeric ID from the JSON
         cat_map = {cat["name"]: cat["id"] for cat in data["categories"]}
         # For each pathology, mark an image positive (1.0) if ANY of its annotations
@@ -1683,6 +1698,11 @@ class TBX11K_Dataset(Dataset):
         self.csv["ActiveTuberculosis"] = self.csv["id"].map(lambda x: float(any(a["category_id"] == cat_map["ActiveTuberculosis"] for a in ann_dict[x])))
         self.csv["ObsoletePulmonaryTuberculosis"] = self.csv["id"].map(lambda x: float(any(a["category_id"] == cat_map["ObsoletePulmonaryTuberculosis"] for a in ann_dict[x])))
         self.csv["PulmonaryTuberculosis"] = self.csv["id"].map(lambda x: float(any(a["category_id"] == cat_map["PulmonaryTuberculosis"] for a in ann_dict[x])))
+        # An image is positive for the "Tuberculosis" superclass if it has any annotation
+        # belonging to a category under the Tuberculosis supercategory. Lets users who
+        # only care about TB vs. non-TB use this column and drop the granular ones.
+        tb_cat_ids = {cat["id"] for cat in data["categories"] if cat["supercategory"] == "Tuberculosis"}
+        self.csv["Tuberculosis"] = self.csv["id"].map(lambda x: float(any(a["category_id"] in tb_cat_ids for a in ann_dict[x])))
 
         self.labels = self.csv[self.pathologies].values.astype(np.float32)
 
