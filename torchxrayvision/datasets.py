@@ -1921,7 +1921,7 @@ class VinBrain_Dataset(Dataset):
         self.labels = self.labels.astype(np.float32)
 
         self.csv = self.csv.reset_index()
-        
+
     def string(self):
         return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
 
