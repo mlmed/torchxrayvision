@@ -55,7 +55,7 @@ def create_test_images(request):
 
     # for nih dataset
     create_test_img(test_png_img_file, xrv.datasets.NIH_Dataset, "00000001_000.png")
-    create_test_img(test_png_img_file, xrv.datasets.PC_Dataset, "125374151943505747025890313053997514922_j5rk5q.png")
+    create_test_img(test_png_img_file, xrv.datasets.PC_Dataset, "199914230381877223049737457410357013634_xwhp3m.png")
     create_test_img(test_png_img_file, xrv.datasets.NIH_Google_Dataset, "00000211_006.png")
     create_test_img(test_png_img_file, xrv.datasets.Openi_Dataset, "CXR10_IM-0002-1001.png")
     create_test_img(test_jpg_img_file, xrv.datasets.CheX_Dataset, "train/patient00004/study1/view1_frontal.jpg")
