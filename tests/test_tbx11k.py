@@ -3,14 +3,12 @@ import os
 import numpy as np
 import torchxrayvision as xrv
 
-IMGPATH = os.environ.get("TBX11K_PATH", "")
+IMGPATH = os.path.join(os.path.dirname(__file__), "tbx11k_test_data")
 
-@pytest.mark.skipif(not os.path.exists(IMGPATH), reason="TBX11K dataset not found")
 def test_tbx11k_basic():
     tbx11k = xrv.datasets.TBX11K_Dataset(imgpath=IMGPATH)
-    assert len(tbx11k) == 6600
+    assert len(tbx11k) == 3
 
-@pytest.mark.skipif(not os.path.exists(IMGPATH), reason="TBX11K dataset not found")
 def test_tbx11k_get():
     tbx11k = xrv.datasets.TBX11K_Dataset(imgpath=IMGPATH)
     sample = tbx11k[0]
@@ -18,8 +16,13 @@ def test_tbx11k_get():
     assert sample["bbox"] is not None
     assert len(sample["lab"]) == 3  
 
-@pytest.mark.skipif(not os.path.exists(IMGPATH), reason="TBX11K dataset not found")
 def test_tbx11k_labels():
     tbx11k = xrv.datasets.TBX11K_Dataset(imgpath=IMGPATH)
-    assert tbx11k.labels.shape == (6600,3)
-    assert np.all((tbx11k.labels == 0.0) | (tbx11k.labels == 1.0))
+    assert tbx11k.labels.shape == (3, 3)
+
+    expected = np.array([
+        [1., 0., 0.],  # tb0005 - Active TB
+        [0., 1., 0.],  # tb0007 - Obsolete, two bounding boxes
+        [0., 0., 0.],  # h0001  - healthy
+    ])
+    assert np.array_equal(tbx11k.labels, expected)

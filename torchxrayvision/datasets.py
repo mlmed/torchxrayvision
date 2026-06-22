@@ -1670,7 +1670,6 @@ class TBX11K_Dataset(Dataset):
         ann_dict = defaultdict(list)
         for ann in data["annotations"]:
             ann_dict[ann["image_id"]].append({"category_id" : ann["category_id"], "bbox" : ann["bbox"]})
-        self.csv['category_id'] = self.csv['id'].map(lambda x: [a["category_id"] for a in ann_dict[x]])
         self.csv['bbox'] = self.csv['id'].map(lambda x: [a["bbox"] for a in ann_dict[x]])
 
         # Create pathologies list by pulling every category dictionary and extracting the "name" value.
@@ -1685,7 +1684,7 @@ class TBX11K_Dataset(Dataset):
         self.csv["ObsoletePulmonaryTuberculosis"] = self.csv["id"].map(lambda x: float(any(a["category_id"] == cat_map["ObsoletePulmonaryTuberculosis"] for a in ann_dict[x])))
         self.csv["PulmonaryTuberculosis"] = self.csv["id"].map(lambda x: float(any(a["category_id"] == cat_map["PulmonaryTuberculosis"] for a in ann_dict[x])))
 
-        self.labels = self.csv[self.pathologies].values
+        self.labels = self.csv[self.pathologies].values.astype(np.float32)
 
     def string(self):
         return self.__class__.__name__ + " num_samples={} data_aug={}".format(len(self),self.data_aug)
@@ -1922,7 +1921,7 @@ class VinBrain_Dataset(Dataset):
         self.labels = self.labels.astype(np.float32)
 
         self.csv = self.csv.reset_index()
-x
+        
     def string(self):
         return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
 
