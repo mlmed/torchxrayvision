@@ -115,6 +115,10 @@ def read_xray_dcm(
     """
     try:
         import pydicom
+        try:
+            from pydicom.pixels import apply_voi_lut as _apply_voi_lut
+        except ImportError:
+            from pydicom.pixel_data_handlers.util import apply_voi_lut as _apply_voi_lut
     except ImportError:
         raise ImportError(
             "Missing Package Pydicom. Try installing it by running `pip install pydicom`."
@@ -135,7 +139,7 @@ def read_xray_dcm(
 
     # LUT for human friendly view
     if voi_lut:
-        data = pydicom.pixel_data_handlers.util.apply_voi_lut(data, ds, index=0)
+        data = _apply_voi_lut(data, ds, index=0)
 
     # `MONOCHROME1` have an inverted view; Bones are black; background is white
     # https://web.archive.org/web/20150920230923/http://www.mccauslandcenter.sc.edu/mricro/dicom/index.html
