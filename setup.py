@@ -4,6 +4,8 @@ from setuptools import setup, find_packages
 
 with open("torchxrayvision/_version.py", "r") as f:
     _version_match = re.search(r'__version__ = ["\']([^"\']+)["\']', f.read())
+    if _version_match is None:
+        raise RuntimeError("Unable to find __version__ in torchxrayvision/_version.py")
     __version__ = _version_match.group(1)
 
 with open("README.md", "r") as fh:
