@@ -945,6 +945,8 @@ class PC_Dataset(Dataset):
         if unique_patients:
             self.csv = self.csv.groupby("PatientID").first().reset_index()
 
+        self.csv = self.csv.sort_values("ImageID").reset_index(drop=True)
+
         # Filter out age < 10 (paper published 2019)
         self.csv = self.csv[(2019 - self.csv.PatientBirth > 10)]
 
