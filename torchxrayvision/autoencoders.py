@@ -242,7 +242,7 @@ def ResNetAE(weights=None, cache_dir=None):
         (default: ``~/.torchxrayvision/``).
     """
 
-    if weights == None:
+    if weights is None:
         return ResNetAE101()
 
     if not weights in model_urls.keys():

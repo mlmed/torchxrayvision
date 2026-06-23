@@ -1087,6 +1087,8 @@ class CheX_Dataset(Dataset):
                 if pathology != "Support Devices":
                     self.csv.loc[healthy, pathology] = 0
                 mask = self.csv[pathology]
+            else:
+                mask = pd.Series(np.nan, index=self.csv.index)
 
             labels.append(mask.values)
         self.labels = np.asarray(labels).T
@@ -1235,6 +1237,8 @@ class MIMIC_Dataset(Dataset):
             if pathology in self.csv.columns:
                 self.csv.loc[healthy, pathology] = 0
                 mask = self.csv[pathology]
+            else:
+                mask = pd.Series(np.nan, index=self.csv.index)
 
             labels.append(mask.values)
         self.labels = np.asarray(labels).T
@@ -1578,7 +1582,7 @@ class COVID19_Dataset(Dataset):
             with zipfile.ZipFile(self.semantic_masks_v7labs_lungs_path).open(archive_path) as file:
                 mask = imageio.imread(file.read())
 
-                mask = (mask == 255).astype(np.float)
+                mask = (mask == 255).astype(np.float32)
                 # Reshape so image resizing works
                 mask = mask[None, :, :]
 
