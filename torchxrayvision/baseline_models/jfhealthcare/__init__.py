@@ -13,22 +13,25 @@ from ... import utils
 
 
 class DenseNet(nn.Module):
-    """A model trained on the CheXpert data
+    """JF Healthcare DenseNet-121 classifier trained on CheXpert
 
-    https://github.com/jfhealthcare/Chexpert
-    Apache-2.0 License
+    A DenseNet-121 model trained on the Stanford CheXpert dataset using
+    weakly supervised lesion localisation with Probabilistic-CAM Pooling.
+    Predicts 5 pathologies.
 
-    .. code-block:: bibtex
+    **Targets (5):** Atelectasis, Cardiomegaly, Consolidation, Edema, Effusion.
 
-        @misc{ye2020weakly,
-            title={Weakly Supervised Lesion Localization With Probabilistic-CAM Pooling},
-            author={Wenwu Ye and Jin Yao and Hui Xue and Yi Li},
-            year={2020},
-            eprint={2005.14480},
-            archivePrefix={arXiv},
-            primaryClass={cs.CV}
-        }
+    Source:
+        https://github.com/jfhealthcare/Chexpert
 
+    License:
+        Apache-2.0
+
+    Citation:
+        Ye W, Yao J, Xue H, Li Y.
+        Weakly Supervised Lesion Localization With Probabilistic-CAM Pooling.
+        *arXiv:2005.14480*, 2020.
+        https://arxiv.org/abs/2005.14480
     """
 
     targets: List[str] = [

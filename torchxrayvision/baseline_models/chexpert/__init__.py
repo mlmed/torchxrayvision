@@ -10,19 +10,32 @@ from ... import utils
 
 
 class DenseNet(nn.Module):
-    """CheXpert: A Large Chest Radiograph Dataset with Uncertainty Labels and Expert Comparison.
-    Irvin, J., et al (2019).
-    AAAI Conference on Artificial Intelligence. 
-    http://arxiv.org/abs/1901.07031
+    """CheXpert ensemble DenseNet classifier
 
-    Setting num_models less than 30 will load a subset of the ensemble.
+    An ensemble of up to 30 DenseNet models trained on the Stanford CheXpert
+    dataset, predicting 5 pathologies. Setting ``num_models`` to a value less
+    than 30 loads a subset of the ensemble, which reduces memory use and
+    inference time at the cost of accuracy.
 
-    Modified for TorchXRayVision to maintain the pytorch gradient tape
-    and also to provide the features() argument.
+    **Targets (5):** Atelectasis, Cardiomegaly, Consolidation, Edema, Effusion.
 
-    Weights can be found: 
-    https://academictorrents.com/details/5c7ee21e6770308f2d2b4bd829e896dbd9d3ee87
-    https://archive.org/download/torchxrayvision_chexpert_weights/chexpert_weights.zip
+    Modified for TorchXRayVision to maintain the PyTorch gradient tape and
+    to expose a ``features()`` method compatible with the rest of the library.
+
+    .. note::
+        This class requires a local copy of the pre-trained weights ZIP file,
+        which must be passed as ``weights_zip``. The weights are **not**
+        downloaded automatically.
+
+    Citation:
+        Irvin J, Rajpurkar P, Ko M, et al.
+        CheXpert: A Large Chest Radiograph Dataset with Uncertainty Labels
+        and Expert Comparison.
+        *AAAI Conference on Artificial Intelligence*, 2019.
+        https://arxiv.org/abs/1901.07031
+
+    Download weights:
+        https://academictorrents.com/details/5c7ee21e6770308f2d2b4bd829e896dbd9d3ee87
     """
 
     targets: List[str] = [

@@ -183,27 +183,35 @@ class _Transition(nn.Sequential):
 
 
 class DenseNet(nn.Module):
-    """Based on 
+    """Pre-trained DenseNet-121 pathology classifier
+
+    Based on
     `"Densely Connected Convolutional Networks" <https://arxiv.org/abs/1608.06993>`_
 
-    Possible weights for this class include:
+    Models are trained on a single dataset or a combination of datasets and
+    predict up to 18 chest pathologies. Input images are automatically resized
+    to the resolution the model was trained on (224 × 224 for all current
+    weights).
+
+    Available pre-trained weights:
 
     .. code-block:: python
 
-        ## 224x224 models
-        model = xrv.models.DenseNet(weights="densenet121-res224-all")
-        model = xrv.models.DenseNet(weights="densenet121-res224-rsna") # RSNA Pneumonia Challenge
-        model = xrv.models.DenseNet(weights="densenet121-res224-nih") # NIH chest X-ray8
-        model = xrv.models.DenseNet(weights="densenet121-res224-pc") # PadChest (University of Alicante)
-        model = xrv.models.DenseNet(weights="densenet121-res224-chex") # CheXpert (Stanford)
-        model = xrv.models.DenseNet(weights="densenet121-res224-mimic_nb") # MIMIC-CXR (MIT)
-        model = xrv.models.DenseNet(weights="densenet121-res224-mimic_ch") # MIMIC-CXR (MIT)
+        model = xrv.models.DenseNet(weights="densenet121-res224-all")       # trained on all datasets
+        model = xrv.models.DenseNet(weights="densenet121-res224-rsna")      # RSNA Pneumonia Challenge
+        model = xrv.models.DenseNet(weights="densenet121-res224-nih")       # NIH ChestX-ray14
+        model = xrv.models.DenseNet(weights="densenet121-res224-pc")        # PadChest
+        model = xrv.models.DenseNet(weights="densenet121-res224-chex")      # CheXpert (Stanford)
+        model = xrv.models.DenseNet(weights="densenet121-res224-mimic_nb")  # MIMIC-CXR (MIT)
+        model = xrv.models.DenseNet(weights="densenet121-res224-mimic_ch")  # MIMIC-CXR (MIT)
 
-    :param weights: Specify a weight name to load pre-trained weights
-    :param cache_dir: Override where the weights will be stored (default is ~/.torchxrayvision/)
-    :param op_threshs: Specify a weight name to load pre-trained weights 
-    :param apply_sigmoid: Apply a sigmoid 
-
+    :param weights: Name of pre-trained weights to load. See above for options.
+    :param cache_dir: Directory used to store downloaded weights
+        (default: ``~/.torchxrayvision/``).
+    :param op_threshs: Per-pathology operating-point thresholds. When set,
+        outputs are re-scaled so that the threshold maps to 0.5.
+    :param apply_sigmoid: If ``True``, apply a sigmoid to the raw logits before
+        returning. Ignored when ``op_threshs`` is also set.
     """
 
     targets: List[str] = [
@@ -359,21 +367,27 @@ class DenseNet(nn.Module):
 
 ##########################
 class ResNet(nn.Module):
-    """
-    Based on `"Deep Residual Learning for Image Recognition" <https://arxiv.org/abs/1512.03385>`_
+    """Pre-trained ResNet-50/101 pathology classifier
 
-    Possible weights for this class include:
+    Based on
+    `"Deep Residual Learning for Image Recognition" <https://arxiv.org/abs/1512.03385>`_
+
+    Input images are automatically resized to the resolution the model was
+    trained on (512 × 512 for all current weights).
+
+    Available pre-trained weights:
 
     .. code-block:: python
 
-        # 512x512 models
-        model = xrv.models.ResNet(weights="resnet50-res512-all")
+        model = xrv.models.ResNet(weights="resnet50-res512-all")  # trained on all datasets
 
-    :param weights: Specify a weight name to load pre-trained weights
-    :param cache_dir: Override where the weights will be stored (default is ~/.torchxrayvision/)
-    :param op_threshs: Specify a weight name to load pre-trained weights 
-    :param apply_sigmoid: Apply a sigmoid 
-
+    :param weights: Name of pre-trained weights to load. See above for options.
+    :param cache_dir: Directory used to store downloaded weights
+        (default: ``~/.torchxrayvision/``).
+    :param op_threshs: Per-pathology operating-point thresholds. When set,
+        outputs are re-scaled so that the threshold maps to 0.5.
+    :param apply_sigmoid: If ``True``, apply a sigmoid to the raw logits before
+        returning. Ignored when ``op_threshs`` is also set.
     """
 
     targets: List[str] = [

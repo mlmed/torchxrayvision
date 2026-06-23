@@ -67,6 +67,35 @@ autodoc_default_options = {
 
 autodoc_inherit_docstrings = False
 
+
+# ---------------------------------------------------------------------------
+# Make 'xrv' a transparent alias for 'torchxrayvision'.
+# A meta-path finder intercepts any 'xrv' or 'xrv.*' import and resolves it
+# against 'torchxrayvision' / 'torchxrayvision.*' automatically, so no
+# submodule list needs to be maintained here.
+# ---------------------------------------------------------------------------
+import importlib as _il
+import importlib.abc as _abc
+import importlib.machinery as _machinery
+
+
+class _XrvAliasFinder(_abc.MetaPathFinder):
+    def find_spec(self, fullname, path, target=None):
+        if fullname == 'xrv' or fullname.startswith('xrv.'):
+            real = 'torchxrayvision' + fullname[3:]  # strip 'xrv'
+            if real in sys.modules:
+                sys.modules.setdefault(fullname, sys.modules[real])
+                return None
+            try:
+                mod = _il.import_module(real)
+                sys.modules.setdefault(fullname, mod)
+            except ImportError:
+                pass
+        return None
+
+
+sys.meta_path.insert(0, _XrvAliasFinder())
+
 html_theme_options = {
     'logo_only': True,
     'display_version': True,

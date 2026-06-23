@@ -5,3 +5,6 @@ __pycache__
 *.mp4
 *.png
 *.DS_Store
+build
+dist
+.python-version
