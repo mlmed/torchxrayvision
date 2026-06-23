@@ -11,8 +11,10 @@ import zipfile
 import imageio
 import numpy as np
 import pandas as pd
+import json
 import skimage
 from typing import Dict, List
+from collections import defaultdict
 import skimage.transform
 from skimage.io import imread
 import torch
@@ -1607,7 +1609,122 @@ class NLMTB_Dataset(Dataset):
 
         return sample
 
+class TBX11K_Dataset(Dataset):
+    """Tuberculosis X-ray 11K
 
+    TBX11k contains 11200 X-ray images with corresponding bounding boxes
+    annotations for tuberculosis (TB) areas. Images are across five categories:
+    Healthy, Sick but Non-TB, Active TB, Latent TB, and Uncertain TB.
+
+    Note that this dataset includes images from the Montgomery and Shenzhen
+    datasets, which are also available via NLMTB_Dataset. Users should avoid
+    training on NLMTB_Dataset and evaluating on TBX11k (or vice versa) as this
+    may result in data leakage.
+
+    The dataset annotations distinguish between different tuberculosis findings,
+    which map to the following labels:
+
+        - ActiveTuberculosis: currently active, contagious TB, typically shown
+          by infiltrates, consolidation, or cavities on the X-ray.
+        - ObsoletePulmonaryTuberculosis: old, healed/inactive TB lesions from a
+          prior infection, no longer active.
+        - PulmonaryTuberculosis: a general pulmonary TB category defined in the
+          dataset. Note: this category does not appear in the train/val/trainval
+          annotations, so its label column is always 0.
+        - Tuberculosis: a superclass label that is positive if the image has any
+          of the above TB findings. Users who only need TB vs. non-TB can use
+          this column and drop the more granular ones.
+
+    This dataset incorporates images from four TB datasets:
+        - DA dataset (156 images, CC BY 4.0)
+        - DB dataset (150 images, CC BY 4.0)
+        - Montgomery County X-ray Set (138 images, public domain, NLM)
+        - Shenzhen X-ray Set (662 images, public domain, NLM)
+
+    Citation:
+
+    Y. Liu, Y. -H. Wu, Y. Ban, H. Wang and M. -M. Cheng. Rethinking Computer-Aided
+    Tuberculosis Diagnosis. 2020 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR).
+    Seattle, WA, USA, 2020, pp. 2643-2652, doi: 10.1109/CVPR42600.2020.00272.
+
+
+    Dataset: https://github.com/yun-liu/Tuberculosis
+    Paper: https://ieeexplore.ieee.org/document/9156613
+    License: CC BY-NC-SA 2.0
+    https://creativecommons.org/licenses/by-nc-sa/2.0/
+
+    """
+
+    def __init__(self,
+                imgpath,
+                split="train",
+                transform=None,
+                data_aug=None,
+                seed=0
+                ):
+        split_to_json = {
+            "train": "TBX11K_train.json",
+            "val": "TBX11K_val.json",
+            "trainval": "TBX11K_trainval.json",
+        }
+
+        super(TBX11K_Dataset, self).__init__()
+        np.random.seed(seed)
+        self.imgpath = imgpath
+        self.transform = transform
+        self.data_aug = data_aug
+
+        if split not in split_to_json:
+            raise ValueError(f"Split must be one of {list(split_to_json.keys())}, got '{split}'")
+
+        with open(os.path.join(self.imgpath, "annotations", "json", split_to_json[split])) as f:
+            data = json.load(f)
+        
+        self.csv = pd.DataFrame(data["images"])
+        ann_dict = defaultdict(list)
+        for ann in data["annotations"]:
+            ann_dict[ann["image_id"]].append({"category_id" : ann["category_id"], "bbox" : ann["bbox"]})
+        self.csv['bbox'] = self.csv['id'].map(lambda x: [a["bbox"] for a in ann_dict[x]])
+
+        # Create pathologies list by pulling every category dictionary and extracting the "name" value.
+        # The pathology names define the label columns and their order
+        self.pathologies = [cat["name"] for cat in data["categories"]]
+        self.pathologies.append("Tuberculosis")
+        # Map each category name to its numeric ID from the JSON
+        cat_map = {cat["name"]: cat["id"] for cat in data["categories"]}
+        # For each pathology, mark an image positive (1.0) if ANY of its annotations
+        # match that category's ID. Using any() handles images with multiple bounding
+        # boxes, including boxes of different categories on the same image.
+        self.csv["ActiveTuberculosis"] = self.csv["id"].map(lambda x: float(any(a["category_id"] == cat_map["ActiveTuberculosis"] for a in ann_dict[x])))
+        self.csv["ObsoletePulmonaryTuberculosis"] = self.csv["id"].map(lambda x: float(any(a["category_id"] == cat_map["ObsoletePulmonaryTuberculosis"] for a in ann_dict[x])))
+        self.csv["PulmonaryTuberculosis"] = self.csv["id"].map(lambda x: float(any(a["category_id"] == cat_map["PulmonaryTuberculosis"] for a in ann_dict[x])))
+        # An image is positive for the "Tuberculosis" superclass if it has any annotation
+        # belonging to a category under the Tuberculosis supercategory. Lets users who
+        # only care about TB vs. non-TB use this column and drop the granular ones.
+        tb_cat_ids = {cat["id"] for cat in data["categories"] if cat["supercategory"] == "Tuberculosis"}
+        self.csv["Tuberculosis"] = self.csv["id"].map(lambda x: float(any(a["category_id"] in tb_cat_ids for a in ann_dict[x])))
+
+        self.labels = self.csv[self.pathologies].values.astype(np.float32)
+
+    def string(self):
+        return self.__class__.__name__ + " num_samples={} data_aug={}".format(len(self),self.data_aug)
+
+    def __len__(self):
+        return len(self.labels)
+    
+    def __getitem__(self, idx):
+        sample = {}
+        sample["idx"] = idx
+        sample["lab"] = self.labels[idx]
+        sample["bbox"] = self.csv['bbox'].iloc[idx]
+        imgid = self.csv['file_name'].iloc[idx]
+        img_path = os.path.join(self.imgpath, "imgs", imgid)
+        img = imread(img_path)
+        sample["img"] = normalize(img, maxval=255, reshape=True)
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
+        return sample
+    
 class SIIM_Pneumothorax_Dataset(Dataset):
     """SIIM Pneumothorax Dataset
 
