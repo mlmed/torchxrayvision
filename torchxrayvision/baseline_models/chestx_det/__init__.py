@@ -25,37 +25,38 @@ def _convert_state_dict(state_dict):
 
 
 class PSPNet(nn.Module):
-    """ChestX-Det Segmentation Model
+    """ChestX-Det anatomical segmentation model (PSPNet)
 
-    You can load pretrained anatomical segmentation models. `Demo Notebook <https://github.com/mlmed/torchxrayvision/blob/main/scripts/segmentation.ipynb>`_
+    A PSPNet model pre-trained for pixel-level segmentation of 14 anatomical
+    structures in chest X-rays. Output shape is ``[batch, 14, 512, 512]``.
+
+    **Targets (14):** Left Clavicle, Right Clavicle, Left Scapula, Right
+    Scapula, Left Lung, Right Lung, Left Hilus Pulmonis, Right Hilus
+    Pulmonis, Heart, Aorta, Facies Diaphragmatica, Mediastinum, Weasand,
+    Spine.
+
+    `Demo notebook <https://github.com/mlmed/torchxrayvision/blob/main/scripts/segmentation.ipynb>`_
 
     .. code-block:: python
 
         seg_model = xrv.baseline_models.chestx_det.PSPNet()
         output = seg_model(image)
-        output.shape # [1, 14, 512, 512]
-        seg_model.targets # ['Left Clavicle', 'Right Clavicle', 'Left Scapula', 'Right Scapula',
-                          #  'Left Lung', 'Right Lung', 'Left Hilus Pulmonis', 'Right Hilus Pulmonis',
-                          #  'Heart', 'Aorta', 'Facies Diaphragmatica', 'Mediastinum',  'Weasand', 'Spine']
+        output.shape  # [1, 14, 512, 512]
 
     .. image:: _static/segmentation-pspnet.png
 
-    https://github.com/Deepwise-AILab/ChestX-Det-Dataset
+    :param cache_dir: Directory used to store downloaded weights
+        (default: ``~/.torchxrayvision/``).
 
-    .. code-block:: bibtex
+    Dataset:
+        https://github.com/Deepwise-AILab/ChestX-Det-Dataset
 
-        @article{Lian2021,
-            title = {{A Structure-Aware Relation Network for Thoracic Diseases Detection and Segmentation}},
-            author = {Lian, Jie and Liu, Jingyu and Zhang, Shu and Gao, Kai and Liu, Xiaoqing and Zhang, Dingwen and Yu, Yizhou},
-            doi = {10.48550/arxiv.2104.10326},
-            journal = {IEEE Transactions on Medical Imaging},
-            url = {https://arxiv.org/abs/2104.10326},
-            year = {2021}
-        }
-
-    params:
-        cache_dir (str): Override directory used to store cached weights (default: ~/.torchxrayvision/)
-
+    Citation:
+        Lian J, Liu J, Zhang S, et al.
+        A Structure-Aware Relation Network for Thoracic Diseases Detection
+        and Segmentation.
+        *IEEE Transactions on Medical Imaging*, 2021.
+        doi: 10.48550/arxiv.2104.10326
     """
 
     targets: List[str] = [

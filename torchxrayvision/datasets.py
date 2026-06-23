@@ -385,28 +385,33 @@ class SubsetDataset(Dataset):
 class NIH_Dataset(Dataset):
     """NIH ChestX-ray14 dataset
 
-    ChestX-ray dataset comprises 112,120 frontal-view X-ray images of 30,
-    805 unique patients with the text-mined fourteen disease image labels (
-    where each image can have multi-labels), mined from the associated
-    radiological reports using natural language processing. Fourteen common
-    thoracic pathologies include Atelectasis, Consolidation, Infiltration,
-    Pneumothorax, Edema, Emphysema, Fibrosis, Effusion, Pneumonia,
-    Pleural_thickening, Cardiomegaly, Nodule, Mass and Hernia, which is an
-    extension of the 8 common disease patterns listed in our CVPR2017 paper.
-    Note that original radiology reports (associated with these chest x-ray
-    studies) are not meant to be publicly shared for many reasons. The
-    text-mined disease labels are expected to have accuracy >90%.Please find
-    more details and benchmark performance of trained models based on 14
-    disease labels in our arxiv paper: https://arxiv.org/abs/1705.02315
+    The NIH ChestX-ray14 dataset contains 112,120 frontal-view chest X-ray
+    images from 30,805 unique patients. Each image may carry one or more of
+    14 disease labels that were automatically mined from accompanying
+    radiological reports using natural language processing. The text-mined
+    labels are expected to have an accuracy greater than 90 %.
 
-    Dataset release website:
-    https://www.nih.gov/news-events/news-releases/nih-clinical-center-provides-one-largest-publicly-available-chest-x-ray-datasets-scientific-community
+    **Pathologies (14):** Atelectasis, Cardiomegaly, Consolidation, Edema,
+    Effusion, Emphysema, Fibrosis, Hernia, Infiltration, Mass, Nodule,
+    Pleural Thickening, Pneumonia, Pneumothorax.
 
-    Download full size images here:
-    https://academictorrents.com/details/557481faacd824c83fbf57dcf7b6da9383b3235a
+    Bounding-box annotations for a subset of images are included and are
+    accessible via the ``pathology_masks=True`` argument.
 
-    Download resized (224x224) images here:
-    https://academictorrents.com/details/e615d3aebce373f1dc8bd9d11064da55bdadede0
+    Citation:
+        Wang X, Peng Y, Lu L, Lu Z, Bagheri M, Summers RM.
+        ChestX-ray8: Hospital-scale Chest X-ray Database and Benchmarks.
+        *Proceedings of CVPR*, 2017.
+        https://arxiv.org/abs/1705.02315
+
+    Dataset release:
+        https://www.nih.gov/news-events/news-releases/nih-clinical-center-provides-one-largest-publicly-available-chest-x-ray-datasets-scientific-community
+
+    Download full-size images:
+        https://academictorrents.com/details/557481faacd824c83fbf57dcf7b6da9383b3235a
+
+    Download resized (224 × 224) images:
+        https://academictorrents.com/details/e615d3aebce373f1dc8bd9d11064da55bdadede0
     """
 
     def __init__(self,
@@ -545,26 +550,31 @@ class NIH_Dataset(Dataset):
 
 
 class RSNA_Pneumonia_Dataset(Dataset):
-    """RSNA Pneumonia Detection Challenge
+    """RSNA Pneumonia Detection Challenge dataset
+
+    A subset of the NIH ChestX-ray14 images re-annotated by board-certified
+    radiologists for the 2018 RSNA Pneumonia Detection Challenge. The dataset
+    contains 26,684 frontal chest X-rays with bounding-box annotations for
+    regions of pneumonia / lung opacity.
+
+    **Pathologies (2):** Lung Opacity, Pneumonia.
+
+    Per-image bounding-box masks are available via ``pathology_masks=True``.
+    Images can be loaded as JPEG (default) or DICOM by setting
+    ``extension=".dcm"`` (requires ``pydicom``).
 
     Citation:
-
-    Augmenting the National Institutes of Health Chest Radiograph Dataset
-    with Expert Annotations of Possible Pneumonia. Shih, George, Wu,
-    Carol C., Halabi, Safwan S., Kohli, Marc D., Prevedello, Luciano M.,
-    Cook, Tessa S., Sharma, Arjun, Amorosa, Judith K., Arteaga, Veronica,
-    Galperin-Aizenberg, Maya, Gill, Ritu R., Godoy, Myrna C.B., Hobbs,
-    Stephen, Jeudy, Jean, Laroia, Archana, Shah, Palmi N., Vummidi, Dharshan,
-    Yaddanapudi, Kavitha, and Stein, Anouk. Radiology: Artificial
-    Intelligence, 1 2019. doi: 10.1148/ryai.2019180041.
-
-    More info: https://www.rsna.org/en/education/ai-resources-and-training/ai-image-challenge/RSNA-Pneumonia-Detection-Challenge-2018
+        Shih G, Wu CC, Halabi SS, et al.
+        Augmenting the National Institutes of Health Chest Radiograph Dataset
+        with Expert Annotations of Possible Pneumonia.
+        *Radiology: Artificial Intelligence*, 2019.
+        doi: 10.1148/ryai.2019180041
 
     Challenge site:
-    https://www.kaggle.com/c/rsna-pneumonia-detection-challenge
+        https://www.kaggle.com/c/rsna-pneumonia-detection-challenge
 
-    JPG files stored here:
-    https://academictorrents.com/details/95588a735c9ae4d123f3ca408e56570409bcf2a9
+    Download JPEG images:
+        https://academictorrents.com/details/95588a735c9ae4d123f3ca408e56570409bcf2a9
     """
 
     def __init__(self,
@@ -701,25 +711,34 @@ class RSNA_Pneumonia_Dataset(Dataset):
 
 
 class NIH_Google_Dataset(Dataset):
-    """A relabelling of a subset of images from the NIH dataset.  The data
-    tables should be applied against an NIH download.  A test and validation
-    split are provided in the original.  They are combined here, but one or
-    the other can be used by providing the original csv to the csvpath
-    argument.
+    """NIH ChestX-ray14 with Google radiologist re-labels
+
+    A subset of the NIH ChestX-ray14 dataset that has been re-annotated by
+    radiologists at Google. Labels were adjudicated by a panel of US
+    board-certified radiologists to produce high-quality reference standards
+    for four findings.
+
+    **Pathologies (4):** Airspace Opacity (mapped to Lung Opacity), Fracture,
+    Nodule/Mass, Pneumothorax.
+
+    The original release provides separate test and validation splits; this
+    class combines both by default. To use only one split, pass the
+    corresponding CSV file via the ``csvpath`` argument.
+
+    .. note::
+        This class loads images from an existing NIH ChestX-ray14 download.
+        The image files themselves are not redistributed.
 
     Citation:
+        Majkowska A, Mittal S, Steiner DF, et al.
+        Chest Radiograph Interpretation with Deep Learning Models: Assessment
+        with Radiologist-adjudicated Reference Standards and
+        Population-adjusted Evaluation.
+        *Radiology*, 2020.
+        https://pubs.rsna.org/doi/10.1148/radiol.2019191293
 
-    Chest Radiograph Interpretation with Deep Learning Models: Assessment
-    with Radiologist-adjudicated Reference Standards and Population-adjusted
-    Evaluation Anna Majkowska, Sid Mittal, David F. Steiner, Joshua J.
-    Reicher, Scott Mayer McKinney, Gavin E. Duggan, Krish Eswaran, Po-Hsuan
-    Cameron Chen, Yun Liu, Sreenivasa Raju Kalidindi, Alexander Ding, Greg S.
-    Corrado, Daniel Tse, and Shravya Shetty. Radiology 2020
-
-    https://pubs.rsna.org/doi/10.1148/radiol.2019191293
-
-    NIH data can be downloaded here:
-    https://academictorrents.com/details/e615d3aebce373f1dc8bd9d11064da55bdadede0
+    Download NIH images (resized 224 × 224):
+        https://academictorrents.com/details/e615d3aebce373f1dc8bd9d11064da55bdadede0
     """
 
     def __init__(self,
@@ -797,28 +816,39 @@ class NIH_Google_Dataset(Dataset):
 
 
 class PC_Dataset(Dataset):
-    """PadChest dataset from the Hospital San Juan de Alicante - University of
-    Alicante
+    """PadChest dataset
 
-    Note that images with null labels (as opposed to normal), and images that
-    cannot be properly loaded (listed as 'missing' in the code) are excluded,
-    which makes the total number of available images slightly less than the
-    total number of image files.
+    A large, multi-label chest X-ray dataset collected at the Hospital
+    San Juan de Alicante (Spain). PadChest contains over 160,000 images
+    from more than 67,000 patients, annotated with 174 radiographic findings
+    across 27 diagnostic labels (28 as loaded here, including a support
+    devices label). Labels were obtained via a combination of manual
+    annotation and NLP applied to Spanish-language radiology reports.
+    Roughly a quarter of the images were manually verified by a radiologist.
+
+    **Pathologies (28):** Atelectasis, Cardiomegaly, Consolidation, and
+    many more — see ``self.pathologies`` for the full list after loading.
+
+    .. note::
+        Images with null labels (distinct from a normal finding) and a small
+        number of images that cannot be loaded are excluded at load time, so
+        the effective dataset size is slightly less than the file count.
 
     Citation:
-
-    PadChest: A large chest x-ray image dataset with multi-label annotated
-    reports. Aurelia Bustos, Antonio Pertusa, Jose-Maria Salinas, and Maria
-    de la Iglesia-Vayá. arXiv preprint, 2019. https://arxiv.org/abs/1901.07441
+        Bustos A, Pertusa A, Salinas JM, de la Iglesia-Vayá M.
+        PadChest: A large chest x-ray image dataset with multi-label
+        annotated reports.
+        *arXiv:1901.07441*, 2019.
+        https://arxiv.org/abs/1901.07441
 
     Dataset website:
-    http://bimcv.cipf.es/bimcv-projects/padchest/
+        http://bimcv.cipf.es/bimcv-projects/padchest/
 
-    Download full size images here:
-    https://academictorrents.com/details/dec12db21d57e158f78621f06dcbe78248d14850
+    Download full-size images:
+        https://academictorrents.com/details/dec12db21d57e158f78621f06dcbe78248d14850
 
-    Download resized (224x224) images here (recropped):
-    https://academictorrents.com/details/96ebb4f92b85929eadfb16761f310a6d04105797
+    Download resized (224 × 224) images:
+        https://academictorrents.com/details/96ebb4f92b85929eadfb16761f310a6d04105797
     """
 
     def __init__(self,
@@ -972,23 +1002,31 @@ class PC_Dataset(Dataset):
 
 
 class CheX_Dataset(Dataset):
-    """CheXpert Dataset
+    """CheXpert dataset (Stanford)
+
+    CheXpert is a large chest radiograph dataset from Stanford containing
+    224,316 images from 65,240 patients. Labels for 14 observations were
+    generated automatically using the CheXpert labeler applied to free-text
+    radiology reports. A key feature of this dataset is its handling of
+    *uncertain* labels: the original CSV encodes uncertainty as ``-1``, which
+    this class converts to ``NaN`` for consistency with the rest of the
+    library.
+
+    **Pathologies (13):** Atelectasis, Cardiomegaly, Consolidation, Edema,
+    Effusion, Enlarged Cardiomediastinum, Fracture, Lung Lesion, Lung
+    Opacity, Pleural Other, Pneumonia, Pneumothorax, Support Devices.
+    ("No Finding" is used internally to zero-out pathology labels but is not
+    returned as a column.)
 
     Citation:
+        Irvin J, Rajpurkar P, Ko M, et al.
+        CheXpert: A Large Chest Radiograph Dataset with Uncertainty Labels
+        and Expert Comparison.
+        *arXiv:1901.07031*, 2019.
+        https://arxiv.org/abs/1901.07031
 
-    CheXpert: A Large Chest Radiograph Dataset with Uncertainty Labels and
-    Expert Comparison. Jeremy Irvin *, Pranav Rajpurkar *, Michael Ko,
-    Yifan Yu, Silviana Ciurea-Ilcus, Chris Chute, Henrik Marklund, Behzad
-    Haghgoo, Robyn Ball, Katie Shpanskaya, Jayne Seekins, David A. Mong,
-    Safwan S. Halabi, Jesse K. Sandberg, Ricky Jones, David B. Larson,
-    Curtis P. Langlotz, Bhavik N. Patel, Matthew P. Lungren, Andrew Y. Ng.
-    https://arxiv.org/abs/1901.07031
-
-    Dataset website here:
-    https://stanfordmlgroup.github.io/competitions/chexpert/
-
-    A small validation set is provided with the data as well, but is so tiny,
-    it is not included here.
+    Dataset website:
+        https://stanfordmlgroup.github.io/competitions/chexpert/
     """
 
     def __init__(self,
@@ -1112,18 +1150,32 @@ class CheX_Dataset(Dataset):
 
 
 class MIMIC_Dataset(Dataset):
-    """MIMIC-CXR Dataset
+    """MIMIC-CXR dataset (MIT / Beth Israel Deaconess Medical Center)
+
+    MIMIC-CXR is a large, de-identified dataset of chest radiographs
+    collected from the Beth Israel Deaconess Medical Center between 2011 and
+    2016. It contains 227,835 images from 64,588 patients, along with
+    structured labels extracted from free-text radiology reports using the
+    CheXpert labeler. Both PA and AP views are available.
+
+    **Pathologies (13):** Atelectasis, Cardiomegaly, Consolidation, Edema,
+    Effusion, Enlarged Cardiomediastinum, Fracture, Lung Lesion, Lung
+    Opacity, Pleural Other, Pneumonia, Pneumothorax, Support Devices.
+
+    .. note::
+        Access requires a credentialed PhysioNet account and completion of
+        the required data-use training. Both a ``csvpath`` (labels CSV) and
+        a ``metacsvpath`` (DICOM metadata CSV) must be provided.
 
     Citation:
+        Johnson AEW, Pollard TJ, Berkowitz S, et al.
+        MIMIC-CXR: A large publicly available database of labeled chest
+        radiographs.
+        *arXiv:1901.07042*, 2019.
+        https://arxiv.org/abs/1901.07042
 
-    Johnson AE, Pollard TJ, Berkowitz S, Greenbaum NR, Lungren MP, Deng CY,
-    Mark RG, Horng S. MIMIC-CXR: A large publicly available database of
-    labeled chest radiographs. arXiv preprint arXiv:1901.07042. 2019 Jan 21.
-
-    https://arxiv.org/abs/1901.07042
-
-    Dataset website here:
-    https://physionet.org/content/mimic-cxr-jpg/2.0.0/
+    Dataset website:
+        https://physionet.org/content/mimic-cxr-jpg/2.0.0/
     """
 
     def __init__(self,
@@ -1229,23 +1281,36 @@ class MIMIC_Dataset(Dataset):
 
 
 class Openi_Dataset(Dataset):
-    """OpenI Dataset
+    """OpenI / Indiana University chest X-ray collection
 
-    Dina Demner-Fushman, Marc D. Kohli, Marc B. Rosenman, Sonya E. Shooshan,
-    Laritza Rodriguez, Sameer Antani, George R. Thoma, and Clement J.
-    McDonald. Preparing a collection of radiology examinations for
-    distribution and retrieval. Journal of the American Medical Informatics
-    Association, 2016. doi: 10.1093/jamia/ocv080.
+    The Indiana University chest X-ray collection (OpenI) contains 7,470
+    chest X-ray images from 3,955 radiology reports collected at Indiana
+    University Health. Labels are derived automatically from MeSH terms
+    embedded in the XML report files.
 
-    Views have been determined by projection using T-SNE.  To use the T-SNE
-    view rather than the view defined by the record,
-    set use_tsne_derived_view to true.
+    **Pathologies (18):** Atelectasis, Calcified Granuloma, Cardiomegaly,
+    Edema, Effusion, Emphysema, Fibrosis, Fracture, Granuloma, Hernia,
+    Infiltration, Lung Lesion, Lung Opacity, Mass, Nodule, Pleural
+    Thickening, Pneumonia, Pneumothorax.
+
+    .. note::
+        View position labels in the original records are noisy. A T-SNE
+        projection was used to derive higher-quality PA/AP labels. 
+        Set ``use_tsne_derived_view=True`` to use these
+        derived labels instead of the raw metadata values.
+
+    Citation:
+        Demner-Fushman D, Kohli MD, Rosenman MB, et al.
+        Preparing a collection of radiology examinations for distribution
+        and retrieval.
+        *Journal of the American Medical Informatics Association*, 2016.
+        doi: 10.1093/jamia/ocv080
 
     Dataset website:
-    https://openi.nlm.nih.gov/faq
+        https://openi.nlm.nih.gov/faq
 
     Download images:
-    https://academictorrents.com/details/5a3a439df24931f410fac269b87b050203d9467d
+        https://academictorrents.com/details/5a3a439df24931f410fac269b87b050203d9467d
     """
 
     def __init__(self, imgpath,
@@ -1393,32 +1458,35 @@ class Openi_Dataset(Dataset):
 class COVID19_Dataset(Dataset):
     """COVID-19 Image Data Collection
 
-    This dataset currently contains hundreds of frontal view X-rays and is
-    the largest public resource for COVID-19 image and prognostic data,
-    making it a necessary resource to develop and evaluate tools to aid in
-    the treatment of COVID-19. It was manually aggregated from publication
-    figures as well as various web based repositories into a machine learning
-    (ML) friendly format with accompanying dataloader code. We collected
-    frontal and lateral view imagery and metadata such as the time since
-    first symptoms, intensive care unit (ICU) status, survival status,
-    intubation status, or hospital location. We present multiple possible use
-    cases for the data such as predicting the need for the ICU, predicting
-    patient survival, and understanding a patient's trajectory during
-    treatment.
+    A manually curated, open-source collection of frontal and lateral chest
+    X-rays (and CT scans) from COVID-19 cases, aggregated from published
+    figures and public web repositories. It is one of the largest public
+    resources for COVID-19 chest imaging and prognostic data.
+
+    In addition to image labels, the accompanying metadata CSV provides
+    clinical context including time since first symptoms, ICU admission
+    status, survival status, intubation status, and hospital location.
+    These fields enable tasks such as severity prediction and patient
+    trajectory modelling.
+
+    Lung segmentation masks (from V7 Labs) are optionally available via
+    ``semantic_masks=True``.
+
+    .. note::
+        Both ``imgpath`` and ``csvpath`` must be provided; neither is bundled
+        with the library. Clone or download the dataset repository first.
 
     Citations:
+        Cohen JP, Morrison P, Dao L, Roth K, Duong TQ, Ghassemi M.
+        COVID-19 Image Data Collection: Prospective Predictions Are the
+        Future. *arXiv:2006.11988*, 2020.
 
-    COVID-19 Image Data Collection: Prospective Predictions Are the Future
-    Joseph Paul Cohen and Paul Morrison and Lan Dao and Karsten Roth and Tim
-    Q Duong and Marzyeh Ghassemi arXiv:2006.11988, 2020
+        Cohen JP, Morrison P, Dao L.
+        COVID-19 Image Data Collection.
+        *arXiv:2003.11597*, 2020.
 
-    COVID-19 image data collection,
-    Joseph Paul Cohen and Paul Morrison and Lan Dao
-    arXiv:2003.11597, 2020
-
-    Dataset: https://github.com/ieee8023/covid-chestxray-dataset
-
-    Paper: https://arxiv.org/abs/2003.11597
+    Dataset repository:
+        https://github.com/ieee8023/covid-chestxray-dataset
     """
 
     dataset_url = "https://github.com/ieee8023/covid-chestxray-dataset"
@@ -1432,12 +1500,6 @@ class COVID19_Dataset(Dataset):
                  seed: int = 0,
                  semantic_masks=False,
                  ):
-        """
-        Args:
-            imgpath: Path to the directory containing images
-            csvpath: Path to the image directory
-        """
-
         super(COVID19_Dataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.imgpath = imgpath
@@ -1526,27 +1588,38 @@ class COVID19_Dataset(Dataset):
 
 
 class NLMTB_Dataset(Dataset):
-    """National Library of Medicine Tuberculosis Datasets
+    """NLM Tuberculosis datasets (Montgomery County & Shenzhen)
 
-    https://lhncbc.nlm.nih.gov/publication/pub9931
-    https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4256233/
+    Two public chest X-ray datasets released by the National Library of
+    Medicine for computer-aided TB screening:
 
-    Note that each dataset should be loaded separately by this class (they
-    may be merged afterwards).  All images are of view PA.
+    * **Montgomery County** (USA): 138 normal and 80 TB-positive PA images,
+      collected by the Montgomery County Department of Health and Human
+      Services.
+    * **Shenzhen** (China): approximately 326 normal and 336 TB-positive PA
+      images, collected at Shenzhen No. 3 People's Hospital.
 
-    Jaeger S, Candemir S, Antani S, Wang YX, Lu PX, Thoma G. Two public chest
-    X-ray datasets for computer-aided screening of pulmonary diseases. Quant
-    Imaging Med Surg. 2014 Dec;4(6):475-7. doi:
-    10.3978/j.issn.2223-4292.2014.11.20. PMID: 25525580; PMCID: PMC4256233.
+    **Pathologies (1):** Tuberculosis.
 
-    Download Links:
-    Montgomery County
-    https://academictorrents.com/details/ac786f74878a5775c81d490b23842fd4736bfe33
-    http://openi.nlm.nih.gov/imgs/collections/NLM-MontgomeryCXRSet.zip
+    .. note::
+        Load each dataset separately by pointing ``imgpath`` at the
+        corresponding root folder (``NLM-MontgomeryCXRSet`` or
+        ``ChinaSet_AllFiles``). Use
+        :class:`~torchxrayvision.datasets.MergeDataset` to combine them.
+        All images are PA view.
 
-    Shenzhen
-    https://academictorrents.com/details/462728e890bd37c05e9439c885df7afc36209cc8
-    http://openi.nlm.nih.gov/imgs/collections/ChinaSet_AllFiles.zip
+    Citation:
+        Jaeger S, Candemir S, Antani S, Wang YX, Lu PX, Thoma G.
+        Two public chest X-ray datasets for computer-aided screening of
+        pulmonary diseases.
+        *Quant Imaging Med Surg*, 2014; 4(6):475–477.
+        doi: 10.3978/j.issn.2223-4292.2014.11.20
+
+    Download Montgomery County images:
+        https://academictorrents.com/details/ac786f74878a5775c81d490b23842fd4736bfe33
+
+    Download Shenzhen images:
+        https://academictorrents.com/details/462728e890bd37c05e9439c885df7afc36209cc8
     """
 
     def __init__(self,
@@ -1610,49 +1683,53 @@ class NLMTB_Dataset(Dataset):
         return sample
 
 class TBX11K_Dataset(Dataset):
-    """Tuberculosis X-ray 11K
+    """TBX11K Tuberculosis X-ray dataset
 
-    TBX11k contains 11200 X-ray images with corresponding bounding boxes
-    annotations for tuberculosis (TB) areas. Images are across five categories:
-    Healthy, Sick but Non-TB, Active TB, Latent TB, and Uncertain TB.
+    TBX11K contains 11,200 chest X-ray images with bounding-box annotations
+    for tuberculosis (TB) areas, spanning five categories: Healthy, Sick but
+    Non-TB, Active TB, Latent TB, and Uncertain TB.
 
-    Note that this dataset includes images from the Montgomery and Shenzhen
-    datasets, which are also available via NLMTB_Dataset. Users should avoid
-    training on NLMTB_Dataset and evaluating on TBX11k (or vice versa) as this
-    may result in data leakage.
+    .. note::
+        This dataset overlaps with :class:`~xrv.datasets.NLMTB_Dataset`
+        (Montgomery + Shenzhen images). Avoid training on one and evaluating
+        on the other to prevent data leakage.    
 
-    The dataset annotations distinguish between different tuberculosis findings,
-    which map to the following labels:
+    **Pathologies (4):** ActiveTuberculosis, ObsoletePulmonaryTuberculosis,
+    PulmonaryTuberculosis, Tuberculosis (superclass).
 
-        - ActiveTuberculosis: currently active, contagious TB, typically shown
-          by infiltrates, consolidation, or cavities on the X-ray.
-        - ObsoletePulmonaryTuberculosis: old, healed/inactive TB lesions from a
-          prior infection, no longer active.
-        - PulmonaryTuberculosis: a general pulmonary TB category defined in the
-          dataset. Note: this category does not appear in the train/val/trainval
-          annotations, so its label column is always 0.
-        - Tuberculosis: a superclass label that is positive if the image has any
-          of the above TB findings. Users who only need TB vs. non-TB can use
-          this column and drop the more granular ones.
+    Label notes:
 
-    This dataset incorporates images from four TB datasets:
-        - DA dataset (156 images, CC BY 4.0)
-        - DB dataset (150 images, CC BY 4.0)
-        - Montgomery County X-ray Set (138 images, public domain, NLM)
-        - Shenzhen X-ray Set (662 images, public domain, NLM)
+    - ``ActiveTuberculosis``: currently active, contagious TB, typically
+      shown by infiltrates, consolidation, or cavities on the X-ray.
+    - ``ObsoletePulmonaryTuberculosis``: old, healed/inactive TB lesions
+      from a prior infection, no longer active.
+    - ``PulmonaryTuberculosis``: a general pulmonary TB category defined in
+      the dataset. Does not appear in train/val/trainval annotations so its
+      label column is always 0.
+    - ``Tuberculosis``: superclass label, positive if any of the above TB
+      findings are present. Use this column for binary TB vs. non-TB tasks.
+
+    This dataset incorporates images from four TB collections:
+
+    - DA dataset (156 images, CC BY 4.0)
+    - DB dataset (150 images, CC BY 4.0)
+    - Montgomery County X-ray Set (138 images, public domain, NLM)
+    - Shenzhen X-ray Set (662 images, public domain, NLM)
 
     Citation:
+        Liu Y, Wu YH, Ban Y, Wang H, Cheng MM.
+        Rethinking Computer-Aided Tuberculosis Diagnosis.
+        *IEEE/CVF CVPR*, 2020, pp. 2643–2652.
+        doi: 10.1109/CVPR42600.2020.00272
 
-    Y. Liu, Y. -H. Wu, Y. Ban, H. Wang and M. -M. Cheng. Rethinking Computer-Aided
-    Tuberculosis Diagnosis. 2020 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR).
-    Seattle, WA, USA, 2020, pp. 2643-2652, doi: 10.1109/CVPR42600.2020.00272.
+    Dataset and annotations:
+        https://github.com/yun-liu/Tuberculosis
 
+    Paper:
+        https://ieeexplore.ieee.org/document/9156613
 
-    Dataset: https://github.com/yun-liu/Tuberculosis
-    Paper: https://ieeexplore.ieee.org/document/9156613
-    License: CC BY-NC-SA 2.0
-    https://creativecommons.org/licenses/by-nc-sa/2.0/
-
+    License:
+        CC BY-NC-SA 2.0 — https://creativecommons.org/licenses/by-nc-sa/2.0/
     """
 
     def __init__(self,
@@ -1726,16 +1803,28 @@ class TBX11K_Dataset(Dataset):
         return sample
     
 class SIIM_Pneumothorax_Dataset(Dataset):
-    """SIIM Pneumothorax Dataset
+    """SIIM-ACR Pneumothorax Segmentation dataset
 
-    https://academictorrents.com/details/6ef7c6d039e85152c4d0f31d83fa70edc4aba088
-    https://www.kaggle.com/c/siim-acr-pneumothorax-segmentation
+    The training corpus from the 2019 SIIM-ACR Pneumothorax Segmentation
+    Kaggle challenge. It contains 12,954 chest X-ray images in DICOM format
+    along with run-length-encoded (RLE) segmentation masks that delineate
+    pneumothorax (collapsed lung) regions. Images without pneumothorax carry
+    a mask value of ``-1``.
 
-    "The data is comprised of images in DICOM format and annotations in the
-    form of image IDs and run-length-encoded (RLE) masks. Some of the images
-    contain instances of pneumothorax (collapsed lung), which are indicated
-    by encoded binary masks in the annotations. Some training images have
-    multiple annotations. Images without pneumothorax have a mask value of -1."
+    **Pathologies (1):** Pneumothorax.
+
+    Per-image segmentation masks are available via ``pathology_masks=True``.
+    Requires ``pydicom`` to read the ``.dcm`` image files.
+
+    .. note::
+        Some training images have multiple annotations from different
+        radiologists; all annotations are combined into a single mask.
+
+    Challenge site:
+        https://www.kaggle.com/c/siim-acr-pneumothorax-segmentation
+
+    Download DICOM images:
+        https://academictorrents.com/details/6ef7c6d039e85152c4d0f31d83fa70edc4aba088
     """
 
     def __init__(self,
@@ -1859,23 +1948,38 @@ class SIIM_Pneumothorax_Dataset(Dataset):
 
 
 class VinBrain_Dataset(Dataset):
-    """VinBrain Dataset
+    """VinDr-CXR dataset
 
-    .. code-block:: python
+    A large chest X-ray dataset collected at two major hospitals in Vietnam
+    (Hanoi Medical University Hospital and Bach Mai Hospital), annotated by
+    17 experienced radiologists. The training set contains 15,000 DICOM
+    images with bounding-box labels covering 14 thoracic abnormalities and a
+    "No finding" class.
+
+    **Pathologies (14):** Aortic Enlargement, Atelectasis, Calcification,
+    Cardiomegaly, Consolidation, Effusion, ILD, Infiltration, Lesion,
+    Lung Opacity, Nodule/Mass, Pleural Thickening, Pneumothorax, Pulmonary
+    Fibrosis.
+
+    Per-image bounding-box masks are available via ``pathology_masks=True``.
+    Requires ``pydicom`` to read the ``.dicom`` image files.
+
+    Example::
 
         d_vin = xrv.datasets.VinBrain_Dataset(
             imgpath=".../train",
             csvpath=".../train.csv"
         )
 
-    Nguyen, H. Q., Lam, K., Le, L. T., Pham, H. H., Tran, D. Q., Nguyen,
-    D. B., Le, D. D., Pham, C. M., Tong, H. T. T., Dinh, D. H., Do, C. D.,
-    Doan, L. T., Nguyen, C. N., Nguyen, B. T., Nguyen, Q. V., Hoang, A. D.,
-    Phan, H. N., Nguyen, A. T., Ho, P. H., … Vu, V. (2020). VinDr-CXR: An
-    open dataset of chest X-rays with radiologist’s annotations.
-    http://arxiv.org/abs/2012.15029
+    Citation:
+        Nguyen HQ, Lam K, Le LT, et al.
+        VinDr-CXR: An open dataset of chest X-rays with radiologist's
+        annotations.
+        *arXiv:2012.15029*, 2020.
+        http://arxiv.org/abs/2012.15029
 
-    https://www.kaggle.com/c/vinbigdata-chest-xray-abnormalities-detection
+    Challenge site:
+        https://www.kaggle.com/c/vinbigdata-chest-xray-abnormalities-detection
     """
 
     def __init__(self,
@@ -2011,11 +2115,25 @@ class VinBrain_Dataset(Dataset):
 
 
 class StonyBrookCOVID_Dataset(Dataset):
-    """Stonybrook Radiographic Assessment of Lung Opacity Score Dataset
+    """Stony Brook COVID-19 Radiographic Assessment of Lung Opacity (RALO) dataset
 
-    https://doi.org/10.5281/zenodo.4633999
+    A dataset of chest X-rays from COVID-19 positive patients collected at
+    Stony Brook University Hospital. Each image is scored for the geographic
+    extent and opacity severity of lung involvement using the RALO scoring
+    system. Labels are continuous scores rather than binary pathology labels.
 
-    Citation will be set soon.
+    **Pathologies (2):** Geographic Extent, Lung Opacity.
+
+    .. note::
+        Both ``imgpath`` (path to ``CXR_images_scored/``) and ``csvpath``
+        (path to ``ralo-dataset-metadata.csv``) must be provided. All images
+        are AP view.
+
+    Citation:
+        Goldgof G, et al.
+        Stony Brook Medicine COVID-19 Positive Cases.
+        *Zenodo*, 2021.
+        https://doi.org/10.5281/zenodo.4633999
     """
 
     def __init__(self,
@@ -2088,23 +2206,26 @@ class StonyBrookCOVID_Dataset(Dataset):
 
 
 class ObjectCXR_Dataset(Dataset):
-    """ObjectCXR Dataset
+    """Object-CXR foreign object detection dataset
 
-    "We provide a large dataset of chest X-rays with strong annotations of
-    foreign objects, and the competition for automatic detection of foreign
-    objects. Specifically, 5000 frontal chest X-ray images with foreign
-    objects presented and 5000 frontal chest X-ray images without foreign
-    objects are provided. All the chest X-ray images were filmed in township
-    hospitals in China and collected through our telemedicine platform.
-    Foreign objects within the lung field of each chest X-ray are annotated
-    with bounding boxes, ellipses or masks depending on the shape of the
-    objects."
+    A challenge dataset from MIDL 2020 containing 10,000 frontal chest X-ray
+    images: 5,000 with at least one foreign object present and 5,000 without.
+    Images were collected from township hospitals in China via a telemedicine
+    platform. Foreign objects are annotated with bounding boxes, ellipses, or
+    pixel masks depending on object shape.
 
-    Challenge dataset from MIDL2020
+    **Pathologies (1):** Foreign Object.
 
-    https://jfhealthcare.github.io/object-CXR/
+    .. note::
+        Images are stored inside a ZIP archive. Pass the path to the ZIP file
+        as ``imgzippath`` and the annotation CSV path as ``csvpath``.
 
-    https://academictorrents.com/details/fdc91f11d7010f7259a05403fc9d00079a09f5d5
+    Challenge website:
+        https://jfhealthcare.github.io/object-CXR/
+
+    Download images and annotations:
+        https://academictorrents.com/details/fdc91f11d7010f7259a05403fc9d00079a09f5d5
+        https://archive.org/download/object-CXR/object-CXR/
     """
 
     def __init__(self,

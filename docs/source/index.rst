@@ -1,10 +1,9 @@
 Introduction
 =========================================
 
+.. warning::
 
-.. raw:: html
-
-    <p><font color="red">*NOT FOR MEDICAL USE*</font></p>
+    NOT FOR MEDICAL USE. For research and software development only. Not for diagnostic or clinical decision making.
 
 
 A library for chest X-ray datasets and models. Including pre-trained models.
@@ -97,3 +96,5 @@ Contents
     models
     dataset_helpers
     datasets
+    utilities
+    faq

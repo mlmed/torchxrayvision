@@ -220,23 +220,26 @@ def ResNetAE101(**kwargs):
 
 
 def ResNetAE(weights=None, cache_dir=None):
-    """A ResNet based autoencoder.
+    """ResNet-based image autoencoder
 
-    Possible weights for this class include:
+    Encodes a chest X-ray to a compact latent representation and decodes it
+    back to image space. Useful for representation learning, anomaly detection,
+    and data augmentation.
 
-    - "101-elastic" trained on PadChest, NIH, CheXpert, and MIMIC. From the paper https://arxiv.org/abs/2102.09475
+    Available pre-trained weights:
+
+    - ``"101-elastic"`` — trained on PadChest, NIH, CheXpert, and MIMIC.
+      From `Cohen et al., 2021 <https://arxiv.org/abs/2102.09475>`_.
 
     .. code-block:: python
 
-        ae = xrv.autoencoders.ResNetAE(weights="101-elastic") # trained on PadChest, NIH, CheXpert, and MIMIC
-        z = ae.encode(image)
-        image2 = ae.decode(z)
+        ae = xrv.autoencoders.ResNetAE(weights="101-elastic")
+        z = ae.encode(image)    # encode to latent space
+        image2 = ae.decode(z)   # reconstruct
 
-
-    params:
-        weights (str): Weights to use. See above for options.
-        cache_dir (str): Override directory used to store cached weights (default: ~/.torchxrayvision/)
-
+    :param weights: Name of pre-trained weights to load. See above for options.
+    :param cache_dir: Directory used to store downloaded weights
+        (default: ``~/.torchxrayvision/``).
     """
 
     if weights == None:

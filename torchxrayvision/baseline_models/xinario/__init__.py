@@ -10,11 +10,12 @@ from ... import utils
 
 
 class ViewModel(nn.Module):
-    """
+    """Chest X-ray view classifier (Frontal vs. Lateral)
 
+    A ResNet-50 model trained to classify chest X-rays as frontal or lateral
+    view. The native resolution is 320 × 320; images are scaled automatically.
 
-    The native resolution of the model is 320x320. Images are scaled
-    automatically.
+    **Targets (2):** Frontal, Lateral.
 
     `Demo notebook <https://github.com/mlmed/torchxrayvision/blob/main/scripts/view_classifier.ipynb>`__
 
@@ -26,14 +27,11 @@ class ViewModel(nn.Module):
         image = torch.from_numpy(image)[None,...]
 
         pred = model(image)
-        # tensor([[17.3186, 26.7156]]), grad_fn=<AddmmBackward0>)
-
         model.targets[pred.argmax()]
-        # Lateral
+        # 'Lateral'
 
-
-    Source: https://github.com/xinario/chestViewSplit
-
+    Source:
+        https://github.com/xinario/chestViewSplit
     """
 
     targets: List[str] = ['Frontal', 'Lateral']

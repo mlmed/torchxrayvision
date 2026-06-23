@@ -8,7 +8,7 @@ Model benchmarks for classifiers are `here <https://github.com/mlmed/torchxrayvi
 Model Interface
 +++++++++++++++
 
-.. automodule:: torchxrayvision.models
+.. automodule:: xrv.models
 
     .. autoclass:: Model
         :members:
@@ -28,7 +28,7 @@ XRV Pathology Classifiers
 XRV ResNet Autoencoder
 ++++++++++++++++++++++
 
-.. automodule:: torchxrayvision.autoencoders
+.. automodule:: xrv.autoencoders
 
     .. autoclass:: ResNetAE(weights=SPECIFY)
 
@@ -36,41 +36,41 @@ XRV ResNet Autoencoder
 CheXpert Pathology Classifier
 +++++++++++++++++++++++++++++
 
-.. automodule:: torchxrayvision.baseline_models.chexpert
+.. autoclass:: xrv.baseline_models.chexpert.DenseNet
    :members:
 
 JF Healthcare Pathology Classifier
 ++++++++++++++++++++++++++++++++++
 
-.. automodule:: torchxrayvision.baseline_models.jfhealthcare
+.. autoclass:: xrv.baseline_models.jfhealthcare.DenseNet
    :members:
 
 ChestX-Det Segmentation
 +++++++++++++++++++++++
 
-.. automodule:: torchxrayvision.baseline_models.chestx_det
+.. autoclass:: xrv.baseline_models.chestx_det.PSPNet
    :members:
    
 Emory HITI Race
 +++++++++++++++
 
-.. automodule:: torchxrayvision.baseline_models.emory_hiti
+.. autoclass:: xrv.baseline_models.emory_hiti.RaceModel
    :members:
    
 Riken Age Model
 +++++++++++++++
 
-.. automodule:: torchxrayvision.baseline_models.riken
+.. autoclass:: xrv.baseline_models.riken.AgeModel
    :members:
 
 Xinario View Model
 ++++++++++++++++++
 
-.. automodule:: torchxrayvision.baseline_models.xinario
+.. autoclass:: xrv.baseline_models.xinario.ViewModel
    :members:
 
 Mira Sex Model
 ++++++++++++++++++
 
-.. automodule:: torchxrayvision.baseline_models.mira
+.. autoclass:: xrv.baseline_models.mira.SexModel
    :members:
