@@ -2,6 +2,7 @@ import os
 import shutil
 import sys
 
+import numpy as np
 import pytest
 import torchvision
 
@@ -180,7 +181,6 @@ def test_errors_when_doing_things_that_should_not_work():
     with pytest.raises(NotImplementedError) as excinfo:
         merged_dataset.pathologies = None
     
-    
     subset_dataset = xrv.datasets.SubsetDataset(datasets[0], [0,1,2])
     
     with pytest.raises(NotImplementedError) as excinfo:
@@ -194,4 +194,93 @@ def test_errors_when_doing_things_that_should_not_work():
         
     with pytest.raises(NotImplementedError) as excinfo:
         merged_dataset.pathologies = None
-    
+
+
+def test_relabel_dataset_missing_pathology_becomes_nan():
+    """Pathologies requested but absent in the dataset must produce all-NaN columns."""
+    d = xrv.datasets.NIH_Dataset(imgpath=".")
+    n_samples = len(d)
+
+    # Pick a pathology that NIH_Dataset definitely does NOT have
+    absent_pathology = "Enlarged Cardiomediastinum"
+    assert absent_pathology not in d.pathologies, \
+        f"{absent_pathology} unexpectedly present in NIH_Dataset"
+
+    xrv.datasets.relabel_dataset([absent_pathology], d, silent=True)
+
+    assert d.pathologies == [absent_pathology]
+    assert d.labels.shape == (n_samples, 1)
+    assert np.all(np.isnan(d.labels[:, 0])), \
+        "Missing pathology column should be all NaN after relabeling"
+
+
+def test_relabel_dataset_present_pathology_preserved():
+    """Pathologies that exist in the dataset must retain their original label values."""
+    d = xrv.datasets.NIH_Dataset(imgpath=".")
+
+    present_pathology = "Atelectasis"
+    assert present_pathology in d.pathologies
+
+    original_col_idx = list(d.pathologies).index(present_pathology)
+    original_col = d.labels[:, original_col_idx].copy()
+
+    xrv.datasets.relabel_dataset([present_pathology], d, silent=True)
+
+    assert d.pathologies == [present_pathology]
+    np.testing.assert_array_equal(d.labels[:, 0], original_col)
+
+
+def test_relabel_dataset_dropped_pathologies_removed():
+    """Pathologies not in the requested list must be absent after relabeling."""
+    d = xrv.datasets.NIH_Dataset(imgpath=".")
+    original_pathologies = list(d.pathologies)
+
+    keep = [original_pathologies[0]]
+    xrv.datasets.relabel_dataset(keep, d, silent=True)
+
+    assert list(d.pathologies) == keep
+    assert d.labels.shape[1] == 1
+
+
+def test_merge_dataset_lab_alignment():
+    """MergeDataset.labels must be the vertical concatenation of the sub-dataset
+    labels in order, so that merged.labels[i] equals the correct sub-dataset row."""
+    d1 = xrv.datasets.NIH_Dataset(imgpath=".")
+    d2 = xrv.datasets.NIH_Dataset(imgpath=".")
+
+    xrv.datasets.relabel_dataset(xrv.datasets.default_pathologies, d1, silent=True)
+    xrv.datasets.relabel_dataset(xrv.datasets.default_pathologies, d2, silent=True)
+
+    merged = xrv.datasets.MergeDataset([d1, d2])
+
+    # First len(d1) rows come from d1
+    np.testing.assert_array_equal(merged.labels[:len(d1)], d1.labels)
+    # Next len(d2) rows come from d2
+    np.testing.assert_array_equal(merged.labels[len(d1):], d2.labels)
+
+    # Spot-check: the which_dataset index and offset arithmetic must match labels
+    for idx in [0, len(d1) - 1, len(d1), len(merged) - 1]:
+        ds_idx = merged.which_dataset[idx]
+        local_idx = idx - int(merged.offset[idx])
+        expected_lab = merged.datasets[ds_idx].labels[local_idx]
+        np.testing.assert_array_equal(
+            merged.labels[idx],
+            expected_lab,
+            err_msg=f"merged.labels[{idx}] doesn't match sub-dataset label"
+        )
+
+
+def test_merge_dataset_source_field():
+    """MergeDataset.which_dataset must record the correct sub-dataset index for every row."""
+    d1 = xrv.datasets.NIH_Dataset(imgpath=".")
+    d2 = xrv.datasets.NIH_Dataset(imgpath=".")
+
+    xrv.datasets.relabel_dataset(xrv.datasets.default_pathologies, d1, silent=True)
+    xrv.datasets.relabel_dataset(xrv.datasets.default_pathologies, d2, silent=True)
+
+    merged = xrv.datasets.MergeDataset([d1, d2])
+
+    assert merged.which_dataset[0] == 0
+    assert merged.which_dataset[len(d1) - 1] == 0
+    assert merged.which_dataset[len(d1)] == 1
+    assert merged.which_dataset[len(merged) - 1] == 1
