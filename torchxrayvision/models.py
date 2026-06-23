@@ -356,12 +356,11 @@ class DenseNet(nn.Module):
         features = self.features2(x)
         out = self.classifier(features)
 
-        if hasattr(self, 'apply_sigmoid') and self.apply_sigmoid:
-            out = torch.sigmoid(out)
-
-        if hasattr(self, "op_threshs") and (self.op_threshs != None):
+        if hasattr(self, "op_threshs") and (self.op_threshs is not None):
             out = torch.sigmoid(out)
             out = op_norm(out, self.op_threshs)
+        elif hasattr(self, 'apply_sigmoid') and self.apply_sigmoid:
+            out = torch.sigmoid(out)
         return out
 
 
@@ -482,12 +481,11 @@ class ResNet(nn.Module):
 
         out = self.model(x)
 
-        if hasattr(self, 'apply_sigmoid') and self.apply_sigmoid:
-            out = torch.sigmoid(out)
-
-        if hasattr(self, "op_threshs") and (self.op_threshs != None):
+        if hasattr(self, "op_threshs") and (self.op_threshs is not None):
             out = torch.sigmoid(out)
             out = op_norm(out, self.op_threshs)
+        elif hasattr(self, 'apply_sigmoid') and self.apply_sigmoid:
+            out = torch.sigmoid(out)
         return out
 
 
