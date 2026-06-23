@@ -203,7 +203,7 @@ class Dataset:
         self.views = views
 
         # missing data is unknown
-        self.csv.view.fillna("UNKNOWN", inplace=True)
+        self.csv["view"] = self.csv["view"].fillna("UNKNOWN")
 
         if "*" not in views:
             self.csv = self.csv[self.csv["view"].isin(self.views)]  # Select the view
@@ -1122,7 +1122,7 @@ class CheX_Dataset(Dataset):
 
         # age
         self.csv['age_years'] = self.csv['Age'] * 1.0
-        self.csv['Age'][(self.csv['Age'] == 0)] = None
+        self.csv.loc[self.csv['Age'] == 0, 'Age'] = None
 
         # sex
         self.csv['sex_male'] = self.csv['Sex'] == 'Male'
