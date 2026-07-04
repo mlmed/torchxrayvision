@@ -50,7 +50,7 @@ class RaceModel(nn.Module):
 
         super(RaceModel, self).__init__()
 
-        self.model = torchvision.models.resnet34(pretrained=False)
+        self.model = torchvision.models.resnet34(weights=None)
         n_classes = 3
         self.model.fc = nn.Sequential(
             nn.Linear(512, n_classes), nn.LogSoftmax(dim=1))
@@ -70,7 +70,7 @@ class RaceModel(nn.Module):
             xrv.utils.download(url, self.weights_filename_local)
 
         try:
-            ckpt = torch.load(self.weights_filename_local, map_location="cpu")
+            ckpt = torch.load(self.weights_filename_local, map_location="cpu", weights_only=True)
             self.model.load_state_dict(ckpt)
             self.model = self.model.module
             self.model = self.model.eval()  # Must be in eval mode to work correctly

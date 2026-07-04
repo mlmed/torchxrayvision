@@ -73,7 +73,7 @@ class DenseNet(nn.Module):
             xrv.utils.download(url, self.weights_filename_local)
 
         try:
-            ckpt = torch.load(self.weights_filename_local, map_location="cpu")
+            ckpt = torch.load(self.weights_filename_local, map_location="cpu", weights_only=True)
             model.module.load_state_dict(ckpt)
         except Exception as e:
             print("Loading failure. Check weights file:", self.weights_filename_local)
