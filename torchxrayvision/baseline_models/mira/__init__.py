@@ -80,7 +80,7 @@ class SexModel(nn.Module):
                     raise e
 
             try:
-                ckpt = torch.load(self.weights_filename_local, map_location="cpu")
+                ckpt = torch.load(self.weights_filename_local, map_location="cpu", weights_only=False)
                 
                 # Extract state dict from PyTorch Lightning checkpoint
                 if 'state_dict' in ckpt:

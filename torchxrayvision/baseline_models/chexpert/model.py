@@ -44,7 +44,7 @@ class Model(nn.Module):
         self.use_gpu = use_gpu
 
         # Set pretrained to False to avoid loading weights which will be overwritten
-        self.model = model_fn(pretrained=False)
+        self.model = model_fn(weights=None)
 
         self.pool = nn.AdaptiveAvgPool2d(1)
 
@@ -96,7 +96,7 @@ def load_individual(weights_zip, ckpt_path, model_uncertainty, use_gpu=False):
     with weights_zip.open(ckpt_path) as file:
 
         stream = io.BytesIO(file.read())
-        ckpt_dict = torch.load(stream, map_location="cpu")
+        ckpt_dict = torch.load(stream, map_location="cpu", weights_only=False)
 
     device = 'cuda:0' if use_gpu else 'cpu'
 
