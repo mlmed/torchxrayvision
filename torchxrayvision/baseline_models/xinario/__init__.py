@@ -55,7 +55,7 @@ class ViewModel(nn.Module):
 
         self.model = torchvision.models.resnet.resnet50()
         try:
-            weights = torch.load(self.weights_filename_local)
+            weights = torch.load(self.weights_filename_local, map_location='cpu', weights_only=True)
             self.model.load_state_dict(weights);
             self.model = self.model.eval()
         except Exception as e:

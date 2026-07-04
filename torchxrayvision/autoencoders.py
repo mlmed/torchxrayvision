@@ -267,7 +267,7 @@ def ResNetAE(weights=None, cache_dir=None):
         utils.download(url, weights_filename_local)
 
     try:
-        state_dict = torch.load(weights_filename_local, map_location='cpu')
+        state_dict = torch.load(weights_filename_local, map_location='cpu', weights_only=True)
         ae.load_state_dict(state_dict)
     except Exception as e:
         print("Loading failure. Check weights file:", weights_filename_local)

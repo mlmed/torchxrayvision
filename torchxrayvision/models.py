@@ -427,12 +427,12 @@ class ResNet(nn.Module):
         self.pathologies = self.targets  # keep to be backward compatible
 
         if self.weights.startswith("resnet101"):
-            self.model = torchvision.models.resnet101(num_classes=len(self.weights_dict["labels"]), pretrained=False)
+            self.model = torchvision.models.resnet101(num_classes=len(self.weights_dict["labels"]), weights=None)
             # patch for single channel
             self.model.conv1 = torch.nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
 
         elif self.weights.startswith("resnet50"):
-            self.model = torchvision.models.resnet50(num_classes=len(self.weights_dict["labels"]), pretrained=False)
+            self.model = torchvision.models.resnet50(num_classes=len(self.weights_dict["labels"]), weights=None)
             # patch for single channel
             self.model.conv1 = torch.nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
 
