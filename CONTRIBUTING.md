@@ -1,22 +1,39 @@
-We welcome pull requests to improve functionality of the library. Please discuss with the team before making a pull request to make sure it fits the scope of the project.
+# Contributing to TorchXRayVision
 
-Here are some directions that we would like to go in:
+We welcome pull requests! Please open an issue to discuss major changes before submitting.
 
-### datasets
+We are looking for contributions in:
+- Datasets: Tuberculosis datasets, segmentation masks
+- Baseline Models: Pathology predictions or other interesting tasks
+- Utility Functions: Evaluation scripts and metrics
 
-- Tuberculosis datasets.
-- Segmentations for existing datasets (pathology masks, organ segmentations, object segmentations)
- - object-CXR https://jfhealthcare.github.io/object-CXR/
+---
 
-### model
+## Guidelines
 
-- Models from the CheXpert leaderboard https://stanfordmlgroup.github.io/competitions/chexpert/
+### 1. Adding a New Dataset
+Follow conventions in `torchxrayvision/datasets.py`:
+- Inherit from `Dataset`.
+- Parse metadata from CSV/JSON.
+- `__getitem__` must return a dict with `img` and `lab`.
+- Normalize images with `xrv.utils.normalize(img, maxval=...)`. Ensure `maxval` matches the format (e.g., 255 for 8-bit) to map values to `[-1024, 1024]` with shape `(1, H, W)`.
 
-One issue here is that they are interchangable with the existing model and are well organized.
+### 2. Adding a Baseline Model
+When adding to `torchxrayvision/baseline_models`:
+- Inherit from `nn.Module`.
+- Define a `targets` list for model outputs.
+- Download weights automatically via `xrv.utils.download` unless restricted.
+- The `forward()` method must accept inputs in `[-1024, 1024]` and internally scale them for your model.
+- Use `xrv.utils.fix_resolution` and `xrv.utils.warn_normalization`.
+- Provide a docstring with examples and citation.
 
-### utility functions
-
-Evaluation scripts?
-
-
-
+### 3. Development
+Install requirements:
+```bash
+pip install -r requirements-dev.txt
+```
+Run tests:
+```bash
+pytest tests/
+```
+Check style with `pep8.sh`.
