@@ -737,6 +737,8 @@ class UNetResNet50(BackboneUNet):
 
     License:
         Creative Commons Attribution-NonCommercial-ShareAlike
+        "the license applies only to the CXAS model and weights, and does not extend to or restrict the rest of 
+        the TorchXRayVision library, which can remain under Apache" - Constantin Seibold (code author)
 
     Citation:
         Seibold C M, Reiß S, Sarfraz M S, et al.
@@ -749,7 +751,7 @@ class UNetResNet50(BackboneUNet):
         Stiefelhagen R.
         Accurate fine-grained segmentation of human anatomy in radiographs via
         volumetric pseudo-labeling.
-        *arXiv preprint arXiv:2306.03934*, 2023.
+        arXiv:2306.03934, 2023.
         url: https://arxiv.org/abs/2306.03934
 
         https://github.com/ConstantinSeibold/ChestXRayAnatomySegmentation
