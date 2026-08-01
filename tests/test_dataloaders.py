@@ -1,10 +1,12 @@
 import os
 import shutil
 import sys
+import warnings
 
 import numpy as np
 import pytest
 import torchvision
+from skimage.io import imread
 
 import torchxrayvision as xrv
 
@@ -28,6 +30,18 @@ test_data_path = "/tmp/testdata"
 test_png_img_file = os.path.join(file_path, "00000001_000.png")
 test_jpg_img_file = os.path.join(file_path, "16747_3_1.jpg")
 test_dcm_img_file = os.path.join(file_path, "1.2.276.0.7230010.3.1.4.8323329.6904.1517875201.850819.dcm")
+
+
+@pytest.mark.parametrize("image_path", [test_png_img_file, test_jpg_img_file])
+def test_imageio_byte_loading_matches_skimage_without_deprecation_warning(image_path):
+    with open(image_path, "rb") as image_file:
+        image_bytes = image_file.read()
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        actual = xrv.datasets.imageio.imread(image_bytes)
+
+    np.testing.assert_array_equal(actual, imread(image_path))
 
 
 @pytest.fixture
