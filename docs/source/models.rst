@@ -50,6 +50,13 @@ ChestX-Det Segmentation
 
 .. autoclass:: xrv.baseline_models.chestx_det.PSPNet
    :members:
+
+CXAS ChestXRayAnatomy Segmentation model
+++++++++++++++++++++++++++++++++++++++++
+
+.. autoclass:: xrv.baseline_models.chestx_anatomy.UNetResNet50
+   :members:
+   
    
 Emory HITI Race
 +++++++++++++++
