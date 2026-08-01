@@ -8,7 +8,10 @@ import tarfile
 import warnings
 import zipfile
 
-import imageio
+try:
+    import imageio.v2 as imageio
+except ImportError:  # imageio < 2.9
+    import imageio
 import numpy as np
 import pandas as pd
 import json
