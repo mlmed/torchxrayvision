@@ -298,3 +298,28 @@ def test_merge_dataset_source_field():
     assert merged.which_dataset[len(d1) - 1] == 0
     assert merged.which_dataset[len(d1)] == 1
     assert merged.which_dataset[len(merged) - 1] == 1
+
+
+def test_nih_dataset_patient_sex_column(tmp_path):
+    """NIH's official Data_Entry_2017_v2020.csv (as currently distributed by
+    the NIH Clinical Center) renamed the "Patient Gender" column to
+    "Patient Sex". NIH_Dataset should accept either name rather than raising
+    a KeyError on a CSV downloaded directly from the official source."""
+    import pandas as pd
+
+    csv = pd.DataFrame({
+        "Image Index": ["00000001_000.png"],
+        "Finding Labels": ["Cardiomegaly"],
+        "Follow-up #": [0],
+        "Patient ID": [1],
+        "Patient Age": [58],
+        "Patient Sex": ["M"],
+        "View Position": ["PA"],
+    })
+    csv_path = tmp_path / "Data_Entry_2017_v2020.csv"
+    csv.to_csv(csv_path, index=False)
+
+    d = xrv.datasets.NIH_Dataset(imgpath=str(tmp_path), csvpath=str(csv_path))
+
+    assert d.csv["sex_male"].iloc[0]
+    assert not d.csv["sex_female"].iloc[0]

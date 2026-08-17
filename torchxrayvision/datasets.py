@@ -453,6 +453,12 @@ class NIH_Dataset(Dataset):
         self.check_paths_exist()
         self.csv = pd.read_csv(self.csvpath)
 
+        # The official Data_Entry_2017_v2020.csv renamed "Patient Gender" to
+        # "Patient Sex"; normalize back so downstream column lookups (below)
+        # work with either version of the file.
+        if 'Patient Gender' not in self.csv.columns and 'Patient Sex' in self.csv.columns:
+            self.csv = self.csv.rename(columns={'Patient Sex': 'Patient Gender'})
+
         # Remove images with view position other than specified
         self.csv["view"] = self.csv['View Position']
         self.limit_to_selected_views(views)
