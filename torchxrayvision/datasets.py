@@ -1162,6 +1162,206 @@ class CheX_Dataset(Dataset):
         return sample
 
 
+class CheXlocalize_Dataset(Dataset):
+    """CheXlocalize dataset (Stanford)
+
+    CheXlocalize supplies the official CheXpert validation and test image
+    sets together with two things not available anywhere else: the blinded
+    official test-set labels (majority vote of 5 board-certified
+    radiologists) and radiologist-drawn segmentation masks localizing 10 of
+    the 13 CheXpert pathologies. Use this class instead of ``CheX_Dataset``
+    for the CheXpert val/test splits: ``CheX_Dataset`` infers the split by
+    string-matching ``'train'``/``'valid'`` in the CSV path and raises
+    ``NotImplementedError`` on CheXlocalize's ``test_labels.csv``, and the
+    blinded test CSV omits the ``Sex``/``Age``/``Frontal-Lateral``/``AP-PA``
+    columns ``CheX_Dataset`` assumes exist (dropped to prevent
+    re-identification of the blinded test set).
+
+    **Pathologies (13):** same as ``CheX_Dataset`` — Atelectasis,
+    Cardiomegaly, Consolidation, Edema, Effusion, Enlarged
+    Cardiomediastinum, Fracture, Lung Lesion, Lung Opacity, Pleural Other,
+    Pneumonia, Pneumothorax, Support Devices.
+
+    **Segmentation masks** are available for 10 of these pathologies (all
+    but Fracture, Pleural Other, Pneumonia) via ``pathology_masks=True`` and
+    ``segmentation_jsonpath`` pointing at ``gt_segmentations_val.json`` or
+    ``gt_segmentations_test.json``. Masks are stored as COCO RLE
+    (``pycocotools``) keyed by CXR id (``patientX_studyY_viewZ_frontal``).
+    Requires ``pycocotools`` to decode.
+
+    Citation:
+        Saporta A, Gui X, Agrawal A, et al.
+        Benchmarking saliency methods for chest X-ray interpretation.
+        *Nature Machine Intelligence*, 2022.
+        https://doi.org/10.1038/s42256-022-00536-x
+
+    Dataset website:
+        https://stanfordaimi.azurewebsites.net/datasets/23c56a0d-15de-405b-87c8-99c30138950c
+    """
+
+    def __init__(self,
+                 imgpath,
+                 csvpath,
+                 views=["PA", "AP"],
+                 transform=None,
+                 data_aug=None,
+                 seed=0,
+                 unique_patients=True,
+                 pathology_masks=False,
+                 segmentation_jsonpath=None
+                 ):
+
+        super(CheXlocalize_Dataset, self).__init__()
+        np.random.seed(seed)  # Reset the seed so all runs are the same.
+
+        self.pathologies = ["Enlarged Cardiomediastinum",
+                            "Cardiomegaly",
+                            "Lung Opacity",
+                            "Lung Lesion",
+                            "Edema",
+                            "Consolidation",
+                            "Pneumonia",
+                            "Atelectasis",
+                            "Pneumothorax",
+                            "Pleural Effusion",
+                            "Pleural Other",
+                            "Fracture",
+                            "Support Devices"]
+
+        self.pathologies = sorted(self.pathologies)
+
+        self.imgpath = imgpath
+        self.transform = transform
+        self.data_aug = data_aug
+        self.pathology_masks = pathology_masks
+        self.segmentation_jsonpath = segmentation_jsonpath
+        self.csvpath = csvpath
+        self.csv = pd.read_csv(self.csvpath)
+        self.views = views
+
+        # clean up path in csv so the user can specify the path, and so
+        # patient/view parsing below works regardless of the val/test split
+        self.csv["Path"] = self.csv["Path"].str.replace("CheXpert-v1.0-small/", "", regex=False)
+        self.csv["Path"] = self.csv["Path"].str.replace("CheXpert-v1.0/", "", regex=False)
+        self.csv["Path"] = self.csv["Path"].str.replace(r"^valid/", "val/", regex=True)
+
+        # The blinded official test CSV omits demographic/view columns to
+        # prevent re-identification. Synthesize safe defaults instead of
+        # assuming they exist like CheX_Dataset does.
+        if "Frontal/Lateral" not in self.csv.columns:
+            self.csv["Frontal/Lateral"] = np.where(
+                self.csv["Path"].str.contains("_lateral", case=False), "Lateral", "Frontal")
+        if "AP/PA" not in self.csv.columns:
+            self.csv["AP/PA"] = "AP"
+        if "Sex" not in self.csv.columns:
+            self.csv["Sex"] = "Unknown"
+        if "Age" not in self.csv.columns:
+            self.csv["Age"] = np.nan
+
+        self.csv["view"] = self.csv["Frontal/Lateral"]  # Assign view column
+        self.csv.loc[(self.csv["view"] == "Frontal"), "view"] = self.csv["AP/PA"]  # If Frontal change with the corresponding value in the AP/PA column otherwise remains Lateral
+        self.csv["view"] = self.csv["view"].replace({'Lateral': "L"})  # Rename Lateral with L
+
+        self.limit_to_selected_views(views)
+
+        if unique_patients:
+            self.csv["PatientID"] = self.csv["Path"].str.extract(pat=r'(patient\d+)')
+            self.csv = self.csv.groupby("PatientID").first().reset_index()
+
+        # Get our classes.
+        healthy = self.csv["No Finding"] == 1 if "No Finding" in self.csv.columns else pd.Series(False, index=self.csv.index)
+        labels = []
+        for pathology in self.pathologies:
+            if pathology in self.csv.columns:
+                if pathology != "Support Devices":
+                    self.csv.loc[healthy, pathology] = 0
+                mask = self.csv[pathology]
+            else:
+                mask = pd.Series(np.nan, index=self.csv.index)
+
+            labels.append(mask.values)
+        self.labels = np.asarray(labels).T
+        self.labels = self.labels.astype(np.float32)
+
+        # Make all the -1 values into nans to keep things simple
+        self.labels[self.labels == -1] = np.nan
+
+        # Rename pathologies
+        self.pathologies = list(np.char.replace(self.pathologies, "Pleural Effusion", "Effusion"))
+
+        # patientid (split-agnostic, unlike CheX_Dataset)
+        patientid = self.csv["Path"].str.extract(pat=r'patient(\d+)')[0]
+        self.csv["patientid"] = patientid
+
+        # age
+        self.csv['age_years'] = self.csv['Age'] * 1.0
+        self.csv.loc[self.csv['Age'] == 0, 'Age'] = None
+
+        # sex
+        self.csv['sex_male'] = self.csv['Sex'] == 'Male'
+        self.csv['sex_female'] = self.csv['Sex'] == 'Female'
+
+        if self.pathology_masks and self.segmentation_jsonpath:
+            import json
+            with open(self.segmentation_jsonpath) as f:
+                self.segmentations = json.load(f)
+        else:
+            self.segmentations = {}
+
+    def string(self):
+        return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        sample = {}
+        sample["idx"] = idx
+        sample["lab"] = self.labels[idx]
+
+        imgid = self.csv['Path'].iloc[idx]
+        img_path = os.path.join(self.imgpath, imgid)
+        img = imread(img_path)
+
+        sample["img"] = normalize(img, maxval=255, reshape=True)
+
+        if self.pathology_masks:
+            sample["pathology_masks"] = self.get_pathology_mask_dict(imgid, sample["img"].shape[2])
+
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
+
+        return sample
+
+    def get_pathology_mask_dict(self, imgid, this_size):
+        try:
+            from pycocotools import mask as coco_mask
+        except ImportError:
+            raise Exception("Please install pycocotools to work with CheXlocalize segmentation masks")
+
+        # e.g. "val/patient64622/study1/view1_frontal.jpg" -> "patient64622_study1_view1_frontal"
+        cxr_id = os.path.splitext(imgid)[0]
+        cxr_id = "_".join(cxr_id.split("/")[1:])
+
+        path_mask = {}
+        entry = self.segmentations.get(cxr_id, {})
+        for patho in self.pathologies:
+            # "Effusion" in this class's pathologies vs. "Pleural Effusion" in the JSON
+            json_key = "Pleural Effusion" if patho == "Effusion" else patho
+            mask = np.zeros([this_size, this_size])
+
+            if json_key in entry:
+                rle = entry[json_key]
+                decoded = coco_mask.decode(rle).astype(np.float32)
+                decoded = skimage.transform.resize(decoded, (this_size, this_size), mode='constant', order=0)
+                mask = decoded.round()  # make 0,1
+
+            mask = mask[None, :, :]
+            path_mask[self.pathologies.index(patho)] = mask
+
+        return path_mask
+
+
 class MIMIC_Dataset(Dataset):
     """MIMIC-CXR dataset (MIT / Beth Israel Deaconess Medical Center)
 
@@ -1771,7 +1971,7 @@ class TBX11K_Dataset(Dataset):
 
         with open(os.path.join(self.imgpath, "annotations", "json", split_to_json[split])) as f:
             data = json.load(f)
-        
+
         self.csv = pd.DataFrame(data["images"])
         ann_dict = defaultdict(list)
         for ann in data["annotations"]:
@@ -1803,7 +2003,7 @@ class TBX11K_Dataset(Dataset):
 
     def __len__(self):
         return len(self.labels)
-    
+
     def __getitem__(self, idx):
         sample = {}
         sample["idx"] = idx
@@ -1816,7 +2016,7 @@ class TBX11K_Dataset(Dataset):
         sample = apply_transforms(sample, self.transform)
         sample = apply_transforms(sample, self.data_aug)
         return sample
-    
+
 class SIIM_Pneumothorax_Dataset(Dataset):
     """SIIM-ACR Pneumothorax Segmentation dataset
 

@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import sys
@@ -323,3 +324,96 @@ def test_nih_dataset_patient_sex_column(tmp_path):
 
     assert d.csv["sex_male"].iloc[0]
     assert not d.csv["sex_female"].iloc[0]
+
+
+def _make_chexlocalize_test_csv(tmp_path, split="test"):
+    """A blinded-official-test-style CSV: no Sex/Age/Frontal-Lateral/AP-PA
+    columns, and a 'valid/' path prefix on val rows to test normalization."""
+    import pandas as pd
+
+    prefix = "valid/" if split == "val" else f"{split}/"
+    csv = pd.DataFrame({
+        "Path": [f"CheXpert-v1.0/{prefix}patient64622/study1/view1_frontal.jpg"],
+        "Atelectasis": [1],
+        "Cardiomegaly": [0],
+        "Consolidation": [np.nan],
+        "Edema": [-1],
+        "Pleural Effusion": [1],
+    })
+    csv_path = tmp_path / f"{split}_labels.csv"
+    csv.to_csv(csv_path, index=False)
+
+    img_dir = tmp_path / ("val" if split == "val" else split) / "patient64622" / "study1"
+    img_dir.mkdir(parents=True)
+    shutil.copyfile(test_jpg_img_file, img_dir / "view1_frontal.jpg")
+
+    return csv_path
+
+
+def test_chexlocalize_dataset_blinded_test_csv(tmp_path):
+    """CheX_Dataset raises NotImplementedError on a CSV path without 'train'
+    or 'valid' in it (as with CheXlocalize's test_labels.csv), and assumes
+    Sex/Age/Frontal-Lateral/AP-PA columns exist. CheXlocalize_Dataset must
+    load this blinded test CSV without either problem."""
+    csv_path = _make_chexlocalize_test_csv(tmp_path, split="test")
+
+    d = xrv.datasets.CheXlocalize_Dataset(imgpath=str(tmp_path), csvpath=str(csv_path))
+
+    assert len(d) == 1
+    sample = d[0]
+    assert "img" in sample
+    assert "lab" in sample
+    assert d.csv["patientid"].iloc[0] == "64622"
+
+    atelectasis_idx = d.pathologies.index("Atelectasis")
+    edema_idx = d.pathologies.index("Edema")
+    assert sample["lab"][atelectasis_idx] == 1
+    assert np.isnan(sample["lab"][edema_idx])  # uncertain (-1) becomes NaN
+
+
+def test_chexlocalize_dataset_valid_prefix_normalized_to_val(tmp_path):
+    """CheXlocalize's val CSV uses a 'valid/' path prefix, but images ship
+    under a 'val/' directory on disk — CheXlocalize_Dataset must normalize
+    this rather than fail to find the image."""
+    csv_path = _make_chexlocalize_test_csv(tmp_path, split="val")
+
+    d = xrv.datasets.CheXlocalize_Dataset(imgpath=str(tmp_path), csvpath=str(csv_path))
+
+    assert len(d) == 1
+    sample = d[0]
+    assert "img" in sample
+
+
+def test_chexlocalize_dataset_segmentation_masks(tmp_path):
+    pycocotools = pytest.importorskip("pycocotools")
+    from pycocotools import mask as coco_mask
+
+    csv_path = _make_chexlocalize_test_csv(tmp_path, split="test")
+
+    raw_mask = np.zeros((256, 256), dtype=np.uint8, order="F")
+    raw_mask[64:128, 64:128] = 1
+    rle = coco_mask.encode(raw_mask)
+    rle["counts"] = rle["counts"].decode("ascii")
+
+    segmentations = {
+        "patient64622_study1_view1_frontal": {
+            "Atelectasis": rle,
+        }
+    }
+    seg_path = tmp_path / "gt_segmentations_test.json"
+    with open(seg_path, "w") as f:
+        json.dump(segmentations, f)
+
+    d = xrv.datasets.CheXlocalize_Dataset(
+        imgpath=str(tmp_path), csvpath=str(csv_path),
+        pathology_masks=True, segmentation_jsonpath=str(seg_path))
+
+    sample = d[0]
+    assert "pathology_masks" in sample
+
+    atelectasis_idx = d.pathologies.index("Atelectasis")
+    cardiomegaly_idx = d.pathologies.index("Cardiomegaly")
+    assert atelectasis_idx in sample["pathology_masks"]
+    assert sample["pathology_masks"][atelectasis_idx].sum() > 0
+    # Pathologies absent from the segmentation JSON must yield an all-zero mask
+    assert sample["pathology_masks"][cardiomegaly_idx].sum() == 0
