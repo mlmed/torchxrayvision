@@ -388,16 +388,40 @@ def test_chexlocalize_dataset_valid_prefix_normalized_to_val(tmp_path):
     assert "img" in sample
 
 
-def test_chexlocalize_dataset_segmentation_masks(tmp_path):
-    pycocotools = pytest.importorskip("pycocotools")
-    from pycocotools import mask as coco_mask
+def _mask_to_uncompressed_coco_rle(mask):
+    """Build an uncompressed COCO RLE dict from a binary mask (Fortran order)."""
+    data = mask.reshape(-1, order="F")
+    counts = []
+    value = 0
+    run = 0
+    for pixel in data:
+        if pixel == value:
+            run += 1
+        else:
+            counts.append(run)
+            run = 1
+            value = 1 - value
+    counts.append(run)
+    return {"size": list(mask.shape), "counts": counts}
 
+
+def test_decode_coco_rle_compressed_string():
+    """CheXlocalize ships compressed COCO RLE strings, not SIIM-style flat pairs."""
+    rle = {
+        "size": [256, 256],
+        "counts": "PR`0P2P600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000Pno0",
+    }
+    mask = xrv.datasets._decode_coco_rle(rle)
+    assert mask.shape == (256, 256)
+    assert int(mask[64:128, 64:128].sum()) == 64 * 64
+
+
+def test_chexlocalize_dataset_segmentation_masks(tmp_path):
     csv_path = _make_chexlocalize_test_csv(tmp_path, split="test")
 
     raw_mask = np.zeros((256, 256), dtype=np.uint8, order="F")
     raw_mask[64:128, 64:128] = 1
-    rle = coco_mask.encode(raw_mask)
-    rle["counts"] = rle["counts"].decode("ascii")
+    rle = _mask_to_uncompressed_coco_rle(raw_mask)
 
     segmentations = {
         "patient64622_study1_view1_frontal": {

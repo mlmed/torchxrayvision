@@ -95,6 +95,72 @@ def apply_transforms(sample, transform, seed=None) -> Dict:
     return sample
 
 
+def _rle_fr_string(encoded_string):
+    """Convert a COCO-compressed RLE string to run-length counts.
+
+    Pure-Python translation of rleFrString() from COCO maskApi.c.
+    """
+    encoded_bytes = encoded_string.encode("latin-1")
+    encoded_length = len(encoded_bytes)
+    counts_array = [0] * encoded_length
+    num_counts = 0
+    string_position = 0
+
+    while string_position < encoded_length:
+        decoded_value = 0
+        bit_position = 0
+        has_more_bits = True
+
+        while has_more_bits and string_position < encoded_length:
+            char_value = encoded_bytes[string_position] - 48
+            decoded_value |= (char_value & 0x1F) << (5 * bit_position)
+            has_more_bits = (char_value & 0x20) != 0
+            string_position += 1
+            bit_position += 1
+
+        if not has_more_bits and (char_value & 0x10):
+            decoded_value |= -1 << (5 * bit_position)
+
+        if num_counts > 2:
+            decoded_value += counts_array[num_counts - 2]
+
+        counts_array[num_counts] = decoded_value
+        num_counts += 1
+
+    return counts_array[:num_counts]
+
+
+def _decode_coco_rle(rle):
+    """Decode a COCO RLE dict to a (H, W) uint8 mask without pycocotools."""
+    height, width = rle["size"]
+    counts = rle["counts"]
+
+    if isinstance(counts, (str, bytes)):
+        if isinstance(counts, bytes):
+            counts = counts.decode("latin-1")
+        counts = _rle_fr_string(counts)
+    elif not isinstance(counts, list):
+        raise ValueError("Invalid COCO RLE counts")
+
+    total_pixels = height * width
+    mask = np.zeros(total_pixels, dtype=np.uint8)
+    current_position = 0
+    current_value = 0
+
+    for count in counts:
+        if count <= 0:
+            continue
+        end_position = current_position + count
+        if end_position > total_pixels:
+            raise ValueError("Invalid COCO RLE data")
+        if current_value == 1:
+            mask[current_position:end_position] = 1
+        current_position = end_position
+        current_value = 1 - current_value
+
+    return mask.reshape((height, width), order="F")
+
+
 def relabel_dataset(pathologies, dataset, silent=False):
     """This function will add, remove, and reorder the `.labels` field to
 have the same order as the pathologies argument passed to it. If a pathology is specified but doesn’t
@@ -1185,9 +1251,8 @@ class CheXlocalize_Dataset(Dataset):
     **Segmentation masks** are available for 10 of these pathologies (all
     but Fracture, Pleural Other, Pneumonia) via ``pathology_masks=True`` and
     ``segmentation_jsonpath`` pointing at ``gt_segmentations_val.json`` or
-    ``gt_segmentations_test.json``. Masks are stored as COCO RLE
-    (``pycocotools``) keyed by CXR id (``patientX_studyY_viewZ_frontal``).
-    Requires ``pycocotools`` to decode.
+    ``gt_segmentations_test.json``. Masks are stored as COCO RLE keyed by CXR
+    id (``patientX_studyY_viewZ_frontal``).
 
     License:
         The images and segmentation annotations are released under the
@@ -1358,11 +1423,6 @@ class CheXlocalize_Dataset(Dataset):
         return sample
 
     def get_mask_dict(self, imgid, this_size):
-        try:
-            from pycocotools import mask as coco_mask
-        except ImportError:
-            raise Exception("Please install pycocotools to work with CheXlocalize segmentation masks")
-
         # e.g. "val/patient64622/study1/view1_frontal.jpg" -> "patient64622_study1_view1_frontal"
         cxr_id = os.path.splitext(imgid)[0]
         cxr_id = "_".join(cxr_id.split("/")[1:])
@@ -1379,7 +1439,7 @@ class CheXlocalize_Dataset(Dataset):
                 continue
 
             rle = entry[json_key]
-            decoded = coco_mask.decode(rle).astype(np.float32)
+            decoded = _decode_coco_rle(rle).astype(np.float32)
             decoded = skimage.transform.resize(decoded, (this_size, this_size), mode='constant', order=0)
             mask = decoded.round()  # make 0,1
             mask = mask[None, :, :]
