@@ -1206,6 +1206,13 @@ class CheXlocalize_Dataset(Dataset):
 
     Dataset website:
         https://stanfordaimi.azurewebsites.net/datasets/23c56a0d-15de-405b-87c8-99c30138950c
+
+    Example:
+        >>> d = xrv.datasets.CheXlocalize_Dataset(
+        ...     imgpath="CheXpert-v1.0/test",
+        ...     csvpath="test_labels.csv",
+        ...     pathology_masks=True,
+        ...     segmentation_jsonpath="gt_segmentations_test.json")
     """
 
     def __init__(self,
