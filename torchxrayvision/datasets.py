@@ -1189,6 +1189,15 @@ class CheXlocalize_Dataset(Dataset):
     (``pycocotools``) keyed by CXR id (``patientX_studyY_viewZ_frontal``).
     Requires ``pycocotools`` to decode.
 
+    License:
+        The images and segmentation annotations are released under the
+        Stanford University School of Medicine CheXlocalize Dataset
+        Research Use Agreement (shown at registration on the Stanford AIMI
+        download portal, see dataset website below): personal,
+        non-commercial research use only, no redistribution, no derivative
+        works. The benchmarking code in the ``cheXlocalize`` GitHub repo is
+        separately MIT-licensed (https://github.com/rajpurkarlab/cheXlocalize).
+
     Citation:
         Saporta A, Gui X, Agrawal A, et al.
         Benchmarking saliency methods for chest X-ray interpretation.
@@ -1308,6 +1317,10 @@ class CheXlocalize_Dataset(Dataset):
         else:
             self.segmentations = {}
 
+        # e.g. "val/patient64622/study1/view1_frontal.jpg" -> "patient64622_study1_view1_frontal"
+        cxr_id = self.csv["Path"].apply(lambda p: "_".join(os.path.splitext(p)[0].split("/")[1:]))
+        self.csv["has_masks"] = cxr_id.isin(self.segmentations.keys())
+
     def string(self):
         return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
 
@@ -1326,14 +1339,14 @@ class CheXlocalize_Dataset(Dataset):
         sample["img"] = normalize(img, maxval=255, reshape=True)
 
         if self.pathology_masks:
-            sample["pathology_masks"] = self.get_pathology_mask_dict(imgid, sample["img"].shape[2])
+            sample["pathology_masks"] = self.get_mask_dict(imgid, sample["img"].shape[2])
 
         sample = apply_transforms(sample, self.transform)
         sample = apply_transforms(sample, self.data_aug)
 
         return sample
 
-    def get_pathology_mask_dict(self, imgid, this_size):
+    def get_mask_dict(self, imgid, this_size):
         try:
             from pycocotools import mask as coco_mask
         except ImportError:
@@ -1348,15 +1361,18 @@ class CheXlocalize_Dataset(Dataset):
         for patho in self.pathologies:
             # "Effusion" in this class's pathologies vs. "Pleural Effusion" in the JSON
             json_key = "Pleural Effusion" if patho == "Effusion" else patho
-            mask = np.zeros([this_size, this_size])
 
-            if json_key in entry:
-                rle = entry[json_key]
-                decoded = coco_mask.decode(rle).astype(np.float32)
-                decoded = skimage.transform.resize(decoded, (this_size, this_size), mode='constant', order=0)
-                mask = decoded.round()  # make 0,1
+            # Don't add masks for labels we don't have (matches NIH_Dataset,
+            # VinBrain_Dataset, ObjectCXR_Dataset: sparse dict, no zero masks)
+            if json_key not in entry:
+                continue
 
+            rle = entry[json_key]
+            decoded = coco_mask.decode(rle).astype(np.float32)
+            decoded = skimage.transform.resize(decoded, (this_size, this_size), mode='constant', order=0)
+            mask = decoded.round()  # make 0,1
             mask = mask[None, :, :]
+
             path_mask[self.pathologies.index(patho)] = mask
 
         return path_mask

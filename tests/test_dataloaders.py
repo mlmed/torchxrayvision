@@ -415,5 +415,7 @@ def test_chexlocalize_dataset_segmentation_masks(tmp_path):
     cardiomegaly_idx = d.pathologies.index("Cardiomegaly")
     assert atelectasis_idx in sample["pathology_masks"]
     assert sample["pathology_masks"][atelectasis_idx].sum() > 0
-    # Pathologies absent from the segmentation JSON must yield an all-zero mask
-    assert sample["pathology_masks"][cardiomegaly_idx].sum() == 0
+    # Pathologies absent from the segmentation JSON get no entry (sparse dict,
+    # matching NIH_Dataset/VinBrain_Dataset/ObjectCXR_Dataset)
+    assert cardiomegaly_idx not in sample["pathology_masks"]
+    assert bool(d.csv["has_masks"].iloc[0])
