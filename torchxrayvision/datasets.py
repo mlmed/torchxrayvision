@@ -1211,7 +1211,7 @@ class CheXlocalize_Dataset(Dataset):
     def __init__(self,
                  imgpath,
                  csvpath,
-                 views=["PA", "AP"],
+                 views=["PA", "AP", "UNKNOWN"],
                  transform=None,
                  data_aug=None,
                  seed=0,
@@ -1261,7 +1261,11 @@ class CheXlocalize_Dataset(Dataset):
             self.csv["Frontal/Lateral"] = np.where(
                 self.csv["Path"].str.contains("_lateral", case=False), "Lateral", "Frontal")
         if "AP/PA" not in self.csv.columns:
-            self.csv["AP/PA"] = "AP"
+            # Neither CheXlocalize nor CheXpert documentation states whether
+            # the blinded test set is AP, PA, or a mix — leave it unknown
+            # rather than guess. `views` defaults to include "UNKNOWN" so
+            # these frontal images aren't silently dropped.
+            self.csv["AP/PA"] = "UNKNOWN"
         if "Sex" not in self.csv.columns:
             self.csv["Sex"] = "Unknown"
         if "Age" not in self.csv.columns:

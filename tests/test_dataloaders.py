@@ -359,6 +359,10 @@ def test_chexlocalize_dataset_blinded_test_csv(tmp_path):
 
     d = xrv.datasets.CheXlocalize_Dataset(imgpath=str(tmp_path), csvpath=str(csv_path))
 
+    # AP/PA is genuinely unknown for the blinded test CSV — must not be
+    # guessed as "AP", and the frontal image must still survive the default
+    # views filter rather than being silently dropped as an unknown view.
+    assert d.csv["AP/PA"].iloc[0] == "UNKNOWN"
     assert len(d) == 1
     sample = d[0]
     assert "img" in sample
