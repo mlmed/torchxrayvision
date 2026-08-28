@@ -1223,7 +1223,7 @@ class CheXlocalize_Dataset(Dataset):
                  data_aug=None,
                  seed=0,
                  unique_patients=True,
-                 pathology_masks=False,
+                 pathology_masks=True,
                  segmentation_jsonpath=None
                  ):
 
