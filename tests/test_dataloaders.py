@@ -357,7 +357,7 @@ def test_chexlocalize_dataset_blinded_test_csv(tmp_path):
     load this blinded test CSV without either problem."""
     csv_path = _make_chexlocalize_test_csv(tmp_path, split="test")
 
-    d = xrv.datasets.CheXlocalize_Dataset(imgpath=str(tmp_path), csvpath=str(csv_path))
+    d = xrv.datasets.CheXlocalize_Dataset(imgpath=str(tmp_path), csvpath=str(csv_path), pathology_masks=False)
 
     # AP/PA is genuinely unknown for the blinded test CSV — must not be
     # guessed as "AP", and the frontal image must still survive the default
