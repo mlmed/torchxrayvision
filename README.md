@@ -22,7 +22,7 @@ Twitter: [@torchxrayvision](https://twitter.com/torchxrayvision)
 ## Getting started
 
 ```
-$ pip install torchxrayvision
+pip install torchxrayvision
 ```
 
 ```python3
