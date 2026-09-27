@@ -1187,7 +1187,17 @@ class CheXlocalize_Dataset(Dataset):
     ``segmentation_jsonpath`` pointing at ``gt_segmentations_val.json`` or
     ``gt_segmentations_test.json``. Masks are stored as COCO RLE
     (``pycocotools``) keyed by CXR id (``patientX_studyY_viewZ_frontal``).
-    Requires ``pycocotools`` to decode.
+    Requires ``pycocotools`` to decode. Of the raw CSV rows, 187/234 val and
+    499/668 test have a mask for all 10 pathologies (rest have none). Some
+    are lateral views, dropped by the default frontal-only ``views``, so a
+    default-constructed instance sees masks on 170/200 val, 403/500 test.
+
+    **Folder naming:** the CSV's ``Path`` column always says ``valid/``
+    (CheXpert's own convention), but ``imgpath`` may point at a plain
+    CheXpert-v1.0 download (folder ``valid/``) or at CheXlocalize's own
+    repackaged copy of the same images (folder ``val/``). This class checks
+    which folder actually exists under ``imgpath`` and rewrites the path
+    only if needed, so both layouts work.
 
     License:
         The images and segmentation annotations are released under the
@@ -1259,7 +1269,12 @@ class CheXlocalize_Dataset(Dataset):
         # patient/view parsing below works regardless of the val/test split
         self.csv["Path"] = self.csv["Path"].str.replace("CheXpert-v1.0-small/", "", regex=False)
         self.csv["Path"] = self.csv["Path"].str.replace("CheXpert-v1.0/", "", regex=False)
-        self.csv["Path"] = self.csv["Path"].str.replace(r"^valid/", "val/", regex=True)
+        # CSV says "valid/" (from CheXpert's own val_labels.csv). But images
+        # may come from CheXpert's release ("valid/" folder) or CheXlocalize's
+        # repackaging of the same images ("val/" folder) -- check disk, don't guess.
+        if self.csv["Path"].str.startswith("valid/").any() and os.path.isdir(os.path.join(imgpath, "val")) \
+                and not os.path.isdir(os.path.join(imgpath, "valid")):
+            self.csv["Path"] = self.csv["Path"].str.replace(r"^valid/", "val/", regex=True)
 
         # The blinded official test CSV omits demographic/view columns to
         # prevent re-identification. Synthesize safe defaults instead of
@@ -1321,7 +1336,12 @@ class CheXlocalize_Dataset(Dataset):
         self.csv['sex_male'] = self.csv['Sex'] == 'Male'
         self.csv['sex_female'] = self.csv['Sex'] == 'Female'
 
-        if self.pathology_masks and self.segmentation_jsonpath:
+        if self.pathology_masks and not self.segmentation_jsonpath:
+            raise ValueError("pathology_masks=True requires segmentation_jsonpath "
+                              "(e.g. gt_segmentations_val.json); pass "
+                              "pathology_masks=False if you don't need masks.")
+
+        if self.pathology_masks:
             import json
             with open(self.segmentation_jsonpath) as f:
                 self.segmentations = json.load(f)
@@ -1370,8 +1390,14 @@ class CheXlocalize_Dataset(Dataset):
         path_mask = {}
         entry = self.segmentations.get(cxr_id, {})
         for patho in self.pathologies:
-            # "Effusion" in this class's pathologies vs. "Pleural Effusion" in the JSON
-            json_key = "Pleural Effusion" if patho == "Effusion" else patho
+            # "Effusion" in this class's pathologies vs. "Pleural Effusion" in the JSON.
+            # Likewise "Lung Opacity" (CheXlocalize's own CSV name, and this class's
+            # pathology name) vs. "Airspace Opacity" (CheXlocalize's own JSON name for
+            # the same finding, see Saporta et al. 2022, Nature Machine Intelligence,
+            # doi:10.1038/s42256-022-00536-x) -- same naming split NIH_Google_Dataset
+            # aliases above.
+            json_key = "Pleural Effusion" if patho == "Effusion" else \
+                "Airspace Opacity" if patho == "Lung Opacity" else patho
 
             # Don't add masks for labels we don't have (matches NIH_Dataset,
             # VinBrain_Dataset, ObjectCXR_Dataset: sparse dict, no zero masks)

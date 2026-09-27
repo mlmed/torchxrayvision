@@ -388,6 +388,24 @@ def test_chexlocalize_dataset_valid_prefix_normalized_to_val(tmp_path):
     assert "img" in sample
 
 
+def test_chexlocalize_dataset_valid_folder_left_alone(tmp_path):
+    """When imgpath's own images live under a 'valid/' folder (as with a
+    plain official CheXpert-v1.0 download, unlike CheXlocalize's own 'val/'
+    packaging), CheXlocalize_Dataset must not rewrite a working path into a
+    nonexistent one."""
+    csv_path = _make_chexlocalize_test_csv(tmp_path, split="val")
+
+    # Simulate a real CheXpert-v1.0 layout: rename the fixture's "val" dir
+    # (created by _make_chexlocalize_test_csv) to "valid", matching the CSV.
+    (tmp_path / "val").rename(tmp_path / "valid")
+
+    d = xrv.datasets.CheXlocalize_Dataset(imgpath=str(tmp_path), csvpath=str(csv_path), pathology_masks=False)
+
+    assert len(d) == 1
+    sample = d[0]
+    assert "img" in sample
+
+
 def test_chexlocalize_dataset_segmentation_masks(tmp_path):
     pycocotools = pytest.importorskip("pycocotools")
     from pycocotools import mask as coco_mask
@@ -423,3 +441,46 @@ def test_chexlocalize_dataset_segmentation_masks(tmp_path):
     # matching NIH_Dataset/VinBrain_Dataset/ObjectCXR_Dataset)
     assert cardiomegaly_idx not in sample["pathology_masks"]
     assert bool(d.csv["has_masks"].iloc[0])
+
+
+def test_chexlocalize_dataset_lung_opacity_mask_key(tmp_path):
+    """CheXlocalize's segmentation JSON calls this pathology "Airspace
+    Opacity", but this class's (and CheXpert's CSV's) pathology name is
+    "Lung Opacity" -- get_mask_dict must map between them."""
+    pycocotools = pytest.importorskip("pycocotools")
+    from pycocotools import mask as coco_mask
+
+    csv_path = _make_chexlocalize_test_csv(tmp_path, split="test")
+
+    raw_mask = np.zeros((256, 256), dtype=np.uint8, order="F")
+    raw_mask[64:128, 64:128] = 1
+    rle = coco_mask.encode(raw_mask)
+    rle["counts"] = rle["counts"].decode("ascii")
+
+    segmentations = {
+        "patient64622_study1_view1_frontal": {
+            "Airspace Opacity": rle,
+        }
+    }
+    seg_path = tmp_path / "gt_segmentations_test.json"
+    with open(seg_path, "w") as f:
+        json.dump(segmentations, f)
+
+    d = xrv.datasets.CheXlocalize_Dataset(
+        imgpath=str(tmp_path), csvpath=str(csv_path),
+        pathology_masks=True, segmentation_jsonpath=str(seg_path))
+
+    sample = d[0]
+    lung_opacity_idx = d.pathologies.index("Lung Opacity")
+    assert lung_opacity_idx in sample["pathology_masks"]
+    assert sample["pathology_masks"][lung_opacity_idx].sum() > 0
+
+
+def test_chexlocalize_dataset_requires_segmentation_jsonpath_for_masks(tmp_path):
+    """pathology_masks=True with no segmentation_jsonpath must raise, not
+    silently return empty masks."""
+    csv_path = _make_chexlocalize_test_csv(tmp_path, split="test")
+
+    with pytest.raises(ValueError):
+        xrv.datasets.CheXlocalize_Dataset(
+            imgpath=str(tmp_path), csvpath=str(csv_path))
