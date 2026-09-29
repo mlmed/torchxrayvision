@@ -190,6 +190,10 @@ d_vin = xrv.datasets.VinBrain_Dataset(imgpath=".../train",
 
 # National Library of Medicine Tuberculosis Datasets. https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4256233/
 d_nlmtb = xrv.datasets.NLMTB_Dataset(imgpath="path to MontgomerySet or ChinaSet_AllFiles")
+
+# CheXlocalize: official CheXpert val/test images, blinded test labels, and radiologist segmentations. https://doi.org/10.1038/s42256-022-00536-x
+d_chexlocalize = xrv.datasets.CheXlocalize_Dataset(imgpath="path to CheXpert val or test image folder",
+                                                   csvpath="path to val_labels.csv or test_labels.csv")
 ```
 
 ## Dataset fields
@@ -263,6 +267,7 @@ Masks are available in the following datasets:
 xrv.datasets.RSNA_Pneumonia_Dataset() # for Lung Opacity
 xrv.datasets.SIIM_Pneumothorax_Dataset() # for Pneumothorax
 xrv.datasets.NIH_Dataset() # for Cardiomegaly, Mass, Effusion, ...
+xrv.datasets.CheXlocalize_Dataset() # for 10 pathologies, from radiologist ground-truth segmentations
 ```
 
 Example usage:
