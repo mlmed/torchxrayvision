@@ -188,6 +188,10 @@ d_siim = xrv.datasets.SIIM_Pneumothorax_Dataset(imgpath="dicom-images-train/",
 d_vin = xrv.datasets.VinDr_Dataset(imgpath=".../train",
                                    csvpath=".../train.csv")
 
+# BRAX, Brazilian labeled chest x-ray dataset. https://doi.org/10.1038/s41597-022-01608-8
+d_brax = xrv.datasets.BRAX_Dataset(imgpath="path to brax/1.1.0/images",
+                                   csvpath="path to brax/1.1.0/master_spreadsheet_update.csv")
+
 # National Library of Medicine Tuberculosis Datasets. https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4256233/
 d_nlmtb = xrv.datasets.NLMTB_Dataset(imgpath="path to MontgomerySet or ChinaSet_AllFiles")
 

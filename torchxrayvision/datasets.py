@@ -1548,6 +1548,157 @@ class MIMIC_Dataset(Dataset):
         return sample
 
 
+class BRAX_Dataset(Dataset):
+    """BRAX, Brazilian labeled chest X-ray dataset
+
+    BRAX contains 40,967 labeled chest radiographs collected at Hospital
+    Israelita Albert Einstein in São Paulo, Brazil. Labels were
+    extracted from Brazilian Portuguese radiology reports with a Portuguese
+    adaptation of the CheXpert labeler, so they use the same encoding as
+    CheXpert: ``1``, ``0``, ``-1`` (uncertain), or blank. As in
+    :class:`CheX_Dataset`, ``-1`` is converted to ``NaN`` and "No Finding"
+    zeroes every other label except Support Devices.
+
+    **Pathologies (13):** Atelectasis, Cardiomegaly, Consolidation, Edema,
+    Effusion, Enlarged Cardiomediastinum, Fracture, Lung Lesion, Lung
+    Opacity, Pleural Other, Pneumonia, Pneumothorax, Support Devices.
+
+    ``imgpath`` is the release's ``images/`` folder (the PNG tree) and
+    ``csvpath`` is ``master_spreadsheet_update.csv``. About a quarter of the
+    images have no ``ViewPosition``; they get the view ``"UNKNOWN"``.
+
+    The release contains 12 labeled images whose source DICOM is a thin strip
+    (aspect ratio 19:1 to 213:1) rather than a chest radiograph; every other
+    image has an aspect ratio below 9:1. Images whose ``Rows``/``Columns``
+    aspect ratio exceeds ``max_aspect_ratio`` are dropped. Pass
+    ``max_aspect_ratio=None`` to keep them.
+
+    .. note::
+        BRAX is distributed under the PhysioNet Credentialed Health Data
+        License 1.5.0. Access requires a credentialed PhysioNet account,
+        the CITI "Data or Specimens Only Research" training, and signing
+        the PhysioNet Credentialed Health Data Use Agreement 1.5.0.
+
+    Example::
+
+        d_brax = xrv.datasets.BRAX_Dataset(
+            imgpath=".../brax/1.1.0/images",
+            csvpath=".../brax/1.1.0/master_spreadsheet_update.csv"
+        )
+
+    Citation:
+        Reis EP, de Paiva JPQ, da Silva MCB, et al.
+        BRAX, Brazilian labeled chest x-ray dataset.
+        *Scientific Data* 9, 487 (2022).
+        https://doi.org/10.1038/s41597-022-01608-8
+
+    Dataset website:
+        https://physionet.org/content/brax/1.1.0/
+    """
+
+    def __init__(self,
+                 imgpath,
+                 csvpath,
+                 views=["PA"],
+                 transform=None,
+                 data_aug=None,
+                 seed=0,
+                 unique_patients=True,
+                 max_aspect_ratio=10
+                 ):
+
+        super(BRAX_Dataset, self).__init__()
+        np.random.seed(seed)  # Reset the seed so all runs are the same.
+
+        self.pathologies = ["Enlarged Cardiomediastinum",
+                            "Cardiomegaly",
+                            "Lung Opacity",
+                            "Lung Lesion",
+                            "Edema",
+                            "Consolidation",
+                            "Pneumonia",
+                            "Atelectasis",
+                            "Pneumothorax",
+                            "Pleural Effusion",
+                            "Pleural Other",
+                            "Fracture",
+                            "Support Devices"]
+
+        self.pathologies = sorted(self.pathologies)
+
+        self.imgpath = imgpath
+        self.csvpath = csvpath
+        self.transform = transform
+        self.data_aug = data_aug
+        self.csv = pd.read_csv(self.csvpath)
+
+        self.csv["view"] = self.csv["ViewPosition"]
+        self.limit_to_selected_views(views)
+
+        if max_aspect_ratio is not None:
+            rows, cols = self.csv["Rows"], self.csv["Columns"]
+            aspect = np.maximum(rows, cols) / np.minimum(rows, cols)
+            self.csv = self.csv[aspect <= max_aspect_ratio]
+
+        if unique_patients:
+            # Not groupby().first(): that takes the first non-null value per
+            # column, mixing labels from different images of the same patient.
+            self.csv = self.csv.drop_duplicates("PatientID")
+
+        self.csv = self.csv.reset_index(drop=True)
+
+        # Get our classes.
+        healthy = self.csv["No Finding"] == 1
+        labels = []
+        for pathology in self.pathologies:
+            if pathology != "Support Devices":
+                self.csv.loc[healthy, pathology] = 0
+            labels.append(self.csv[pathology].values)
+        self.labels = np.asarray(labels).T
+        self.labels = self.labels.astype(np.float32)
+
+        # Make all the -1 values into nans to keep things simple
+        self.labels[self.labels == -1] = np.nan
+
+        # Rename pathologies
+        self.pathologies = list(np.char.replace(self.pathologies, "Pleural Effusion", "Effusion"))
+
+        # add consistent csv values
+
+        # patientid
+        self.csv["patientid"] = self.csv["PatientID"]
+
+        # age (5-year age groups, the oldest given as the string "85 or more")
+        self.csv["age_years"] = pd.to_numeric(self.csv["PatientAge"].replace("85 or more", 85))
+
+        # sex
+        self.csv["sex_male"] = self.csv["PatientSex"] == "M"
+        self.csv["sex_female"] = self.csv["PatientSex"] == "F"
+
+    def string(self):
+        return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        sample = {}
+        sample["idx"] = idx
+        sample["lab"] = self.labels[idx]
+
+        # CSV paths start with the release's images/ folder, which is imgpath
+        imgid = self.csv["PngPath"].iloc[idx].replace("images/", "", 1)
+        img_path = os.path.join(self.imgpath, imgid)
+        img = imread(img_path)
+
+        sample["img"] = normalize(img, maxval=255, reshape=True)
+
+        sample = apply_transforms(sample, self.transform)
+        sample = apply_transforms(sample, self.data_aug)
+
+        return sample
+
+
 class Openi_Dataset(Dataset):
     """OpenI / Indiana University chest X-ray collection
 
