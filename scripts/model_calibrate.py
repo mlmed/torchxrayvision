@@ -94,7 +94,7 @@ if "siim" in cfg.dataset:
     datas.append(dataset)
     datas_names.append("siim")
 if "vin" in cfg.dataset:
-    dataset = xrv.datasets.VinBrain_Dataset(
+    dataset = xrv.datasets.VinDr_Dataset(
         imgpath=cfg.dataset_dir + "vinbigdata-chest-xray-abnormalities-detection/train",
         csvpath=cfg.dataset_dir + "vinbigdata-chest-xray-abnormalities-detection/train.csv",
         transform=transforms, data_aug=data_aug)

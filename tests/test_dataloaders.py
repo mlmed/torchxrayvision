@@ -22,10 +22,10 @@ dataset_classes = [xrv.datasets.NIH_Dataset,
                    xrv.datasets.Openi_Dataset,
                    xrv.datasets.CheX_Dataset,
                    xrv.datasets.SIIM_Pneumothorax_Dataset,
-                   xrv.datasets.VinBrain_Dataset]
+                   xrv.datasets.VinDr_Dataset]
 
 dataset_classes_pydicom = [xrv.datasets.SIIM_Pneumothorax_Dataset,
-                           xrv.datasets.VinBrain_Dataset]
+                           xrv.datasets.VinDr_Dataset]
 
 test_data_path = "/tmp/testdata"
 test_png_img_file = os.path.join(file_path, "00000001_000.png")
@@ -76,7 +76,7 @@ def create_test_images(request):
     create_test_img(test_png_img_file, xrv.datasets.Openi_Dataset, "CXR10_IM-0002-1001.png")
     create_test_img(test_jpg_img_file, xrv.datasets.CheX_Dataset, "train/patient00004/study1/view1_frontal.jpg")
     create_test_img(test_dcm_img_file, xrv.datasets.SIIM_Pneumothorax_Dataset, "1.2.276.0.7230010.3.1.2.8323329.6904.1517875201.850818/1.2.276.0.7230010.3.1.3.8323329.6904.1517875201.850817/1.2.276.0.7230010.3.1.4.8323329.6904.1517875201.850819.dcm")
-    create_test_img(test_dcm_img_file, xrv.datasets.VinBrain_Dataset, "000434271f63a053c4128a0ba6352c7f.dicom")
+    create_test_img(test_dcm_img_file, xrv.datasets.VinDr_Dataset, "000434271f63a053c4128a0ba6352c7f.dicom")
 
 
 def test_dataloader_basic(create_test_images, is_pydicom_installed):
@@ -110,6 +110,10 @@ def test_dataloader_merging(is_pydicom_installed):
 
     # also test alias
     xrv.datasets.Merge_Dataset(datasets)
+
+
+def test_vinbrain_alias():
+    assert xrv.datasets.VinBrain_Dataset is xrv.datasets.VinDr_Dataset
 
 
 def test_dataloader_merging_dups():
@@ -438,7 +442,7 @@ def test_chexlocalize_dataset_segmentation_masks(tmp_path):
     assert atelectasis_idx in sample["pathology_masks"]
     assert sample["pathology_masks"][atelectasis_idx].sum() > 0
     # Pathologies absent from the segmentation JSON get no entry (sparse dict,
-    # matching NIH_Dataset/VinBrain_Dataset/ObjectCXR_Dataset)
+    # matching NIH_Dataset/VinDr_Dataset/ObjectCXR_Dataset)
     assert cardiomegaly_idx not in sample["pathology_masks"]
     assert bool(d.csv["has_masks"].iloc[0])
 

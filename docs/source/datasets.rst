@@ -78,8 +78,8 @@ Available Datasets
      - TBX11K tuberculosis dataset
    * - :class:`xrv.datasets.SIIM_Pneumothorax_Dataset <xrv.datasets.SIIM_Pneumothorax_Dataset>`
      - SIIM-ACR Pneumothorax Segmentation
-   * - :class:`xrv.datasets.VinBrain_Dataset <xrv.datasets.VinBrain_Dataset>`
-     - VinBigData Chest X-ray Abnormalities Detection
+   * - :class:`xrv.datasets.VinDr_Dataset <xrv.datasets.VinDr_Dataset>`
+     - VinDr-CXR (VinBigData Chest X-ray Abnormalities Detection)
    * - :class:`xrv.datasets.StonyBrookCOVID_Dataset <xrv.datasets.StonyBrookCOVID_Dataset>`
      - Stony Brook University COVID-19 positive cases
    * - :class:`xrv.datasets.ObjectCXR_Dataset <xrv.datasets.ObjectCXR_Dataset>`
@@ -131,7 +131,7 @@ Dataset Classes
 .. autoclass:: xrv.datasets.SIIM_Pneumothorax_Dataset
     :members: string
 
-.. autoclass:: xrv.datasets.VinBrain_Dataset
+.. autoclass:: xrv.datasets.VinDr_Dataset
     :members: string
 
 .. autoclass:: xrv.datasets.StonyBrookCOVID_Dataset
