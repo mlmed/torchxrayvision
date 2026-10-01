@@ -1551,8 +1551,8 @@ class MIMIC_Dataset(Dataset):
 class BRAX_Dataset(Dataset):
     """BRAX, Brazilian labeled chest X-ray dataset
 
-    BRAX contains 40,967 chest radiographs from 24,959 studies, collected at
-    Hospital Israelita Albert Einstein in São Paulo, Brazil. Labels were
+    BRAX contains 40,967 labeled chest radiographs collected at Hospital
+    Israelita Albert Einstein in São Paulo, Brazil. Labels were
     extracted from Brazilian Portuguese radiology reports with a Portuguese
     adaptation of the CheXpert labeler, so they use the same encoding as
     CheXpert: ``1``, ``0``, ``-1`` (uncertain), or blank. As in
@@ -1574,8 +1574,10 @@ class BRAX_Dataset(Dataset):
     ``max_aspect_ratio=None`` to keep them.
 
     .. note::
-        Access requires a credentialed PhysioNet account and signing the
-        dataset's data use agreement.
+        BRAX is distributed under the PhysioNet Credentialed Health Data
+        License 1.5.0. Access requires a credentialed PhysioNet account,
+        the CITI "Data or Specimens Only Research" training, and signing
+        the PhysioNet Credentialed Health Data Use Agreement 1.5.0.
 
     Example::
 
