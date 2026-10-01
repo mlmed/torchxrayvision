@@ -64,6 +64,8 @@ Available Datasets
      - CheXpert (Stanford, 224 k images, 14 pathologies)
    * - :class:`xrv.datasets.MIMIC_Dataset <xrv.datasets.MIMIC_Dataset>`
      - MIMIC-CXR (MIT/PhysioNet, 227 k images)
+   * - :class:`xrv.datasets.BRAX_Dataset <xrv.datasets.BRAX_Dataset>`
+     - BRAX (Brazil/PhysioNet, 41 k images)
    * - :class:`xrv.datasets.PC_Dataset <xrv.datasets.PC_Dataset>`
      - PadChest (Spain, 94 k images)
    * - :class:`xrv.datasets.RSNA_Pneumonia_Dataset <xrv.datasets.RSNA_Pneumonia_Dataset>`
@@ -108,6 +110,9 @@ Dataset Classes
     :members: string
 
 .. autoclass:: xrv.datasets.MIMIC_Dataset
+    :members: string
+
+.. autoclass:: xrv.datasets.BRAX_Dataset
     :members: string
 
 .. autoclass:: xrv.datasets.PC_Dataset

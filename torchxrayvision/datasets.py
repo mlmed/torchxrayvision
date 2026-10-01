@@ -1551,12 +1551,13 @@ class MIMIC_Dataset(Dataset):
 class BRAX_Dataset(Dataset):
     """BRAX, Brazilian labeled chest X-ray dataset
 
-    BRAX contains 40,967 chest radiographs from 18,442 patients, collected at
+    BRAX contains 40,967 chest radiographs from 24,959 studies, collected at
     Hospital Israelita Albert Einstein in São Paulo, Brazil. Labels were
-    extracted from the radiology reports with the CheXpert labeler, so they
-    use the same encoding as CheXpert: ``1``, ``0``, ``-1`` (uncertain), or
-    blank. As in :class:`CheX_Dataset`, ``-1`` is converted to ``NaN`` and
-    "No Finding" zeroes every other label except Support Devices.
+    extracted from Brazilian Portuguese radiology reports with a Portuguese
+    adaptation of the CheXpert labeler, so they use the same encoding as
+    CheXpert: ``1``, ``0``, ``-1`` (uncertain), or blank. As in
+    :class:`CheX_Dataset`, ``-1`` is converted to ``NaN`` and "No Finding"
+    zeroes every other label except Support Devices.
 
     **Pathologies (13):** Atelectasis, Cardiomegaly, Consolidation, Edema,
     Effusion, Enlarged Cardiomediastinum, Fracture, Lung Lesion, Lung
@@ -1665,7 +1666,7 @@ class BRAX_Dataset(Dataset):
         # patientid
         self.csv["patientid"] = self.csv["PatientID"]
 
-        # age (the CSV caps ages as the string "85 or more")
+        # age (5-year age groups, the oldest given as the string "85 or more")
         self.csv["age_years"] = pd.to_numeric(self.csv["PatientAge"].replace("85 or more", 85))
 
         # sex
