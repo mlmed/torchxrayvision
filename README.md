@@ -185,8 +185,8 @@ d_siim = xrv.datasets.SIIM_Pneumothorax_Dataset(imgpath="dicom-images-train/",
                                                 csvpath="train-rle.csv")
 
 # VinDr-CXR: An open dataset of chest X-rays with radiologist's annotations. https://arxiv.org/abs/2012.15029
-d_vin = xrv.datasets.VinBrain_Dataset(imgpath=".../train",
-                                      csvpath=".../train.csv")
+d_vin = xrv.datasets.VinDr_Dataset(imgpath=".../train",
+                                   csvpath=".../train.csv")
 
 # National Library of Medicine Tuberculosis Datasets. https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4256233/
 d_nlmtb = xrv.datasets.NLMTB_Dataset(imgpath="path to MontgomerySet or ChinaSet_AllFiles")

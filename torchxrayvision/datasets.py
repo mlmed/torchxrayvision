@@ -228,7 +228,7 @@ class MergeDataset(Dataset):
         - 1 RSNA_Pneumonia_Dataset num_samples=26684 views=['PA', 'AP']
         - 2 NIH_Dataset num_samples=112120 views=['PA', 'AP']
         - 3 SIIM_Pneumothorax_Dataset num_samples=12954
-        - 4 VinBrain_Dataset num_samples=15000 views=['PA', 'AP']
+        - 4 VinDr_Dataset num_samples=15000 views=['PA', 'AP']
     """
 
     def __init__(self, datasets, seed=0, label_concat=False):
@@ -1400,7 +1400,7 @@ class CheXlocalize_Dataset(Dataset):
                 "Airspace Opacity" if patho == "Lung Opacity" else patho
 
             # Don't add masks for labels we don't have (matches NIH_Dataset,
-            # VinBrain_Dataset, ObjectCXR_Dataset: sparse dict, no zero masks)
+            # VinDr_Dataset, ObjectCXR_Dataset: sparse dict, no zero masks)
             if json_key not in entry:
                 continue
 
@@ -2215,7 +2215,7 @@ class SIIM_Pneumothorax_Dataset(Dataset):
         return path_mask
 
 
-class VinBrain_Dataset(Dataset):
+class VinDr_Dataset(Dataset):
     """VinDr-CXR dataset
 
     A large chest X-ray dataset collected at two major hospitals in Vietnam
@@ -2234,10 +2234,12 @@ class VinBrain_Dataset(Dataset):
 
     Example::
 
-        d_vin = xrv.datasets.VinBrain_Dataset(
+        d_vin = xrv.datasets.VinDr_Dataset(
             imgpath=".../train",
             csvpath=".../train.csv"
         )
+
+    ``VinBrain_Dataset`` is kept as a backward-compatible alias of this class.
 
     Citation:
         Nguyen HQ, Lam K, Le LT, et al.
@@ -2259,7 +2261,7 @@ class VinBrain_Dataset(Dataset):
                  seed=0,
                  pathology_masks=False
                  ):
-        super(VinBrain_Dataset, self).__init__()
+        super(VinDr_Dataset, self).__init__()
 
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.imgpath = imgpath
@@ -2380,6 +2382,10 @@ class VinBrain_Dataset(Dataset):
                     path_mask[i] = mask[None, :, :]
 
         return path_mask
+
+
+# alias so it is backwards compatible
+VinBrain_Dataset = VinDr_Dataset
 
 
 class StonyBrookCOVID_Dataset(Dataset):

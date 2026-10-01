@@ -47,7 +47,7 @@ Results updated: 07/23/2023
 | jfhealthcare-DenseNet121 |12,525,301| 0.78 | 0.89 | 0.82 | 0.94 | 0.96 | - | - | - | - | - | - | - | - | - | - |
 | CheXpert-DenseNet121-ensemble | | 0.82 | 0.92 | 0.88 | 0.97 | 0.97 | - | - | - | - | - | - | - | - | - | - |
 
-## VinBrain
+## VinDr-CXR
 
 | Model Name |# Params|  Atelectasis | Cardiomegaly | Consolidation | Effusion | Infiltration | Lung Opacity | Pleural_Thickening | Pneumothorax |
 |-|-:|-|-|-|-|-|-|-|-|
