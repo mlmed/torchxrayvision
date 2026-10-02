@@ -164,6 +164,21 @@ def test_dataloader_relabelling(create_test_images):
     xrv.datasets.relabel_dataset(['Mass'], d_nih)
     
     assert d_nih[0]['lab'] == d_nih.labels[0]
+
+
+def test_vindr_other_lesion():
+    d_vin = xrv.datasets.VinDr_Dataset(imgpath=".")
+    assert "Other Lesion" in d_vin.pathologies
+    assert "Lesion" not in d_vin.pathologies
+
+    idx = d_vin.pathologies.index("Other Lesion")
+    raw = d_vin.rawcsv
+    expected = raw[raw.class_name == "Other lesion"].image_id.nunique()
+    assert d_vin.labels[:, idx].sum() == expected
+
+    image_id = raw[raw.class_name == "Other lesion"].image_id.iloc[0]
+    masks = d_vin.get_mask_dict(image_id, (1, 4000, 4000))
+    assert idx in masks
     
     
     
