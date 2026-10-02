@@ -2219,7 +2219,7 @@ class VinDr_Dataset(Dataset):
     """VinDr-CXR dataset
 
     A large chest X-ray dataset collected at two major hospitals in Vietnam
-    (Hanoi Medical University Hospital and Bach Mai Hospital), annotated by
+    (Hanoi Medical University Hospital and Hospital 108), annotated by
     17 experienced radiologists. The training set contains 15,000 DICOM
     images with bounding-box labels covering 14 thoracic abnormalities and a
     "No finding" class.
@@ -2239,6 +2239,16 @@ class VinDr_Dataset(Dataset):
             csvpath=".../train.csv"
         )
 
+    The bundled default CSV is the Kaggle challenge training set (15,000
+    images, each read independently by 3 radiologists). The official
+    release on PhysioNet (credentialed access) also includes a 3,000-image
+    test set labelled by the consensus of 5 radiologists. After obtaining
+    access, point ``csvpath`` at ``annotations/annotations_train.csv`` or
+    ``annotations/annotations_test.csv`` and ``imgpath`` at the matching
+    ``train`` or ``test`` folder. Only the classes listed above are read;
+    the extra local labels in these files (e.g. Rib fracture, Emphysema)
+    are ignored.
+
     ``VinBrain_Dataset`` is kept as a backward-compatible alias of this class.
 
     Citation:
@@ -2247,6 +2257,9 @@ class VinDr_Dataset(Dataset):
         annotations.
         *arXiv:2012.15029*, 2020.
         http://arxiv.org/abs/2012.15029
+
+    Dataset website (official release):
+        https://physionet.org/content/vindr-cxr/1.0.0/
 
     Challenge site:
         https://www.kaggle.com/c/vinbigdata-chest-xray-abnormalities-detection
