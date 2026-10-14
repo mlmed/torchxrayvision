@@ -4,6 +4,7 @@ import numpy as np
 import skimage
 import torch
 import os
+from tempfile import TemporaryDirectory
 
 from os import PathLike
 from numpy import ndarray
@@ -30,23 +31,45 @@ def in_notebook():
 
 # from here https://sumit-ghosh.com/articles/python-download-progress-bar/
 def download(url: str, filename: str):
-    with open(filename, "wb") as f:
-        response = requests.get(url, stream=True)
-        total = response.headers.get("content-length")
+    """Stream to private staging and publish only after a successful transfer.
 
-        if total is None:
-            f.write(response.content)
-        else:
+    HTTP, transport, and publication failures leave an existing destination
+    unchanged. This does not authenticate the downloaded contents.
+    """
+    filename = os.path.abspath(os.fspath(filename))
+    with requests.get(url, stream=True, timeout=(10, 60)) as response:
+        response.raise_for_status()
+        total = None
+        # iter_content decodes compressed bodies; Content-Length describes the
+        # encoded body and is unsuitable for comparing decoded byte counts.
+        encoding = response.headers.get("content-encoding", "identity").lower()
+        if encoding == "identity" and not response.headers.get("transfer-encoding"):
+            try:
+                total = int(response.headers.get("content-length"))
+            except (TypeError, ValueError):
+                pass
+            if total is not None and total < 0:
+                total = None
+        with TemporaryDirectory(
+            prefix=".torchxrayvision-", dir=os.path.dirname(filename)
+        ) as tmp_dir:
+            temporary_filename = os.path.join(tmp_dir, "download")
             downloaded = 0
-            total = int(total)
-            for data in response.iter_content(
-                chunk_size=max(int(total / 1000), 1024 * 1024)
-            ):
-                downloaded += len(data)
-                f.write(data)
-                done = int(50 * downloaded / total)
-                sys.stdout.write("\r[{}{}]".format("█" * done, "." * (50 - done)))
-                sys.stdout.flush()
+            with open(temporary_filename, "wb") as f:
+                for data in response.iter_content(chunk_size=1024 * 1024):
+                    if not data:
+                        continue
+                    downloaded += len(data)
+                    f.write(data)
+                    if total:
+                        done = min(50, int(50 * downloaded / total))
+                        sys.stdout.write("\r[{}{}]".format("█" * done, "." * (50 - done)))
+                        sys.stdout.flush()
+            if total is not None and downloaded != total:
+                raise requests.exceptions.ChunkedEncodingError(
+                    f"Expected {total} bytes but received {downloaded}"
+                )
+            os.replace(temporary_filename, filename)
     sys.stdout.write("\n")
 
 
