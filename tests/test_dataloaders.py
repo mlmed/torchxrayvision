@@ -488,3 +488,81 @@ def test_chexlocalize_dataset_requires_segmentation_jsonpath_for_masks(tmp_path)
     with pytest.raises(ValueError):
         xrv.datasets.CheXlocalize_Dataset(
             imgpath=str(tmp_path), csvpath=str(csv_path))
+
+
+def _make_brax_test_csv(tmp_path):
+    """A master_spreadsheet_update.csv-style CSV with one PNG per row under
+    images/, covering a patient with two images, an uncertain label, an
+    "85 or more" age, a thin-strip image, a lateral view and a missing view."""
+    import pandas as pd
+
+    pathologies = ["Enlarged Cardiomediastinum", "Cardiomegaly", "Lung Lesion",
+                   "Lung Opacity", "Edema", "Consolidation", "Pneumonia",
+                   "Atelectasis", "Pneumothorax", "Pleural Effusion",
+                   "Pleural Other", "Fracture", "Support Devices"]
+    rows = [
+        # patient, view, rows, columns, age, sex, labels
+        ("id_p1", "PA", 2000, 2000, "40", "M", {"No Finding": 1, "Support Devices": 1}),
+        ("id_p1", "PA", 2000, 2000, "40", "M", {"No Finding": 0, "Cardiomegaly": 1}),
+        ("id_p2", "PA", 2000, 1800, "85 or more", "F", {"No Finding": 0, "Pneumonia": -1, "Pleural Effusion": 1}),
+        ("id_p3", "PA", 12, 2000, "50", "M", {"No Finding": 0, "Edema": 1}),
+        ("id_p4", "L", 2000, 2000, "60", "F", {"No Finding": 0, "Fracture": 1}),
+        ("id_p5", np.nan, 2000, 2000, "70", "M", {"No Finding": 1}),
+    ]
+    records = []
+    for i, (patient, view, n_rows, n_cols, age, sex, labels) in enumerate(rows):
+        png_path = f"images/{patient}/Study_1/Series_1/image-{i}.png"
+        img_file = tmp_path / png_path
+        img_file.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(test_png_img_file, img_file)
+        record = {"PngPath": png_path, "PatientID": patient, "PatientSex": sex,
+                  "PatientAge": age, "ViewPosition": view, "Rows": n_rows, "Columns": n_cols}
+        record.update({p: np.nan for p in ["No Finding"] + pathologies})
+        record.update(labels)
+        records.append(record)
+
+    csv_path = tmp_path / "master_spreadsheet_update.csv"
+    pd.DataFrame(records).to_csv(csv_path, index=False)
+    return csv_path
+
+
+def test_brax_dataset(tmp_path):
+    csv_path = _make_brax_test_csv(tmp_path)
+
+    d = xrv.datasets.BRAX_Dataset(imgpath=str(tmp_path / "images"), csvpath=str(csv_path))
+
+    # PA only, strip dropped, one image per patient
+    assert list(d.csv["PatientID"]) == ["id_p1", "id_p2"]
+    assert "Effusion" in d.pathologies and "Pleural Effusion" not in d.pathologies
+
+    # p1 keeps its first image: No Finding zeroes everything but Support
+    # Devices, and the second image's Cardiomegaly=1 must not leak in
+    p1 = dict(zip(d.pathologies, d.labels[0]))
+    assert p1["Support Devices"] == 1
+    assert p1["Cardiomegaly"] == 0
+    assert all(v == 0 for k, v in p1.items() if k != "Support Devices")
+
+    p2 = dict(zip(d.pathologies, d.labels[1]))
+    assert np.isnan(p2["Pneumonia"])  # uncertain (-1) becomes NaN
+    assert p2["Effusion"] == 1
+    assert np.isnan(p2["Cardiomegaly"])
+
+    assert list(d.csv["age_years"]) == [40, 85]
+    assert list(d.csv["sex_male"]) == [True, False]
+
+    sample = d[0]
+    assert sample["img"].shape[0] == 1
+    assert np.array_equal(sample["lab"], d.labels[0], equal_nan=True)
+
+
+def test_brax_dataset_views_and_aspect_filter(tmp_path):
+    csv_path = _make_brax_test_csv(tmp_path)
+    imgpath = str(tmp_path / "images")
+
+    d = xrv.datasets.BRAX_Dataset(imgpath=imgpath, csvpath=str(csv_path), views=["*"], unique_patients=False)
+    assert len(d) == 5
+    assert "UNKNOWN" in set(d.csv["view"])
+
+    d = xrv.datasets.BRAX_Dataset(imgpath=imgpath, csvpath=str(csv_path), views=["*"], unique_patients=False,
+                                  max_aspect_ratio=None)
+    assert len(d) == 6
