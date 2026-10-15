@@ -2376,8 +2376,8 @@ class VinDr_Dataset(Dataset):
     "No finding" class.
 
     **Pathologies (14):** Aortic Enlargement, Atelectasis, Calcification,
-    Cardiomegaly, Consolidation, Effusion, ILD, Infiltration, Lesion,
-    Lung Opacity, Nodule/Mass, Pleural Thickening, Pneumothorax, Pulmonary
+    Cardiomegaly, Consolidation, Effusion, ILD, Infiltration, Lung Opacity,
+    Nodule/Mass, Other Lesion, Pleural Thickening, Pneumothorax, Pulmonary
     Fibrosis.
 
     Per-image bounding-box masks are available via ``pathology_masks=True``.
@@ -2449,7 +2449,7 @@ class VinDr_Dataset(Dataset):
                             'Infiltration',
                             'Lung Opacity',
                             'Nodule/Mass',
-                            'Lesion',
+                            'Other Lesion',
                             'Effusion',
                             'Pleural_Thickening',
                             'Pneumothorax',
