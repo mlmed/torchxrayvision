@@ -4,7 +4,6 @@ import numpy as np
 import skimage
 import torch
 import os
-from tempfile import TemporaryDirectory
 
 from os import PathLike
 from numpy import ndarray
@@ -31,45 +30,32 @@ def in_notebook():
 
 # from here https://sumit-ghosh.com/articles/python-download-progress-bar/
 def download(url: str, filename: str):
-    """Stream to private staging and publish only after a successful transfer.
-
-    HTTP, transport, and publication failures leave an existing destination
-    unchanged. This does not authenticate the downloaded contents.
-    """
-    filename = os.path.abspath(os.fspath(filename))
-    with requests.get(url, stream=True, timeout=(10, 60)) as response:
+    """Download to `filename + ".part"` and move it into place only on success,
+    so a failed transfer never leaves a partial file at `filename`. An
+    existing .part file from an interrupted download is resumed."""
+    part = filename + ".part"
+    offset = os.path.getsize(part) if os.path.exists(part) else 0
+    headers = {"Range": f"bytes={offset}-"} if offset else {}
+    with requests.get(url, stream=True, headers=headers, timeout=(10, 60)) as response:
+        if response.status_code == 416:
+            # .part is already complete or doesn't match the server; start over
+            os.remove(part)
+            return download(url, filename)
         response.raise_for_status()
-        total = None
-        # iter_content decodes compressed bodies; Content-Length describes the
-        # encoded body and is unsuitable for comparing decoded byte counts.
-        encoding = response.headers.get("content-encoding", "identity").lower()
-        if encoding == "identity" and not response.headers.get("transfer-encoding"):
-            try:
-                total = int(response.headers.get("content-length"))
-            except (TypeError, ValueError):
-                pass
-            if total is not None and total < 0:
-                total = None
-        with TemporaryDirectory(
-            prefix=".torchxrayvision-", dir=os.path.dirname(filename)
-        ) as tmp_dir:
-            temporary_filename = os.path.join(tmp_dir, "download")
-            downloaded = 0
-            with open(temporary_filename, "wb") as f:
-                for data in response.iter_content(chunk_size=1024 * 1024):
-                    if not data:
-                        continue
-                    downloaded += len(data)
-                    f.write(data)
-                    if total:
-                        done = min(50, int(50 * downloaded / total))
-                        sys.stdout.write("\r[{}{}]".format("█" * done, "." * (50 - done)))
-                        sys.stdout.flush()
-            if total is not None and downloaded != total:
-                raise requests.exceptions.ChunkedEncodingError(
-                    f"Expected {total} bytes but received {downloaded}"
-                )
-            os.replace(temporary_filename, filename)
+        if response.status_code != 206:
+            offset = 0  # server ignored the Range header, so it sent the whole file
+        remaining = int(response.headers.get("content-length") or 0)
+        total = offset + remaining if remaining else 0
+        downloaded = offset
+        with open(part, "ab" if offset else "wb") as f:
+            for data in response.iter_content(chunk_size=1024 * 1024):
+                downloaded += len(data)
+                f.write(data)
+                if total:
+                    done = min(50, int(50 * downloaded / total))
+                    sys.stdout.write("\r[{}{}]".format("█" * done, "." * (50 - done)))
+                    sys.stdout.flush()
+    os.replace(part, filename)
     sys.stdout.write("\n")
 
 
