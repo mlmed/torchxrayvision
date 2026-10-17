@@ -30,23 +30,32 @@ def in_notebook():
 
 # from here https://sumit-ghosh.com/articles/python-download-progress-bar/
 def download(url: str, filename: str):
-    with open(filename, "wb") as f:
-        response = requests.get(url, stream=True)
-        total = response.headers.get("content-length")
-
-        if total is None:
-            f.write(response.content)
-        else:
-            downloaded = 0
-            total = int(total)
-            for data in response.iter_content(
-                chunk_size=max(int(total / 1000), 1024 * 1024)
-            ):
+    """Download to `filename + ".part"` and move it into place only on success,
+    so a failed transfer never leaves a partial file at `filename`. An
+    existing .part file from an interrupted download is resumed."""
+    part = filename + ".part"
+    offset = os.path.getsize(part) if os.path.exists(part) else 0
+    headers = {"Range": f"bytes={offset}-"} if offset else {}
+    with requests.get(url, stream=True, headers=headers, timeout=(10, 60)) as response:
+        if response.status_code == 416:
+            # .part is already complete or doesn't match the server; start over
+            os.remove(part)
+            return download(url, filename)
+        response.raise_for_status()
+        if response.status_code != 206:
+            offset = 0  # server ignored the Range header, so it sent the whole file
+        remaining = int(response.headers.get("content-length") or 0)
+        total = offset + remaining if remaining else 0
+        downloaded = offset
+        with open(part, "ab" if offset else "wb") as f:
+            for data in response.iter_content(chunk_size=1024 * 1024):
                 downloaded += len(data)
                 f.write(data)
-                done = int(50 * downloaded / total)
-                sys.stdout.write("\r[{}{}]".format("█" * done, "." * (50 - done)))
-                sys.stdout.flush()
+                if total:
+                    done = min(50, int(50 * downloaded / total))
+                    sys.stdout.write("\r[{}{}]".format("█" * done, "." * (50 - done)))
+                    sys.stdout.flush()
+    os.replace(part, filename)
     sys.stdout.write("\n")
 
 
