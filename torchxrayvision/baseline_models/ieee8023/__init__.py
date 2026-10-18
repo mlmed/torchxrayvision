@@ -125,6 +125,8 @@ class VQGAN(nn.Module):
     decoding gives an image the classifier scores as less positive. It was 
     used for the 6th place MIDRC XAI Challenge winner.
 
+    .. image:: _static/ieee8023-vqgan.jpg
+
     The native resolution of the model is 768x768. Inputs are expected in the
     TorchXRayVision pixel range of [-1024, 1024] and are resized by bilinear
     interpolation automatically. The single channel is repeated to three for the
