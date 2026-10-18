@@ -81,3 +81,9 @@ Mira Sex Model
 
 .. autoclass:: xrv.baseline_models.mira.SexModel
    :members:
+
+VQGAN Autoencoder
+++++++++++++++++++++++++++
+
+.. autoclass:: xrv.baseline_models.ieee8023.VQGAN
+   :members:

@@ -124,6 +124,9 @@ model.targets -> ["Asian", "Black", "White"]
 # Riken age prediction model
 model = xrv.baseline_models.riken.AgeModel()
 
+# VQGAN autoencoder (768x768) for counterfactual explanations
+model = xrv.baseline_models.ieee8023.VQGAN(weights="cxr2-vqgan-768-sd")
+
 ```
 
 Benchmarks of the modes are here: [BENCHMARKS.md](BENCHMARKS.md) and the performance of some of the models can be seen in this paper [arxiv.org/abs/2002.02497](https://arxiv.org/abs/2002.02497). 
