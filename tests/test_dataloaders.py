@@ -5,6 +5,7 @@ import sys
 import warnings
 
 import numpy as np
+import pandas as pd
 import pytest
 import torchvision
 from skimage.io import imread
@@ -179,6 +180,42 @@ def test_vindr_other_lesion():
     image_id = raw[raw.class_name == "Other lesion"].image_id.iloc[0]
     masks = d_vin.get_mask_dict(image_id, (1, 4000, 4000))
     assert idx in masks
+
+
+def test_vindr_image_labels(tmp_path):
+    # image ids from the bundled box CSV: the first has boxes, the second is "No finding" only
+    boxed, normal = "0007d316f756b3fa0baea2ff514ce945", "000434271f63a053c4128a0ba6352c7f"
+    cols = ["image_id", "rad_id", "Cardiomegaly", "Edema", "Pneumonia", "Pleural effusion", "Other diseases", "No finding"]
+    rows = [[boxed, "R1", 1, 0, 1, 1, 0, 0],
+            [boxed, "R2", 1, 0, 0, 1, 0, 0],
+            [boxed, "R3", 0, 0, 0, 0, 0, 0],
+            [normal, "R1", 0, 0, 0, 0, 0, 1],
+            [normal, "R2", 0, 0, 0, 0, 0, 1],
+            [normal, "R3", 0, 0, 0, 0, 0, 1]]
+    labelpath = tmp_path / "image_labels_train.csv"
+    pd.DataFrame(rows, columns=cols).to_csv(labelpath, index=False)
+
+    d_any = xrv.datasets.VinDr_Dataset(imgpath=str(tmp_path), labelpath=str(labelpath))
+    d_maj = xrv.datasets.VinDr_Dataset(imgpath=str(tmp_path), labelpath=str(labelpath), rater_agg="majority")
+
+    assert d_any.pathologies == ["Cardiomegaly", "Edema", "Effusion", "Other disease", "Pneumonia"]
+    assert len(d_any) == 2
+    b, n = list(d_any.csv.image_id).index(boxed), list(d_any.csv.image_id).index(normal)
+    assert d_any.csv.has_masks[b] and not d_any.csv.has_masks[n]
+
+    pneumonia = d_any.pathologies.index("Pneumonia")
+    assert d_any.labels[b, pneumonia] == 1  # 1 of 3 readers
+    assert d_maj.labels[b, pneumonia] == 0
+    cardio = d_any.pathologies.index("Cardiomegaly")
+    assert d_any.labels[b, cardio] == d_maj.labels[b, cardio] == 1  # 2 of 3 readers
+    assert d_any.labels[n].sum() == 0
+
+    xrv.datasets.relabel_dataset(xrv.datasets.default_pathologies, d_any, silent=True)
+    for p in ["Cardiomegaly", "Edema", "Effusion", "Pneumonia"]:
+        assert not np.isnan(d_any.labels[:, d_any.pathologies.index(p)]).any()
+
+    with pytest.raises(ValueError):
+        xrv.datasets.VinDr_Dataset(imgpath=str(tmp_path), labelpath=str(labelpath), rater_agg="all")
     
     
     

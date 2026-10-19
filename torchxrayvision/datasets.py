@@ -2400,6 +2400,27 @@ class VinDr_Dataset(Dataset):
     the extra local labels in these files (e.g. Rib fracture, Emphysema)
     are ignored.
 
+    **Image-level labels (PhysioNet only):** to use all 27 labels of the
+    official release instead, also pass ``labelpath`` pointing at
+    ``annotations/image_labels_train.csv`` or ``image_labels_test.csv``.
+    These add the local labels skipped above (e.g. Edema, Emphysema, Rib
+    fracture, Clavicle fracture) and the 5 diagnoses that exist only at
+    image level (COPD, Lung tumor, Pneumonia, Tuberculosis, Other disease). "No finding" is kept in ``.csv`` but is not a pathology.
+    Train images were read by 3 radiologists; ``rater_agg="any"`` (default,
+    same as the box-file labels) marks an image positive if any of them
+    did, ``rater_agg="majority"`` if at least 2 did. Test images have one
+    consensus reading, so ``rater_agg`` has no effect there. Keep
+    ``csvpath`` on the matching ``annotations_*.csv`` for
+    ``pathology_masks``.
+
+    Example::
+
+        d_vin = xrv.datasets.VinDr_Dataset(
+            imgpath=".../test",
+            csvpath=".../annotations/annotations_test.csv",
+            labelpath=".../annotations/image_labels_test.csv"
+        )
+
     ``VinBrain_Dataset`` is kept as a backward-compatible alias of this class.
 
     Citation:
@@ -2423,7 +2444,9 @@ class VinDr_Dataset(Dataset):
                  transform=None,
                  data_aug=None,
                  seed=0,
-                 pathology_masks=False
+                 pathology_masks=False,
+                 labelpath=None,
+                 rater_agg="any"
                  ):
         super(VinDr_Dataset, self).__init__()
 
@@ -2464,6 +2487,9 @@ class VinDr_Dataset(Dataset):
         # Load data
         self.check_paths_exist()
         self.rawcsv = pd.read_csv(self.csvpath)
+        if labelpath is not None:
+            self._load_image_labels(labelpath, rater_agg)
+            return
         self.csv = pd.DataFrame(self.rawcsv.groupby("image_id")["class_name"].apply(lambda x: "|".join(np.unique(x))))
 
         self.csv["has_masks"] = self.csv.class_name != "No finding"
@@ -2479,6 +2505,35 @@ class VinDr_Dataset(Dataset):
         self.labels = self.labels.astype(np.float32)
 
         self.csv = self.csv.reset_index()
+
+    # image_labels_*.csv column -> pathology name used by the box-file labels;
+    # the train file says "Other diseases", the test file "Other disease"
+    image_label_names = {"Pleural effusion": "Effusion",
+                         "Pleural thickening": "Pleural_Thickening",
+                         "Pulmonary fibrosis": "Pulmonary Fibrosis",
+                         "Other lesion": "Other Lesion",
+                         "Other diseases": "Other disease"}
+
+    def _load_image_labels(self, labelpath, rater_agg):
+        if rater_agg not in ("any", "majority"):
+            raise ValueError("rater_agg must be 'any' or 'majority', got {!r}".format(rater_agg))
+        if not os.path.isfile(labelpath):
+            raise Exception("labelpath must be a file")
+        self.labelpath = labelpath
+
+        raw = pd.read_csv(labelpath).rename(columns=self.image_label_names)
+        cols = [c for c in raw.columns if c not in ("image_id", "rad_id")]
+        readers = raw.groupby("image_id")[cols]
+        if rater_agg == "any":
+            self.csv = readers.max().reset_index()
+        else:
+            self.csv = (readers.mean() > 0.5).astype(int).reset_index()
+
+        boxed = self.rawcsv.image_id[self.rawcsv.class_name != "No finding"]
+        self.csv["has_masks"] = self.csv.image_id.isin(boxed)
+
+        self.pathologies = sorted(c for c in cols if c != "No finding")
+        self.labels = self.csv[self.pathologies].values.astype(np.float32)
 
     def string(self):
         return self.__class__.__name__ + " num_samples={} views={} data_aug={}".format(len(self), self.views, self.data_aug)
