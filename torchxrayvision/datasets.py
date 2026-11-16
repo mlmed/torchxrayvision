@@ -2012,11 +2012,12 @@ class NLMTB_Dataset(Dataset):
     Two public chest X-ray datasets released by the National Library of
     Medicine for computer-aided TB screening:
 
-    * **Montgomery County** (USA): 138 normal and 80 TB-positive PA images,
-      collected by the Montgomery County Department of Health and Human
-      Services.
-    * **Shenzhen** (China): approximately 326 normal and 336 TB-positive PA
-      images, collected at Shenzhen No. 3 People's Hospital.
+    * **Montgomery County** (USA): 138 PA images, comprising 80 normal images
+      and 58 with TB-consistent abnormalities, collected by the Montgomery
+      County Department of Health and Human Services.
+    * **Shenzhen** (China): 662 frontal images, comprising 326 normal images
+      and 336 with TB-consistent abnormalities, collected at Shenzhen No. 3
+      People's Hospital. The source publication includes pediatric AP images.
 
     **Pathologies (1):** Tuberculosis.
 
@@ -2025,7 +2026,11 @@ class NLMTB_Dataset(Dataset):
         corresponding root folder (``NLM-MontgomeryCXRSet`` or
         ``ChinaSet_AllFiles``). Use
         :class:`~torchxrayvision.datasets.MergeDataset` to combine them.
-        All images are PA view.
+        This loader assigns the PA view to all samples, including the
+        pediatric AP images described in the Shenzhen source publication.
+
+    Dataset details:
+        https://lhncbc.nlm.nih.gov/CHRB/CHRB-resources.html
 
     Citation:
         Jaeger S, Candemir S, Antani S, Wang YX, Lu PX, Thoma G.
@@ -2071,7 +2076,7 @@ class NLMTB_Dataset(Dataset):
 
         # Label is the last digit on the simage filename
         self.csv["label"] = self.csv["fname"].apply(lambda x: int(x.split(".")[-2][-1]))
-        # All the images are PA according to the article.
+        # Preserve the loader's PA assignment; Shenzhen also includes AP images.
         self.csv["view"] = "PA"
         self.limit_to_selected_views(views)
 
