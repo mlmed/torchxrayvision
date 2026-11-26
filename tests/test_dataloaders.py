@@ -320,6 +320,22 @@ def test_merge_dataset_source_field():
     assert merged.which_dataset[len(merged) - 1] == 1
 
 
+def test_merge_dataset_label_concat():
+    """With label_concat=True each sub-dataset gets its own block of label
+    columns, and the other blocks are NaN."""
+    d1 = xrv.datasets.NIH_Dataset(imgpath=".")
+    d2 = xrv.datasets.NIH_Dataset(imgpath=".")
+    n1, k = d1.labels.shape
+
+    merged = xrv.datasets.MergeDataset([d1, d2], label_concat=True)
+
+    assert merged.labels.shape == (n1 + len(d2), 2 * k)
+    np.testing.assert_array_equal(merged.labels[:n1, :k], d1.labels)
+    np.testing.assert_array_equal(merged.labels[n1:, k:], d2.labels)
+    assert np.all(np.isnan(merged.labels[:n1, k:]))
+    assert np.all(np.isnan(merged.labels[n1:, :k]))
+
+
 def test_nih_dataset_patient_sex_column(tmp_path):
     """NIH's official Data_Entry_2017_v2020.csv (as currently distributed by
     the NIH Clinical Center) renamed the "Patient Gender" column to

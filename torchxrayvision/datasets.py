@@ -248,19 +248,20 @@ class MergeDataset(Dataset):
             if dataset.pathologies != self.pathologies:
                 raise Exception("incorrect pathology alignment")
 
-        if hasattr(datasets[0], 'labels'):
-            self.labels = np.concatenate([d.labels for d in datasets])
-        else:
-            print("WARN: not adding .labels")
-
         self.which_dataset = self.which_dataset.astype(int)
 
-        if label_concat:
-            new_labels = np.zeros([self.labels.shape[0], self.labels.shape[1] * len(datasets)]) * np.nan
-            for i, shift in enumerate(self.which_dataset):
-                size = self.labels.shape[1]
-                new_labels[i, shift * size:shift * size + size] = self.labels[i]
-            self.labels = new_labels
+        if hasattr(datasets[0], 'labels'):
+            labels = np.concatenate([d.labels for d in datasets])
+            if label_concat:
+                new_labels = np.zeros([labels.shape[0], labels.shape[1] * len(datasets)]) * np.nan
+                for i, shift in enumerate(self.which_dataset):
+                    size = labels.shape[1]
+                    new_labels[i, shift * size:shift * size + size] = labels[i]
+                labels = new_labels
+            # Set .labels once, since __setattr__ blocks changing it afterwards
+            self.labels = labels
+        else:
+            print("WARN: not adding .labels")
 
         try:
             self.csv = pd.concat([d.csv for d in datasets])
